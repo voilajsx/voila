@@ -1,0 +1,67 @@
+{
+  "feature": "echo",
+  "app": "greeting",
+  "version": "1.0.0",
+  "last_updated": "2025-01-20T10:00:00Z",
+  
+  "api": {
+    "base_path": "/api/greeting",
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/echo",
+        "handler": "EchoService.echoMessage",
+        "request_schema": "EchoRequest",
+        "response_schema": "EchoResponse",
+        "description": "Echo back a message (max 500 characters)",
+        "auth_required": false
+      },
+      {
+        "method": "GET",
+        "path": "/echo/:message",
+        "handler": "EchoService.echoMessageGet",
+        "request_schema": null,
+        "response_schema": "EchoResponse",
+        "description": "Echo back a message via URL parameter (max 200 characters)",
+        "auth_required": false
+      }
+    ]
+  },
+
+  "models": {
+    "EchoRequest": {
+      "message": "string"
+    },
+    "EchoData": {
+      "original_message": "string",
+      "echoed_message": "string",
+      "message_length": "number",
+      "timestamp": "string",
+      "requestId": "string",
+      "feature": "string",
+      "method": "string"
+    },
+    "EchoResponse": {
+      "success": "boolean",
+      "data": "EchoData"
+    }
+  },
+
+  "dependencies": {
+    "api": [],
+    "frontend": []
+  },
+
+  "authentication": {
+    "type": "none",
+    "note": "Public echo feature requires no authentication"
+  },
+
+  "reliability": {
+    "test_coverage": 95,
+    "type_safety": 100,
+    "breaking_changes": false,
+    "validation_status": "passed",
+    "last_validated": "2025-01-20T10:00:00Z"
+  }
+}

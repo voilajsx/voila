@@ -1,0 +1,24 @@
+{
+  "app": "climate",
+  "enabled": true,
+  "environments": [
+    "development",
+    "staging",
+    "production"
+  ],
+  "features": {
+    "weather": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Weather feature for climate application"
+    }
+  },
+  "metadata": {
+    "owner": "climate Team",
+    "created": "2025-08-22"
+  }
+}

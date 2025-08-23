@@ -1,0 +1,42 @@
+{
+  "app": "greeting",
+  "enabled": true,
+  "environments": [
+    "development",
+    "staging",
+    "production"
+  ],
+  "features": {
+    "hello": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Simple greeting service for customer engagement"
+    },
+    "echo": {
+      "enabled": false,
+      "environments": [
+        "development"
+      ],
+      "description": "Echo service for testing and debugging"
+    }
+  },
+  "metadata": {
+    "owner": "Greeting Team",
+    "created": "2025-08-21"
+  },
+  "api_compliance": {
+    "last_test_run": "2025-08-22T01:09:56.633Z",
+    "total_tests": 6,
+    "passed_tests": 6,
+    "failed_tests": 0,
+    "success_rate": "100%",
+    "overall_status": "COMPLIANT",
+    "requirements_met": true,
+    "test_results_file": "greeting.testresults-2025-08-22T01-09-56.xlsx",
+    "updated_at": "2025-08-22T04:11:58.448Z"
+  }
+}

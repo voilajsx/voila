@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run digest:*)",
+      "Bash(npm run context:*)",
+      "Bash(npm run plan:*)",
+      "Bash(npm run generate:*)",
+      "Bash(npm run validate:*)",
+      "Bash(DEBUG=1 npm run validate app:api climate)",
+      "Bash(npm run test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl:*)",
+      "Bash(OPENWEATHER_API_KEY=dee32ddb40e0deabd86498a32441cbc2 npm run dev:api)",
+      "Bash(PORT=3002 OPENWEATHERMAP_API_KEY=dee32ddb40e0deabd86498a32441cbc2 npm run dev:api)",
+      "Bash(PORT=3003 OPENWEATHERMAP_API_KEY=dee32ddb40e0deabd86498a32441cbc2 npm run dev:api)",
+      "Bash(PORT=3004 OPENWEATHERMAP_API_KEY=dee32ddb40e0deabd86498a32441cbc2 npm run dev:api)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

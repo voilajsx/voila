@@ -1,0 +1,94 @@
+{
+  "feature": "hello",
+  "app": "greeting",
+  "version": "1.0.0",
+  "last_updated": "2025-01-20T10:00:00Z",
+  
+  "ui": {
+    "base_path": "/app/greeting",
+    "routes": [
+      {
+        "path": "/hello",
+        "component": "HelloPage",
+        "description": "Hello page with default greeting",
+        "auth_required": false
+      },
+      {
+        "path": "/hello/:name",
+        "component": "HelloPage",
+        "description": "Hello page with personalized greeting",
+        "auth_required": false
+      }
+    ]
+  },
+
+  "components": {
+    "HelloPage": {
+      "props": {
+        "name": "string (optional)"
+      },
+      "state": {
+        "greetings": "string[]",
+        "name": "string",
+        "loading": "boolean",
+        "error": "string | null"
+      }
+    }
+  },
+
+  "services": {
+    "HelloService": {
+      "getDefaultGreeting": {
+        "returns": "HelloResponse",
+        "endpoint": "GET /api/greeting/hello"
+      },
+      "getGreetingByName": {
+        "params": {
+          "name": "string"
+        },
+        "returns": "HelloResponse",
+        "endpoint": "GET /api/greeting/hello/:name"
+      }
+    }
+  },
+
+  "models": {
+    "HelloData": {
+      "greetings": "string[]",
+      "name": "string",
+      "language_count": "number",
+      "timestamp": "string",
+      "requestId": "string",
+      "feature": "string"
+    },
+    "HelloResponse": {
+      "success": "boolean",
+      "data": "HelloData"
+    },
+    "HelloComponentState": {
+      "greetings": "string[]",
+      "name": "string",
+      "loading": "boolean",
+      "error": "string | null"
+    }
+  },
+
+  "dependencies": {
+    "api": ["greeting/hello"],
+    "frontend": [],
+    "ui_components": ["Card", "Button", "Input", "Typography", "Space", "Spin", "Alert"]
+  },
+
+  "authentication": {
+    "type": "none",
+    "note": "Public hello feature requires no authentication"
+  },
+
+  "reliability": {
+    "test_coverage": 85,
+    "type_safety": 100,
+    "breaking_changes": false,
+    "validation_status": "passed",
+    "last_validated": "2025-01-20T10:00:00Z"
+  }
+}

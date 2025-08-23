@@ -1,0 +1,76 @@
+# greeting.api.spec.yml
+# Specifications and test cases for Greeting Application Backend — Version 1.0.0
+
+version: 1.0.0
+service: greeting-api-backend
+
+specifications:
+
+  - id: SPEC-HELLO-001
+    title: Default Greeting Endpoint Response
+    description: |
+      The `GET /api/greeting/hello` endpoint SHALL return a default greeting message in English, Spanish,
+      and French. Response MUST have HTTP status 200 and a JSON body with a `message` string starting with
+      "Hello", "Hola", or "Bonjour".
+    endpoint:
+      method: GET
+      path: /api/greeting/hello
+    validations:
+      - status_code: 200
+      - content_type_includes: application/json
+      - body_message_pattern: "^(Hello|Hola|Bonjour).*"
+    tests:
+      - id: TC-HELLO-GET-DEFAULT-01
+        description: "Verify response status is 200."
+        input: {}
+        expected:
+          status_code: 200
+      - id: TC-HELLO-GET-DEFAULT-02
+        description: "Verify Content-Type header includes application/json."
+        input: {}
+        expected:
+          headers:
+            content-type: application/json
+      - id: TC-HELLO-GET-DEFAULT-03
+        description: "Verify response contains success true and greetings array."
+        input: {}
+        expected:
+          body_success_equals: true
+
+  - id: SPEC-HELLO-002
+    title: Personalized Greeting Endpoint Response
+    description: |
+      The `GET /api/greeting/hello/:name` endpoint SHALL return a personalized greeting including
+      the `name` parameter in English, Spanish, and French. Response MUST be HTTP 200 with the message
+      like "Hello, {name}", "Hola, {name}", or "Bonjour, {name}".
+    endpoint:
+      method: GET
+      path: /api/greeting/hello/{name}
+    validations:
+      - status_code: 200
+      - content_type_includes: application/json
+      - body_message_pattern: "^((Hello|Hola|Bonjour), Alice).*$"
+    tests:
+      - id: TC-HELLO-GET-NAME-01
+        description: "Verify response status is 200."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          status_code: 200
+      - id: TC-HELLO-GET-NAME-02
+        description: "Verify Content-Type header includes application/json."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          headers:
+            content-type: application/json
+      - id: TC-HELLO-GET-NAME-03
+        description: "Verify response contains success true and Alice in data."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          body_success_equals: true
+

@@ -1,0 +1,83 @@
+# {{APP_NAME}}.api.spec.yml
+# Specifications and test cases for {{APP_NAME}} Application Backend — Version 1.0.0
+
+version: 1.0.0
+service: {{APP_NAME}}-api-backend
+
+specifications:
+
+  # Default greeting endpoint - template for all features
+  - id: SPEC-{{APP_NAME_UPPER}}-001
+    title: Default Feature Greeting Endpoint
+    description: |
+      Each feature in the {{APP_NAME}} app SHALL have a default greeting endpoint at 
+      `GET /api/{{APP_NAME}}/{feature}` that returns "Hello from {{APP_NAME}}/{feature}!".
+      Response MUST have HTTP status 200 and a JSON body with success=true and proper data structure.
+    endpoint:
+      method: GET
+      path: /api/{{APP_NAME}}/{feature}
+    validations:
+      - status_code: 200
+      - content_type_includes: application/json
+      - body_success_equals: true
+      - body_data_message_pattern: "^Hello from {{APP_NAME}}/.*!"
+    tests:
+      - id: TC-{{APP_NAME_UPPER}}-GET-FEATURE-DEFAULT-01
+        description: "Verify response status is 200."
+        input: {}
+        expected:
+          status_code: 200
+      - id: TC-{{APP_NAME_UPPER}}-GET-FEATURE-DEFAULT-02
+        description: "Verify Content-Type header includes application/json."
+        input: {}
+        expected:
+          headers:
+            content-type: application/json
+      - id: TC-{{APP_NAME_UPPER}}-GET-FEATURE-DEFAULT-03
+        description: "Verify response contains success true and proper data structure."
+        input: {}
+        expected:
+          body_success_equals: true
+          body_data_app_equals: "{{APP_NAME}}"
+          body_data_version_equals: "1.0.0"
+
+  # Personalized greeting endpoint - template for all features  
+  - id: SPEC-{{APP_NAME_UPPER}}-002
+    title: Personalized Feature Greeting Endpoint
+    description: |
+      Each feature in the {{APP_NAME}} app SHALL have a personalized greeting endpoint at
+      `GET /api/{{APP_NAME}}/{feature}/{name}` that returns "Hello from {{APP_NAME}}/{feature}, {name}!".
+      Response MUST be HTTP 200 with the name parameter included in the greeting message.
+    endpoint:
+      method: GET
+      path: /api/{{APP_NAME}}/{feature}/{name}
+    validations:
+      - status_code: 200
+      - content_type_includes: application/json
+      - body_success_equals: true
+      - body_data_message_pattern: "^Hello from {{APP_NAME}}/.*, Alice!$"
+    tests:
+      - id: TC-{{APP_NAME_UPPER}}-GET-FEATURE-NAME-01
+        description: "Verify response status is 200."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          status_code: 200
+      - id: TC-{{APP_NAME_UPPER}}-GET-FEATURE-NAME-02
+        description: "Verify Content-Type header includes application/json."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          headers:
+            content-type: application/json
+      - id: TC-{{APP_NAME_UPPER}}-GET-FEATURE-NAME-03
+        description: "Verify response contains success true and Alice in data."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          body_success_equals: true
+          body_data_name_equals: "Alice"
+          body_data_app_equals: "{{APP_NAME}}"
