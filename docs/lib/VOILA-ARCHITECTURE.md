@@ -226,7 +226,7 @@ Every major action automatically updates both files:
 npm run plan start ecommerce     # → Logs planning start
 npm run generate app:api ecommerce  # → Logs app structure 
 npm run git branch ecommerce           # → Logs app branch (dev/username-ecommerce)
-npm run git commit ecommerce -- --message="implement products"  # → Logs implementation
+npm run git -- commit ecommerce --feat              # → Logs: feat(ecommerce): implement features
 ```
 
 **2. Instant Context Recovery**

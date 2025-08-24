@@ -233,8 +233,7 @@ async function commitChanges(target: string, customMessage?: string, args: strin
     await execAsync(`npm run validate app:api ${appName}`);
     console.log('✅ Validation passed');
   } catch (error: any) {
-    console.log('⚠️  Validation failed, but continuing for testing...');
-    console.log('💡 In production this would stop the commit');
+    throw new Error(`Validation failed: ${error.message}`);
   }
   
   // Stage changes

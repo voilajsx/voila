@@ -19,14 +19,24 @@ dev/username-appname   # Individual development branches
 
 ## Commands
 
-### **3 Essential Commands:**
+### **Essential Commands:**
 
 ```bash
 npm run git init [remote-url]                      # Initialize repository
 npm run git branch <app>                           # Create app branch
-npm run git commit <app>                           # Smart default commit
-npm run git commit <app> -- --message="text"      # Custom commit message
-npm run git push <app>                             # Push for PR
+
+# Conventional commit flags (simple & powerful!)
+npm run git -- commit <app> --feat                 # feat(app): implement features
+npm run git -- commit <app> --fix                  # fix(app): resolve issues
+npm run git -- commit <app> --test                 # test(app): add test coverage
+npm run git -- commit <app> --docs                 # docs(app): update documentation
+npm run git -- commit <app> --chore                # chore(app): maintenance updates
+
+# Traditional options
+npm run git -- commit <app>                        # Smart default commit
+npm run git -- commit <app> -- --message="text"   # Custom commit message
+
+npm run git -- push <app>                          # Push for PR
 ```
 
 ## Complete Workflow
@@ -54,16 +64,16 @@ npm run git branch converter                  # → dev/alex-converter
 
 ### 3. Progressive Development
 ```bash
-# Work on features progressively, commit as you go
-npm run git commit welcome -- --message="implement status feature"
-npm run git commit welcome -- --message="implement hello feature"
-npm run git commit welcome -- --message="add API tests"
-npm run git commit welcome -- --message="update documentation"
+# Work on features progressively with conventional commits
+npm run git -- commit welcome --feat               # After implementing status feature
+npm run git -- commit welcome --feat               # After implementing hello feature
+npm run git -- commit welcome --test               # After adding API tests
+npm run git -- commit welcome --docs               # After updating documentation
 ```
 
 ### 4. Push for Review
 ```bash
-npm run git push welcome
+npm run git -- push welcome
 # → Final validation
 # → Pushes dev/john-welcome
 # → Ready for PR: dev/john-welcome → development
@@ -85,13 +95,23 @@ npm run git push welcome
 - Create branch: `dev/username-appname`
 - Uses your Git `user.name` for unique branch naming
 
-### `npm run git commit <app> [-- --message="text"]`
+### `npm run git -- commit <app> [flags]`
 - Run validation pipeline (`npm run validate app:api <app>`)
 - Stage all changes (`git add .`)
-- Use smart default OR custom message if provided
-- Smart default: `feat(app): update app implementation`
+- Generate conventional commit message based on flag or custom message
 
-### `npm run git push <app>`
+**Conventional Commit Flags:**
+- `--feat`: `feat(app): implement features` - New functionality
+- `--fix`: `fix(app): resolve issues` - Bug fixes  
+- `--test`: `test(app): add test coverage` - Testing improvements
+- `--docs`: `docs(app): update documentation` - Documentation updates
+- `--chore`: `chore(app): maintenance updates` - Maintenance tasks
+
+**Alternatives:**
+- No flag: `feat(app): update app implementation` (default)
+- `-- --message="text"`: Custom message
+
+### `npm run git -- push <app>`
 - Final validation check (`npm run validate app:api <app>`)
 - Push current branch to remote with tracking
 - Show next steps for PR creation
@@ -122,26 +142,26 @@ dev/username-appname
 # Create app branch once
 npm run git branch welcome                  # → dev/john-welcome
 
-# Develop features progressively with meaningful commits
-npm run git commit welcome -- --message="add status endpoint with validation"
-npm run git commit welcome -- --message="add hello endpoint with personalization"  
-npm run git commit welcome -- --message="add comprehensive test suite"
-npm run git commit welcome -- --message="update README and documentation"
+# Develop features progressively with conventional commits
+npm run git -- commit welcome --feat       # After implementing status endpoint
+npm run git -- commit welcome --feat       # After implementing hello endpoint  
+npm run git -- commit welcome --test       # After adding comprehensive test suite
+npm run git -- commit welcome --docs       # After updating README and documentation
 
 # Push when ready for review
-npm run git push welcome                   # → PR: dev/john-welcome → development
+npm run git -- push welcome               # → PR: dev/john-welcome → development
 ```
 
 ### Working on Multiple Apps
 ```bash
 # Different apps = different branches
 npm run git branch welcome                 # Work on welcome app
-# ... develop welcome features ...
-npm run git push welcome                   # Push welcome
+npm run git -- commit welcome --feat       # Implement welcome features
+npm run git -- push welcome               # Push welcome
 
 npm run git branch climate                 # Work on climate app  
-# ... develop climate features ...
-npm run git push climate                   # Push climate
+npm run git -- commit climate --feat       # Implement climate features
+npm run git -- push climate               # Push climate
 ```
 
 ## Pull Request Flow
@@ -175,6 +195,44 @@ Title: Add [appname] app
 - ❌ No commit/push happens until issues are fixed
 - ❌ Maintains code quality gates
 
+## Conventional Commits & Analytics
+
+### **The Power of Structured Commits**
+
+**Conventional Commits provide instant project insights:**
+
+```bash
+# Count commits by type
+git log --grep="feat(" --oneline | wc -l        # How many features implemented?
+git log --grep="fix(" --oneline | wc -l         # How many bugs fixed?
+git log --grep="test(" --oneline | wc -l        # How much testing done?
+
+# Filter commits by app
+git log --grep="(welcome)" --oneline            # All welcome app commits
+git log --grep="(climate)" --oneline            # All climate app commits
+
+# Recent features across all apps
+git log --grep="feat(" --oneline -10            # Last 10 features
+git log --grep="fix(" --since="1 week ago"      # Recent bug fixes
+```
+
+### **Beautiful Commit History**
+```bash
+git log --oneline
+# feat(welcome): implement features
+# test(welcome): add test coverage  
+# docs(welcome): update documentation
+# fix(climate): resolve API timeout
+# feat(climate): implement weather service
+# chore(converter): update dependencies
+```
+
+### **Team Dashboard Benefits**
+- **Sprint velocity**: Count features completed per developer
+- **Code quality**: Track test/fix ratio across projects  
+- **Documentation health**: Monitor docs updates per app
+- **Release notes**: Auto-generate from conventional commits
+
 ## Integration with Standard Git
 
 **You can mix Voila Git commands with standard Git:**
@@ -184,9 +242,9 @@ Title: Add [appname] app
 npm run git branch welcome                  # Voila: create dev/john-welcome
 git status                                  # Standard: check status  
 git diff                                    # Standard: see changes
-npm run git commit welcome -- --message="add status API"  # Voila: validated commit
-git log --oneline                          # Standard: see history
-npm run git push welcome                   # Voila: validated push
+npm run git -- commit welcome --feat       # Voila: validated conventional commit
+git log --grep="feat(" --oneline           # Standard: filter commits  
+npm run git -- push welcome               # Voila: validated push
 ```
 
 **Standard Git commands work normally:**
@@ -208,13 +266,13 @@ npm run git init https://github.com/company/monorepo.git
 # Pick an app to work on
 npm run git branch welcome                          # Create dev/john-welcome
 
-# Develop features progressively
-npm run git commit welcome -- --message="implement status API"
-npm run git commit welcome -- --message="add input validation"
-npm run git commit welcome -- --message="write comprehensive tests"
+# Develop features progressively with conventional commits
+npm run git -- commit welcome --feat               # Implement status API
+npm run git -- commit welcome --feat               # Add input validation  
+npm run git -- commit welcome --test               # Write comprehensive tests
 
 # Push when app is complete
-npm run git push welcome                           # Push for PR review
+npm run git -- push welcome                       # Push for PR review
 ```
 
 ### Team Coordination
@@ -235,14 +293,14 @@ npm run git init https://github.com/company/app.git
 npm run git branch welcome
 # → dev/johnsmith-welcome created from development
 
-# Progressive development
-npm run git commit welcome -- --message="implement status feature with health checks"
-npm run git commit welcome -- --message="implement hello feature with personalization"
-npm run git commit welcome -- --message="add comprehensive API test suite"
-npm run git commit welcome -- --message="update documentation and README"
+# Progressive development with conventional commits
+npm run git -- commit welcome --feat               # Implement status feature with health checks
+npm run git -- commit welcome --feat               # Implement hello feature with personalization
+npm run git -- commit welcome --test               # Add comprehensive API test suite
+npm run git -- commit welcome --docs               # Update documentation and README
 
 # Push complete app
-npm run git push welcome
+npm run git -- push welcome
 # → Validation runs, pushes to remote
 # → Create PR: dev/johnsmith-welcome → development
 ```
@@ -251,13 +309,13 @@ npm run git push welcome
 ```bash
 # Work on climate app
 npm run git branch climate                          # → dev/johnsmith-climate
-npm run git commit climate -- --message="add weather service integration"
-npm run git push climate
+npm run git -- commit climate --feat               # Add weather service integration
+npm run git -- push climate
 
 # Work on converter app  
 npm run git branch converter                        # → dev/johnsmith-converter
-npm run git commit converter -- --message="add currency conversion logic"
-npm run git push converter
+npm run git -- commit converter --feat             # Add currency conversion logic
+npm run git -- push converter
 
 # Each app gets its own PR to development
 ```
@@ -266,7 +324,7 @@ npm run git push converter
 
 ### Validation Failures
 ```bash
-npm run git commit welcome
+npm run git -- commit welcome --feat
 # Error: Validation failed: Contract validation
 # → Fix contract issues in your app
 # → Run 'npm run validate app:api welcome' to debug
@@ -283,7 +341,7 @@ npm run git branch welcome
 
 ### No Remote Repository
 ```bash
-npm run git push welcome  
+npm run git -- push welcome  
 # Warning: No remote configured
 # → Add remote: git remote add origin <url>
 # → Or run: npm run git init <url>

@@ -479,7 +479,7 @@ npm run test app:api myapp
 npm run git commit myapp/greeting
 
 # Or commit with custom message for complex features
-npm run git commit myapp/greeting -- --message="feat(myapp): add greeting service with multi-language support and validation"
+npm run git -- commit myapp --feat    # feat(myapp): implement features
 ```
 - **What it does**: 
   - ✅ Runs validation pipeline (`npm run validate app:api`)
@@ -848,10 +848,10 @@ npm run routes app:api myapp   # App-specific routes
 | Command | Description | Example |
 |---------|-------------|---------|
 | `npm run git init [remote-url]` | Initialize Git repository | `npm run git init https://github.com/user/app.git` |
-| `npm run git branch <app>/<feature>` | Create feature branch | `npm run git branch greeting/hello` |
-| `npm run git branch <app>/<feature> --fix` | Create bug fix branch | `npm run git branch greeting/hello --fix` |
-| `npm run git commit <app>/<feature>` | Commit with smart default | `npm run git commit greeting/hello` |
-| `npm run git commit <app>/<feature> -- --message="msg"` | Commit with custom message | `npm run git commit greeting/hello -- --message="feat: add greeting API"` |
+| `npm run git branch <app>` | Create app branch | `npm run git branch greeting` |
+| `npm run git -- commit <app> --feat` | Commit with feat flag | `npm run git -- commit greeting --feat` |
+| `npm run git -- commit <app> --fix` | Commit with fix flag | `npm run git -- commit greeting --fix` |
+| `npm run git -- commit <app> -- --message="msg"` | Commit with custom message | `npm run git -- commit greeting -- --message="feat: add greeting API"` |
 | `npm run git push <app>/<feature>` | Push for Pull Request | `npm run git push greeting/hello` |
 
 ### Deployment Commands

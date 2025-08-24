@@ -20,16 +20,16 @@ npm run context workflow:next              # Get next step to execute
 # App-Level Development (super simple!)
 npm run generate app:api myapp             # Generate app structure
 npm run git branch myapp                   # Create dev/username-myapp branch
-# Implement all features progressively on same branch
-npm run git commit myapp -- --message="implement feature X"    # Progressive commits
-npm run git commit myapp -- --message="implement feature Y"    # More commits
+# Implement all features progressively on same branch with conventional commits
+npm run git -- commit myapp --feat        # feat(myapp): implement features
+npm run git -- commit myapp --test        # test(myapp): add test coverage
 npm run test app:api myapp                 # Full test suite
 
 # Integration & Deployment
 npm run generate app:api myapp -- --testcases     # Generate API tests
 npm run test app:api myapp -- --apitest           # Run API integration tests
 npm run test app:api myapp -- --compliance        # Run compliance testing
-npm run git commit myapp -- --message="finalize app"  # Final commit
+npm run git -- commit myapp --docs               # docs(myapp): update documentation
 npm run git push myapp                             # Push for PR: dev/username-myapp → development
 npm run deploy staging                             # Deploy to staging
 npm run deploy production                          # Deploy to production
@@ -65,7 +65,7 @@ npm run deploy production                          # Deploy to production
 ### App-Level Development (now handled by workflow)
 - `npm run generate app:api myapp` - App boilerplate (Step 1 in workflow)
 - `npm run git branch myapp` - App branch: dev/username-myapp (Step 3 in workflow)  
-- `npm run generate app:api myapp/feature` - Feature templates (Step 6+ in workflow)
+- `npm run generate app:api myapp` - App structure and features (Step 6+ in workflow)
 4. **Define Contract** (`feature.index.ts`):
    ```typescript
    export const FeatureContract: VoilaFeatureContract = {
@@ -80,7 +80,7 @@ npm run deploy production                          # Deploy to production
    - `feature.services.ts` - Business logic with AppKit
    - `feature.routes.ts` - Express routes with validation
    - `feature.test.ts` - Unit tests (95% coverage required)
-5. `npm run test app:api myapp/feature -- --unittest` - Validate implementation
+5. `npm run test app:api myapp -- --unittest` - Validate implementation
 6. `npm run context workflow:status` - Mark feature complete, get next steps
 
 ### Phase 5: Integration & Deployment
@@ -88,7 +88,7 @@ npm run deploy production                          # Deploy to production
 2. `npm run test app:api myapp -- --apitest` - Run API integration tests
 3. `npm run test app:api myapp -- --compliance` - Run compliance testing
 4. `npm run test app:api myapp` - Run full test suite (unit + API + compliance)
-5. `npm run git commit myapp -- --message="finalize app"` - Final commit
+5. `npm run git -- commit myapp --docs` - docs(myapp): update documentation
 6. `npm run git push myapp` - Push for team review (dev/username-myapp → development)
 7. Create PR, get approval, merge to development
 8. `npm run deploy staging` - Deploy and test staging
@@ -206,10 +206,16 @@ npm run git branch myapp                   # Creates dev/username-myapp
 
 ### Progressive Commits
 ```bash
-npm run git commit myapp                   # Smart default: "feat(myapp): update app implementation"
-npm run git commit myapp -- --message="implement status feature"    # Custom message
-npm run git commit myapp -- --message="implement hello feature"     # Another feature
-npm run git commit myapp -- --message="add comprehensive tests"     # Testing
+# Conventional commit flags (simple & powerful!)
+npm run git -- commit myapp --feat        # feat(myapp): implement features
+npm run git -- commit myapp --fix         # fix(myapp): resolve issues
+npm run git -- commit myapp --test        # test(myapp): add test coverage
+npm run git -- commit myapp --docs        # docs(myapp): update documentation
+npm run git -- commit myapp --chore       # chore(myapp): maintenance updates
+
+# Traditional options
+npm run git -- commit myapp               # Smart default: feat(myapp): update app implementation
+npm run git -- commit myapp -- --message="custom message"  # Custom message
 ```
 
 ### Push for Review
@@ -247,7 +253,7 @@ npm run validate app:api myapp             # Validate specific app
 
 ### Testing Levels
 ```bash
-npm run test app:api myapp/feature -- --unittest    # Unit tests only
+npm run test app:api myapp -- --unittest        # Unit tests only
 npm run test app:api myapp -- --apitest            # API integration tests
 npm run test app:api myapp                          # All tests (unit + API + compliance)
 ```
@@ -300,7 +306,7 @@ npm run context state:reset       # Fresh start - clean slate for new projects
 npm run plan start myapp           # ✅ Logged: Planning started
 npm run generate app:api myapp     # ✅ Logged: App structure created  
 npm run git branch myapp           # ✅ Logged: App branch created (dev/username-myapp)
-npm run git commit myapp -- --message="implement features"  # ✅ Logged: Changes committed
+npm run git -- commit myapp --feat              # ✅ Logged: Changes committed with conventional commit
 ```
 
 ### The Developer Experience Magic
@@ -353,7 +359,7 @@ npm run plan approve myapp
 npm run validate app:api myapp           # See specific errors
 
 # Tests failing
-npm run test app:api myapp/feature -- --unittest  # Test specific feature
+npm run test app:api myapp -- --unittest        # Test specific app
 
 # Git issues
 git config --global user.name "Your Name"

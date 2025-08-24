@@ -41,7 +41,7 @@ npm run help validate           # Learn about validation
 ### Testing Issues
 ```bash
 # Error: Unit tests failing
-npm run test app:api myapp/feature -- --unittest  # Test specific feature
+npm run test app:api myapp -- --unittest        # Test specific app
 # Review test output and fix implementations
 
 # Error: API tests failing
@@ -77,7 +77,7 @@ git config --global user.email "your.email@company.com"
 
 # Error: Validation failed during commit
 npm run validate app:api myapp  # Fix validation issues first
-npm run git commit myapp/feature # Retry commit
+npm run git -- commit myapp --feat # Retry commit
 
 # Error: No remote configured
 npm run git init https://github.com/user/repo.git  # Add remote
