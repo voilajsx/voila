@@ -1,0 +1,14 @@
+{
+  "app": "welcome",
+  "enabled": true,
+  "environments": [
+    "development",
+    "staging",
+    "production"
+  ],
+  "features": {},
+  "metadata": {
+    "owner": "welcome Team",
+    "created": "2025-08-24"
+  }
+}

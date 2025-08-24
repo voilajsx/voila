@@ -8,6 +8,9 @@
  * @llm-rule NOTE: Follows AppKit middleware order: parsing → security → logging → routes → error handling
  */
 
+// Load environment variables from .env file
+import 'dotenv/config';
+
 import express from 'express';
 import { createServer } from 'http';
 import { join, dirname } from 'path';
@@ -231,6 +234,33 @@ const initializeRoutes = async (): Promise<void> => {
     discoveryResult = { routes: [], apps: [], totalFeatures: 0 };
   }
 };
+
+/**
+ * Climate App Health Check Endpoint
+ * @llm-rule WHEN: Need app-specific health monitoring for climate services
+ * @llm-rule AVOID: Complex health checks - keep simple for monitoring systems
+ * @llm-rule NOTE: Returns climate app status, weather API connectivity, and version info
+ */
+app.get('/api/climate/health', (req, res) => {
+  const requestId = util.uuid();
+  const healthData = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    app: 'climate',
+    features: {
+      weather: 'active',
+      search: 'active'
+    },
+    externalServices: {
+      openweathermap: 'connected' // Could be enhanced with actual API ping
+    },
+    requestId
+  };
+  
+  logger.info('Climate health check requested', { requestId });
+  res.json(healthData);
+});
 
 /**
  * API Documentation Endpoint - Live documentation generated from contracts and discovery

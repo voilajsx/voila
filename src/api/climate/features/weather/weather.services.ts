@@ -38,9 +38,13 @@ const config = configClass.get();
 export class WeatherService {
   
   private static getConfig(): WeatherServiceConfig {
+    const apiKey = process.env.OPENWEATHERMAP_API_KEY || config.get('openweathermap.api.key') || 'demo-key';
+    
+    // Configuration loaded successfully from environment
+    
     return {
       openweathermap: {
-        apiKey: config.get('openweathermap.api.key') || 'demo-key',
+        apiKey,
         baseUrl: 'https://api.openweathermap.org/data/2.5'
       },
       cache: {
@@ -91,7 +95,7 @@ export class WeatherService {
       url += `&lat=${request.lat}&lon=${request.lon}`;
     }
 
-    log.info('Fetching from OpenWeatherMap', { requestId, url: url.replace(/appid=[^&]+/, 'appid=***'), fullUrl: url });
+    log.info('Fetching from OpenWeatherMap', { requestId, url: url.replace(/appid=[^&]+/, 'appid=***'), apiKey: serviceConfig.openweathermap.apiKey.substring(0, 6) + '...' });
 
     const response = await fetch(url, {
       headers: { 'User-Agent': 'Voila-Climate-App/1.0' }

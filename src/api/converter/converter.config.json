@@ -1,0 +1,51 @@
+{
+  "app": "converter",
+  "enabled": true,
+  "environments": [
+    "development",
+    "staging",
+    "production"
+  ],
+  "features": {
+    "currency": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Currency feature for converter application"
+    },
+    "temperature": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Temperature feature for converter application"
+    },
+    "time": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Time feature for converter application"
+    },
+    "supported": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Supported feature for converter application"
+    }
+  },
+  "metadata": {
+    "owner": "converter Team",
+    "created": "2025-08-24"
+  }
+}

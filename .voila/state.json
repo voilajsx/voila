@@ -1,0 +1,35 @@
+{
+  "currentApp": "welcome",
+  "currentFeature": "supported",
+  "phase": "app-structure",
+  "lastUpdate": "2025-08-24T10:36:42.971Z",
+  "gitBranch": "dev/krishnateja-welcome",
+  "nextSteps": [
+    "Add features: npm run generate app:api welcome/myfeature",
+    "Update spec: edit src/api/welcome/spec/welcome.api.spec.yml",
+    "Run tests: npm run test all welcome"
+  ],
+  "completedMilestones": [],
+  "context": {
+    "planning": {
+      "businessRequirementsCompleted": false,
+      "technicalSpecCompleted": false,
+      "approved": false
+    },
+    "development": {
+      "appStructureGenerated": true,
+      "currentFeatureInProgress": false,
+      "testsWritten": false,
+      "integrationTestsPassed": false
+    },
+    "deployment": {
+      "deployedToStaging": false,
+      "deployedToProduction": false
+    },
+    "workflow": {
+      "generated": true,
+      "source": "technical-specification",
+      "file": ".voila/workflow.yml"
+    }
+  }
+}

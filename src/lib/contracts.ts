@@ -1218,7 +1218,7 @@ interface DiscoveryResult {
  * @llm-rule AVOID: Direct file system access - use this function for proper discovery
  * @llm-rule NOTE: Supports single app validation or full API validation
  */
-export async function validateContracts(apiPath: string, targetApp: string | null = null): Promise<ValidationResult> {
+export async function validateContracts(apiPath: string, targetApp: string | null = null, targetFeature: string | null = null): Promise<ValidationResult> {
   const result: ValidationResult = {
     success: false,
     errors: [],
@@ -1232,11 +1232,13 @@ export async function validateContracts(apiPath: string, targetApp: string | nul
 
   try {
     // Discover and register contracts
-    const discovered = await discoverAndRegisterContracts(apiPath, targetApp);
+    const discovered = await discoverAndRegisterContracts(apiPath, targetApp, targetFeature);
     result.stats = discovered.stats;
 
     if (discovered.contracts.length === 0) {
-      if (targetApp) {
+      if (targetApp && targetFeature) {
+        throw new Error(`No contracts found for app: ${targetApp}/${targetFeature}`);
+      } else if (targetApp) {
         throw new Error(`No contracts found for app: ${targetApp}`);
       } else {
         console.log('⚠️  No contracts found to validate');
@@ -1273,7 +1275,7 @@ export async function validateContracts(apiPath: string, targetApp: string | nul
  * @llm-rule WHEN: Scanning filesystem for feature contracts during validation
  * @llm-rule AVOID: Manual contract registration - breaks auto-discovery benefits
  */
-async function discoverAndRegisterContracts(apiPath: string, targetApp: string | null): Promise<DiscoveryResult> {
+async function discoverAndRegisterContracts(apiPath: string, targetApp: string | null, targetFeature: string | null = null): Promise<DiscoveryResult> {
   const stats = { apps: 0, features: 0, endpoints: 0 };
   const contracts: DiscoveredContract[] = [];
 
@@ -1301,7 +1303,8 @@ async function discoverAndRegisterContracts(apiPath: string, targetApp: string |
     // Get all feature directories
     const featureDirs = readdirSync(featuresPath).filter(dir => {
       const featurePath = join(featuresPath, dir);
-      return statSync(featurePath).isDirectory();
+      return statSync(featurePath).isDirectory() && 
+             (!targetFeature || dir === targetFeature);
     });
 
     for (const featureName of featureDirs) {

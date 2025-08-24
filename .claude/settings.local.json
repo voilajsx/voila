@@ -13,7 +13,9 @@
       "Bash(OPENWEATHER_API_KEY=dee32ddb40e0deabd86498a32441cbc2 npm run dev:api)",
       "Bash(PORT=3002 OPENWEATHERMAP_API_KEY=dee32ddb40e0deabd86498a32441cbc2 npm run dev:api)",
       "Bash(PORT=3003 OPENWEATHERMAP_API_KEY=dee32ddb40e0deabd86498a32441cbc2 npm run dev:api)",
-      "Bash(PORT=3004 OPENWEATHERMAP_API_KEY=dee32ddb40e0deabd86498a32441cbc2 npm run dev:api)"
+      "Bash(PORT=3004 OPENWEATHERMAP_API_KEY=dee32ddb40e0deabd86498a32441cbc2 npm run dev:api)",
+      "Bash(npm run git:*)",
+      "Bash(git branch:*)"
     ],
     "deny": [],
     "ask": []

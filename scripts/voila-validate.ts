@@ -25,7 +25,7 @@ async function main() {
   }
 
   const command = args[0];
-  const appName = args[1];
+  const target = args[1]; // Can be 'app' or 'app/feature'
   
   console.log('🔍 Voila Contract Validation');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -34,7 +34,23 @@ async function main() {
     const [prefix, action] = command.includes(':') ? command.split(':') : [command, ''];
     
     if (prefix === 'app' && action === 'api') {
-      await validateApp(appName);
+      // Parse target to extract app and optional feature
+      let appName: string | undefined;
+      let featureName: string | undefined;
+      
+      if (target) {
+        if (target.includes('/')) {
+          [appName, featureName] = target.split('/');
+          console.log(`🎯 Target: App '${appName}', Feature '${featureName}'`);
+        } else {
+          appName = target;
+          console.log(`🎯 Target: App '${appName}' (all features)`);
+        }
+      } else {
+        console.log(`🎯 Target: All apps`);
+      }
+      
+      await validateApp(appName, featureName);
     } else {
       console.log(`❌ Unknown command: ${command}`);
       showHelp();
@@ -49,7 +65,7 @@ async function main() {
   }
 }
 
-async function validateApp(appName?: string) {
+async function validateApp(appName?: string, featureName?: string) {
   const apiPath = join(__dirname, '..', 'src', 'api');
   let allValidationsPassed = true;
   let totalErrors = 0;
@@ -57,7 +73,7 @@ async function validateApp(appName?: string) {
 
   // Step 1: Contract Validation
   console.log('📋 Step 1: Contract Validation');
-  const contractResult = await validateContracts(apiPath, appName);
+  const contractResult = await validateContracts(apiPath, appName, featureName);
   
   if (!contractResult.success) {
     allValidationsPassed = false;
@@ -83,7 +99,7 @@ async function validateApp(appName?: string) {
 
   // Step 2: TypeScript Type Checking
   console.log('\n🔍 Step 2: TypeScript Type Checking');
-  const typeCheckResult = await validateTypeScript(apiPath, appName);
+  const typeCheckResult = await validateTypeScript(apiPath, appName, featureName);
   
   if (!typeCheckResult.success) {
     allValidationsPassed = false;
@@ -98,7 +114,7 @@ async function validateApp(appName?: string) {
 
   // Step 3: Syntax and Import Validation
   console.log('\n⚙️  Step 3: Syntax and Import Validation');
-  const syntaxResult = await validateSyntax(apiPath, appName);
+  const syntaxResult = await validateSyntax(apiPath, appName, featureName);
   
   if (!syntaxResult.success) {
     allValidationsPassed = false;
@@ -137,7 +153,7 @@ interface ValidationResult {
   errors: string[];
 }
 
-async function validateTypeScript(apiPath: string, appName?: string): Promise<ValidationResult> {
+async function validateTypeScript(apiPath: string, appName?: string, featureName?: string): Promise<ValidationResult> {
   return new Promise((resolve) => {
     const projectRoot = join(__dirname, '..');
     
@@ -168,20 +184,37 @@ async function validateTypeScript(apiPath: string, appName?: string): Promise<Va
         const errors: string[] = [];
         const allOutput = `${stdout}\n${stderr}`;
         
-        // Parse TypeScript errors from output
+        // Parse TypeScript errors from output with app/feature filtering
         const lines = allOutput.split('\n').filter(line => line.trim());
         lines.forEach(line => {
-          if (line.includes('error TS') && (appName ? line.includes(appName) : true)) {
-            errors.push(`${line.trim()}`);
+          if (line.includes('error TS')) {
+            // Filter by app and feature if specified
+            let includeError = true;
+            
+            if (appName && !line.includes(`/${appName}/`)) {
+              includeError = false;
+            }
+            
+            if (includeError && featureName && !line.includes(`/${featureName}/`)) {
+              includeError = false;
+            }
+            
+            if (includeError) {
+              errors.push(`${line.trim()}`);
+            }
           }
         });
 
         if (errors.length === 0 && code !== 0) {
-          errors.push(`TypeScript compilation failed with exit code ${code}`);
-          if (stderr.trim()) errors.push(`Details: ${stderr.trim()}`);
+          // If no filtered errors but compilation failed, check if we should report it
+          if (!appName && !featureName) {
+            errors.push(`TypeScript compilation failed with exit code ${code}`);
+            if (stderr.trim()) errors.push(`Details: ${stderr.trim()}`);
+          }
+          // For filtered validation, if no errors match the filter, consider it success
         }
 
-        resolve({ success: false, errors });
+        resolve({ success: errors.length === 0, errors });
       }
     });
 
@@ -194,7 +227,7 @@ async function validateTypeScript(apiPath: string, appName?: string): Promise<Va
   });
 }
 
-async function validateSyntax(apiPath: string, appName?: string): Promise<ValidationResult> {
+async function validateSyntax(apiPath: string, appName?: string, featureName?: string): Promise<ValidationResult> {
   // For now, skip the tsx syntax check as it's causing issues
   // The TypeScript compiler already handles syntax validation
   return Promise.resolve({ success: true, errors: [] });
@@ -205,14 +238,15 @@ function showHelp() {
 🔍 Voila Contract Validation - Comprehensive API Validation Suite
 
 USAGE:
-  npm run validate app:api [app-name]
+  npm run validate app:api [app-name[/feature-name]]
 
 COMMANDS:
-  app:api [app-name]     Validate app API structure and contracts
+  app:api [target]       Validate app API structure and contracts
 
 EXAMPLES:
-  npm run validate app:api greeting     # Validate specific app
-  npm run validate app:api              # Validate all apps
+  npm run validate app:api                    # Validate all apps
+  npm run validate app:api converter          # Validate specific app (all features)
+  npm run validate app:api converter/currency # Validate specific feature only
 
 VALIDATION PIPELINE:
   📋 Step 1: Contract Validation

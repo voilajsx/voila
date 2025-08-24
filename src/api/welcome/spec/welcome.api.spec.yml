@@ -1,0 +1,83 @@
+# welcome.api.spec.yml
+# Specifications and test cases for welcome Application Backend — Version 1.0.0
+
+version: 1.0.0
+service: welcome-api-backend
+
+specifications:
+
+  # Default greeting endpoint - template for all features
+  - id: SPEC-WELCOME-001
+    title: Default Feature Greeting Endpoint
+    description: |
+      Each feature in the welcome app SHALL have a default greeting endpoint at 
+      `GET /api/welcome/{feature}` that returns "Hello from welcome/{feature}!".
+      Response MUST have HTTP status 200 and a JSON body with success=true and proper data structure.
+    endpoint:
+      method: GET
+      path: /api/welcome/{feature}
+    validations:
+      - status_code: 200
+      - content_type_includes: application/json
+      - body_success_equals: true
+      - body_data_message_pattern: "^Hello from welcome/.*!"
+    tests:
+      - id: TC-WELCOME-GET-FEATURE-DEFAULT-01
+        description: "Verify response status is 200."
+        input: {}
+        expected:
+          status_code: 200
+      - id: TC-WELCOME-GET-FEATURE-DEFAULT-02
+        description: "Verify Content-Type header includes application/json."
+        input: {}
+        expected:
+          headers:
+            content-type: application/json
+      - id: TC-WELCOME-GET-FEATURE-DEFAULT-03
+        description: "Verify response contains success true and proper data structure."
+        input: {}
+        expected:
+          body_success_equals: true
+          body_data_app_equals: "welcome"
+          body_data_version_equals: "1.0.0"
+
+  # Personalized greeting endpoint - template for all features  
+  - id: SPEC-WELCOME-002
+    title: Personalized Feature Greeting Endpoint
+    description: |
+      Each feature in the welcome app SHALL have a personalized greeting endpoint at
+      `GET /api/welcome/{feature}/{name}` that returns "Hello from welcome/{feature}, {name}!".
+      Response MUST be HTTP 200 with the name parameter included in the greeting message.
+    endpoint:
+      method: GET
+      path: /api/welcome/{feature}/{name}
+    validations:
+      - status_code: 200
+      - content_type_includes: application/json
+      - body_success_equals: true
+      - body_data_message_pattern: "^Hello from welcome/.*, Alice!$"
+    tests:
+      - id: TC-WELCOME-GET-FEATURE-NAME-01
+        description: "Verify response status is 200."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          status_code: 200
+      - id: TC-WELCOME-GET-FEATURE-NAME-02
+        description: "Verify Content-Type header includes application/json."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          headers:
+            content-type: application/json
+      - id: TC-WELCOME-GET-FEATURE-NAME-03
+        description: "Verify response contains success true and Alice in data."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          body_success_equals: true
+          body_data_name_equals: "Alice"
+          body_data_app_equals: "welcome"

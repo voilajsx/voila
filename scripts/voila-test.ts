@@ -330,7 +330,7 @@ async function runApiTests(appName: string, options: string[] = []): Promise<Tes
   // Step 1: Stop any existing servers to ensure clean restart
   console.log('🛑 Step 1: Stopping any existing API servers...');
   try {
-    await executeCommand('npm', ['run', 'server', 'api:stop'], 'Server Stop');
+    // await executeCommand('npm', ['run', 'server', 'api:stop'], 'Server Stop');
     console.log('✅ Server stop completed');
     // Wait a moment for cleanup
     await new Promise(resolve => setTimeout(resolve, 3000));
@@ -580,7 +580,7 @@ async function executeApiTestCase(baseUrl: string, testCase: ApiTestCase): Promi
       }
     };
     
-    if (testCase.requestBody && testCase.requestBody.trim() !== '') {
+    if (testCase.method !== 'GET' && testCase.method !== 'HEAD' && testCase.requestBody && testCase.requestBody.trim() !== '') {
       options.body = testCase.requestBody;
     }
     

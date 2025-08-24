@@ -2,84 +2,71 @@
 ## demo Application
 
 ### Version: v1.0.0
-### Last Updated: 2025-08-22
+### Last Updated: 2025-08-23
 
 ***
 
 ## 1. Business Overview
 
 ### Purpose
-Simple greeting service for customer engagement and brand building
+A simple app to say hello. This application will serve as a demonstration of the Voila framework's capabilities.
 
 ### Target Users
-General public and website visitors who want friendly greetings
+Developers who are learning the Voila framework.
 
 ### Success Criteria
-User adoption and positive feedback, demonstrating brand friendliness
+The application should be able to respond with a "Hello, World!" message.
 
 ***
 
 ## 2. User Requirements
 
 ### User Stories
-
-Based on the requirements analysis, the following user stories define the functional scope:
-
-**As a user, I want to:**
-- Access the application without requiring login or authentication
-- Receive greeting messages in multiple languages
-- Get personalized greetings by providing my name
-- Use the application on both web and mobile devices
+- As a developer, I want to be able to send a GET request to a `/hello` endpoint and receive a "Hello, World!" message.
 
 ### Acceptance Criteria
-- All features must be accessible without authentication
-- Response time must be under 200ms for all requests
-- Application must work on modern browsers (Chrome, Firefox, Safari, Edge)
-- Error messages must be user-friendly and actionable
+- The application should respond with a 200 OK status code.
+- The response body should be a JSON object containing a "message" field with the value "Hello, World!".
 
 ***
 
 ## 3. Functional Scope
 
 ### Core Features
-Multi-language greetings and echo functionality for testing
+- A single endpoint that returns a "Hello, World!" message.
 
 ### API Requirements
-- RESTful API endpoints for all features
-- JSON response format with consistent structure
-- Proper HTTP status codes for all responses
-- Input validation and error handling
+- The API should have a single endpoint: `GET /api/demo/hello`.
+- The response should be a JSON object.
 
 ### Business Rules
-No authentication required, public access only
+- None.
 
 ***
 
 ## 4. Constraints & Assumptions
 
 ### Technical Constraints
-- Must follow Voila framework patterns and conventions
-- TypeScript for type safety
-- Contract-driven development approach
-- Minimum 95% test coverage
+- Must follow Voila framework patterns.
+- TypeScript for type safety.
+- Contract-driven development.
+- Minimum 95% test coverage.
 
 ### Business Constraints
-- No user authentication or data storage required
-- Public application accessible to all users
-- Simple and intuitive user interface
+- None.
+
+### External Dependencies
+- None.
 
 ***
 
 ## 5. Timeline & Approval
 
 ### Development Timeline
-- Planning: Completed
-- Development: 2 weeks
-- Testing: 1 week
-- Deployment: 3 days
+- 1 hour.
 
 ### Stakeholder Approval
-- Business Requirements: ✅ Approved
-- Ready for technical implementation
+- Business Requirements: **STATUS: APPROVED**
+- Technical Specification: **STATUS: UNDER_REVIEW**
 
 ***

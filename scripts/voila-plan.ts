@@ -14,6 +14,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, mkdirSync } from 'fs';
 import readline from 'readline';
+import { VoilaState } from './voila-context.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -129,6 +130,24 @@ async function startPlanning(appName: string, description: string): Promise<void
   console.log(`   2. Change STATUS: UNDER_REVIEW to STATUS: APPROVED in both files`);
   console.log(`   3. Generate app structure: npm run generate app:api ${appName}`);
   console.log(`   4. Start development: npm run dev:api`);
+
+  // Log state
+  VoilaState.logAction('plan_start', `Started planning for '${appName}' app - business requirements and technical spec templates generated`, {
+    currentApp: appName,
+    phase: 'planning',
+    nextSteps: [
+      `Complete [FILL_IN] sections in docs/planning/${appName}/`,
+      `Change STATUS: UNDER_REVIEW to STATUS: APPROVED in both files`,
+      `Run: npm run generate app:api ${appName}`
+    ],
+    context: {
+      planning: {
+        businessRequirementsCompleted: false,
+        technicalSpecCompleted: false,
+        approved: false
+      }
+    }
+  });
 }
 
 async function reviewPlan(appName: string): Promise<void> {
@@ -221,6 +240,23 @@ async function approvePlan(appName: string): Promise<void> {
   console.log('');
   console.log('📝 Ready for implementation:');
   console.log(`   npm run generate app:api ${appName}`);
+
+  // Log state
+  VoilaState.logAction('plan_approve', `Planning approved for '${appName}' app - ready for development`, {
+    currentApp: appName,
+    phase: 'planning',
+    nextSteps: [
+      `Run: npm run generate app:api ${appName}`,
+      `Start feature development`
+    ],
+    context: {
+      planning: {
+        businessRequirementsCompleted: true,
+        technicalSpecCompleted: true,
+        approved: true
+      }
+    }
+  });
 }
 
 function generateBusinessQuestions(description: string): Question[] {
@@ -442,7 +478,7 @@ src/api/${appName}/
 │   ├── [feature-name]/
 │   │   ├── [feature].routes.ts    # Express routes
 │   │   ├── [feature].services.ts  # Business logic
-│   │   ├── [feature].models.ts    # Zod schemas
+│   │   ├── [feature].types.ts     # Zod schemas & TypeScript types
 │   │   ├── [feature].test.ts      # Unit tests
 │   │   └── [feature].index.ts     # Feature contract
 ├── spec/
@@ -507,7 +543,50 @@ src/api/${appName}/
 
 ***
 
-## 12. Implementation Approval
+## 12. Implementation Workflow
+
+### Feature Implementation Order
+**⚠️ CRITICAL: Implement ONE feature at a time in this order:**
+
+[FILL_IN: Define feature implementation sequence]
+
+Example:
+1. **core** (Priority: High, Complexity: High)
+   - Most complex feature with main business logic
+   - Foundation for understanding application patterns
+   
+2. **secondary** (Priority: High, Complexity: Medium)  
+   - Builds on core patterns established
+   - Moderate complexity implementation
+   
+3. **utilities** (Priority: Medium, Complexity: Low)
+   - Support functionality
+   - Simplest implementation
+
+### Per-Feature Definition of Done
+Each feature is complete when:
+- [ ] Feature generated (\`npm run generate app:api ${appName}/feature\`)
+- [ ] Contract implemented (VoilaFeatureContract with endpoints)
+- [ ] Types implemented (Zod schemas + TypeScript interfaces)
+- [ ] Services implemented (business logic with error handling)
+- [ ] Routes implemented (Express endpoints with validation)
+- [ ] Feature validated (\`npm run validate app:api ${appName}/feature\`)
+- [ ] Feature tested (\`npm run test app:api ${appName}/feature -- --unittest\`)
+
+### Workflow Rules
+- **🛑 STOP**: Complete current feature 100% before starting next
+- **✅ GATE**: All validation and tests must pass before proceeding
+- **📋 TRACK**: Update workflow status after each completed feature
+
+### LLM Development Instructions
+- **@llm-rule SEQUENCE**: Follow the feature order exactly as specified
+- **@llm-rule STOP**: Do not generate next feature until current is complete
+- **@llm-rule VALIDATE**: Run validation and tests before proceeding
+- **@llm-rule WORKFLOW**: Use \`npm run context workflow:next\` to get next step
+
+***
+
+## 13. Implementation Approval
 
 ### Technical Review Status
 - 📋 Architecture design under review
@@ -709,13 +788,13 @@ src/api/${context.appName}/
 │   ├── greeting/
 │   │   ├── greeting.routes.ts    # Express routes
 │   │   ├── greeting.services.ts  # Business logic
-│   │   ├── greeting.models.ts    # Zod schemas
+│   │   ├── greeting.types.ts     # Zod schemas & TypeScript types
 │   │   ├── greeting.test.ts      # Unit tests
 │   │   └── greeting.index.ts     # Feature contract
 │   └── echo/
 │       ├── echo.routes.ts
 │       ├── echo.services.ts
-│       ├── echo.models.ts
+│       ├── echo.types.ts
 │       ├── echo.test.ts
 │       └── echo.index.ts
 ├── spec/

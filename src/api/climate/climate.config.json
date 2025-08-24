@@ -15,6 +15,15 @@
         "production"
       ],
       "description": "Weather feature for climate application"
+    },
+    "search": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Search feature for climate application"
     }
   },
   "metadata": {
