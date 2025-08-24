@@ -13,7 +13,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { existsSync } from 'fs';
-import { VoilaState } from './voila-context.js';
+import { VoilaWorkflow } from './voila-context.js';
 
 const execAsync = promisify(exec);
 
@@ -66,7 +66,7 @@ async function deployToEnvironment(environment: 'staging' | 'production'): Promi
   await showDeploymentInfo(environment);
 
   // Log state
-  VoilaState.logAction('deploy', `Successfully deployed to ${environment}`, {
+  VoilaWorkflow.logAction('deploy', `Successfully deployed to ${environment}`, {
     phase: 'deployment',
     nextSteps: [
       `Test core functionality in ${environment}`,

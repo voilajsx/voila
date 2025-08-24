@@ -49,6 +49,151 @@ interface WorkflowData {
   user_notes?: string;
 }
 
+// Workflow management class
+class VoilaWorkflow {
+  private static ACTIONS_FILE = '.voila/actions.log';
+  private static WORKFLOW_FILE = '.voila/workflow.yml';
+
+  static logAction(action: string, description: string) {
+    const timestamp = new Date().toISOString();
+    const logEntry = `[${timestamp}] ${action}: ${description}\n`;
+    
+    if (!fs.existsSync('.voila')) {
+      fs.mkdirSync('.voila', { recursive: true });
+    }
+    
+    fs.appendFileSync(VoilaWorkflow.ACTIONS_FILE, logEntry);
+  }
+
+  static completeCurrentStep(description?: string): boolean {
+    try {
+      const workflowPath = path.join(__dirname, '..', VoilaWorkflow.WORKFLOW_FILE);
+      
+      if (!fs.existsSync(workflowPath)) {
+        console.log('❌ No workflow found');
+        return false;
+      }
+
+      const workflowContent = fs.readFileSync(workflowPath, 'utf-8');
+      const workflow = parseWorkflowYAML(workflowContent);
+      
+      const currentStep = workflow.steps[workflow.current_step];
+      if (!currentStep) {
+        console.log('❌ No current step found');
+        return false;
+      }
+
+      // Mark current step as completed and advance
+      const updatedContent = workflowContent
+        .replace(
+          new RegExp(`(${workflow.current_step}:[\\s\\S]*?status: ")pending(")`, 'g'),
+          `$1completed$2`
+        )
+        .replace(
+          new RegExp(`(current_step: )${workflow.current_step}`),
+          `$1${workflow.current_step + 1}`
+        );
+
+      fs.writeFileSync(workflowPath, updatedContent);
+      
+      const actionDesc = description || currentStep.name;
+      VoilaWorkflow.logAction('step_completed', `Step ${workflow.current_step}: ${actionDesc}`);
+      
+      return true;
+    } catch (error) {
+      console.log(`❌ Error updating workflow: ${error}`);
+      return false;
+    }
+  }
+
+  static getStatus(): string {
+    const workflowPath = path.join(__dirname, '..', VoilaWorkflow.WORKFLOW_FILE);
+    
+    if (!fs.existsSync(workflowPath)) {
+      return 'No workflow found. Generate one with: npm run generate workflow [app-name]';
+    }
+
+    let workflow: WorkflowData;
+    try {
+      const workflowContent = fs.readFileSync(workflowPath, 'utf-8');
+      workflow = parseWorkflowYAML(workflowContent);
+    } catch (error) {
+      return `Error reading workflow: ${error}`;
+    }
+
+    const completedSteps = Object.values(workflow.steps).filter(s => s.status === 'completed').length;
+    const totalSteps = Object.keys(workflow.steps).length;
+    const progressPercent = Math.round((completedSteps / totalSteps) * 100);
+    
+    const currentStep = workflow.steps[workflow.current_step];
+    const nextSteps = Object.values(workflow.steps)
+      .filter(s => s.status === 'pending')
+      .slice(0, 3)
+      .map(s => {
+        const stepId = Object.keys(workflow.steps).find(k => workflow.steps[parseInt(k)] === s);
+        return `${stepId}. ${s.name}`;
+      })
+      .join('\n   ');
+
+    const recentActions = VoilaWorkflow.getLatestActions(5);
+    const recentActionsContent = recentActions.length > 0 
+      ? `\n\n## Recent Actions (Last 5)\n${recentActions.map(line => `- ${line}`).join('\n')}` 
+      : '';
+
+    return `# Project Status
+
+## Current Progress
+- **Project**: ${workflow.project}
+- **Step**: ${workflow.current_step}/${totalSteps}
+- **Progress**: ${progressPercent}% complete (${completedSteps}/${totalSteps} steps)
+
+## Current Step
+${currentStep ? `**${currentStep.name}**` : 'All steps completed!'}
+${currentStep?.command ? `Command: \`${currentStep.command}\`` : ''}
+${currentStep?.notes ? `Notes: ${currentStep.notes}` : ''}
+
+## Next Steps
+   ${nextSteps || 'All workflow steps completed!'}${recentActionsContent}
+
+## Commands
+- \`npm run context next\` - Execute current step
+- \`npm run context complete "<description>"\` - Mark current step complete`;
+  }
+
+  static getLatestActions(count: number = 5): string[] {
+    if (!fs.existsSync(VoilaWorkflow.ACTIONS_FILE)) {
+      return [];
+    }
+    
+    const content = fs.readFileSync(VoilaWorkflow.ACTIONS_FILE, 'utf-8');
+    const lines = content.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+    return lines.slice(-count);
+  }
+
+  static reset() {
+    console.log('🔄 Reset Project State');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    
+    if (fs.existsSync('.voila/workflow.yml')) {
+      fs.unlinkSync('.voila/workflow.yml');
+      console.log('✅ Removed workflow.yml');
+    }
+    
+    if (fs.existsSync('.voila/actions.log')) {
+      fs.unlinkSync('.voila/actions.log');
+      console.log('✅ Removed actions.log');
+    }
+    
+    if (fs.existsSync('.voila/state.json')) {
+      fs.unlinkSync('.voila/state.json');
+      console.log('✅ Removed state.json');
+    }
+    
+    console.log('\n🎯 Fresh start ready!');
+    console.log('   Start with: npm run plan start [app-name]');
+  }
+}
+
 // Simple state management with dual tracking
 interface ProjectState {
   currentApp: string | null;
@@ -496,59 +641,63 @@ async function main() {
 }
 
 async function provideContext(contextType: string): Promise<void> {
-  // Handle state commands first
-  if (contextType.startsWith('state:')) {
-    const stateCommand = contextType.split(':')[1];
-    
-    switch (stateCommand) {
-      case 'resume':
-        console.log('🔄 Resume Previous Session');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-        console.log(VoilaState.getResume());
+  // Handle simplified project management commands
+  switch (contextType) {
+    case 'status':
+      console.log('📊 Project Status');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      console.log(VoilaWorkflow.getStatus());
+      return;
+      
+    case 'next':
+      const appName = process.argv[3]; // Optional app name
+      await showWorkflowNext(appName);
+      return;
+      
+    case 'complete':
+      const actionArgs = process.argv.slice(3); // Get all arguments after 'complete'
+      if (actionArgs.length === 0) {
+        console.log('❌ Please specify what to mark as complete:');
+        console.log('');
+        console.log('EXAMPLES:');
+        console.log('   npm run context complete "implement status feature"');
+        console.log('   npm run context complete "write tests for greeting"');
+        console.log('   npm run context complete "update documentation"');
         return;
-        
-      case 'latest':
-        console.log('📋 Latest Actions (Last 5)');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-        const latest = VoilaState.getLatest(5);
-        if (latest.length === 0) {
-          console.log('No actions recorded yet.');
-        } else {
-          latest.forEach(line => console.log(`- ${line}`));
-        }
-        return;
-        
-      case 'reset':
-        VoilaState.reset();
-        return;
-        
-      default:
-        console.log('❌ Unknown state command. Available: resume, latest, reset');
-        return;
-    }
+      }
+      
+      const completedAction = actionArgs.join(' ');
+      
+      console.log('✅ Completion Tracking');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      
+      // Complete current workflow step
+      const success = VoilaWorkflow.completeCurrentStep(completedAction);
+      
+      if (success) {
+        console.log(`✅ Marked current step as complete: ${completedAction}`);
+        console.log(`📝 Advanced to next workflow step\n`);
+        console.log('🎯 Next Steps:');
+        console.log('   1. Run `npm run context status` to see updated progress');
+        console.log('   2. Run `npm run context next` to see next action');
+      } else {
+        console.log(`❌ Failed to complete step`);
+        console.log('   Run `npm run context status` to check workflow state');
+      }
+      
+      return;
+      
+    case 'reset':
+      VoilaWorkflow.reset();
+      return;
+      
+    case 'framework':
+      // Handle framework learning (same as voila:framework)
+      contextType = 'voila:framework';
+      break;
   }
 
-  // Handle workflow commands
-  if (contextType.startsWith('workflow:')) {
-    const workflowCommand = contextType.split(':')[1];
-    const appName = process.argv[3]; // Optional app name
-    
-    switch (workflowCommand) {
-      case 'status':
-        await showWorkflowStatus(appName);
-        return;
-        
-      case 'next':
-        await showWorkflowNext(appName);
-        return;
-        
-      default:
-        console.log('❌ Unknown workflow command. Available: status, next');
-        console.log('   Use: npm run generate workflow [app] to create workflow');
-        return;
-    }
-  }
-
+  // Handle legacy voila: commands and framework learning
   const contexts: Record<string, ContextCommand> = {
     'voila:framework': {
       name: 'Voila Framework Core',
@@ -748,50 +897,35 @@ Read ALL these documents for comprehensive understanding:
 
 function showHelp() {
   console.log(`
-🧠 Voila Context Script - Contextual Learning for Claude
+🧠 Voila Context Script - Clean & Powerful
 
 USAGE:
-  npm run context <context-type>
+  npm run context <command>
 
-LEARNING CONTEXTS:
-  voila:framework    - Learn complete Voila Framework (architecture, patterns, workflow)
-  voila:comments     - Learn VoilaJSX comment and documentation standards  
-  voila:planning     - Learn the human-controlled planning workflow
-  voila:examples     - Study real application implementations
-  voila:all          - Complete framework mastery (all documents)
+LEARNING:
+  framework          - Learn complete Voila Framework patterns
 
-LLM SESSION CONTINUITY:
-  state:resume       - 🎯 INSTANT PROJECT RESTORE - Complete context recovery
-  state:latest       - 📋 Quick check - last 5 actions with timestamps
-  state:reset        - 🔄 Fresh start - clear all state for new projects
-
-WORKFLOW MANAGEMENT:
-  workflow:status    - 📊 Show current workflow progress and next steps
-  workflow:next      - ➡️ Get next workflow step to execute
+PROJECT MANAGEMENT:
+  status             - Show project state, progress & next steps
+  next               - Get next action to execute  
+  complete <action>  - Mark action done and advance
+  reset              - Fresh start for new project
 
 EXAMPLES:
-  # Learning
-  npm run context voila:framework
-  npm run context voila:comments
+  # Learn Voila
+  npm run context framework
   
-  # State management  
-  npm run context state:resume
-  npm run context state:latest
-  npm run context state:reset
+  # Project workflow
+  npm run context status
+  npm run context next
+  npm run context complete "implement greeting feature"
+  npm run context reset
 
-WORKFLOW:
-  1. Start development normally with Voila commands
-  2. All actions automatically tracked in .voila/ folder
-  3. When context is lost (browser crash, new session):
-     → npm run context state:resume
-  4. Claude instantly knows your entire project state
-  5. Continue development exactly where you left off
-
-THE MAGIC: Never re-explain your project to Claude again!
+THE MAGIC: Perfect LLM session continuity - never lose context again!
 `);
 }
 
 main();
 
 // Export for use by other scripts
-export { VoilaState };
+export { VoilaWorkflow };

@@ -14,7 +14,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, mkdirSync } from 'fs';
 import readline from 'readline';
-import { VoilaState } from './voila-context.js';
+import { VoilaWorkflow } from './voila-context.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -132,7 +132,7 @@ async function startPlanning(appName: string, description: string): Promise<void
   console.log(`   4. Start development: npm run dev:api`);
 
   // Log state
-  VoilaState.logAction('plan_start', `Started planning for '${appName}' app - business requirements and technical spec templates generated`, {
+  VoilaWorkflow.logAction('plan_start', `Started planning for '${appName}' app - business requirements and technical spec templates generated`, {
     currentApp: appName,
     phase: 'planning',
     nextSteps: [
@@ -242,7 +242,7 @@ async function approvePlan(appName: string): Promise<void> {
   console.log(`   npm run generate app:api ${appName}`);
 
   // Log state
-  VoilaState.logAction('plan_approve', `Planning approved for '${appName}' app - ready for development`, {
+  VoilaWorkflow.logAction('plan_approve', `Planning approved for '${appName}' app - ready for development`, {
     currentApp: appName,
     phase: 'planning',
     nextSteps: [

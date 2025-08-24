@@ -48,21 +48,17 @@ async function showAllCommands(): Promise<void> {
   console.log('🚀 Available Voila Commands\n');
   
   const commandCategories = {
-    '📚 Learning & Context': [
-      { cmd: 'npm run context voila:framework', desc: 'Learn complete Voila framework patterns' },
-      { cmd: 'npm run context voila:comments', desc: 'Learn documentation standards' },
-      { cmd: 'npm run context voila:planning', desc: 'Learn planning workflow' },
-      { cmd: 'npm run context voila:examples', desc: 'Study real application examples' }
+    '📚 Learning': [
+      { cmd: 'npm run context framework', desc: 'Learn complete Voila framework patterns' }
     ],
-    '⚡ LLM Session Continuity': [
-      { cmd: 'npm run context state:resume', desc: '🎯 INSTANT PROJECT RESTORE - Complete context recovery' },
-      { cmd: 'npm run context state:latest', desc: '📋 Quick check - last 5 actions with timestamps' },
-      { cmd: 'npm run context state:reset', desc: '🔄 Fresh start - clear all state for new projects' }
+    '⚡ Project Management': [
+      { cmd: 'npm run context status', desc: '📊 Project state + progress + next steps' },
+      { cmd: 'npm run context next', desc: '➡️ Get next action to execute' },
+      { cmd: 'npm run context complete "<action>"', desc: '✅ Mark action done and advance' },
+      { cmd: 'npm run context reset', desc: '🔄 Fresh start for new project' }
     ],
-    '📊 Workflow Management (3 Essential Commands)': [
-      { cmd: 'npm run generate workflow <app>', desc: 'Generate and validate workflow from approved tech spec' },
-      { cmd: 'npm run context workflow:status', desc: 'Show current workflow progress and next steps' },
-      { cmd: 'npm run context workflow:next', desc: 'Get next workflow step to execute' }
+    '📊 Workflow Setup': [
+      { cmd: 'npm run generate workflow <app>', desc: 'Generate and validate workflow from approved tech spec' }
     ],
     '📋 Planning & Requirements': [
       { cmd: 'npm run plan start <app> "<desc>"', desc: 'Generate planning document templates' },
@@ -122,13 +118,13 @@ async function showAllCommands(): Promise<void> {
   }
 
   console.log('💡 Quick Start Workflow:');
-  console.log('   1. npm run context voila:framework     # Learn the framework');
+  console.log('   1. npm run context framework           # Learn the framework');
   console.log('   2. npm run plan start myapp "desc"     # Plan your application');
   console.log('   3. npm run plan approve myapp          # Approve planning docs');
   console.log('   4. npm run generate workflow myapp     # Generate workflow steps');
-  console.log('   5. npm run context workflow:next       # Get next step to do');
-  console.log('   6. npm run dev:api                     # Start development');
-  console.log('   7. npm run validate app:api myapp      # Validate your work');
+  console.log('   5. npm run context next                # Get next step to do');
+  console.log('   6. npm run context complete "action"   # Mark steps complete');
+  console.log('   7. npm run context status              # Check progress');
   console.log('');
   console.log('📖 For detailed help on any command:');
   console.log('   npm run help <command-name>');
@@ -144,37 +140,30 @@ async function showCommandHelp(command: string): Promise<void> {
   const commandHelps: Record<string, CommandHelp> = {
     context: {
       name: 'context',
-      description: 'Learn Voila Framework patterns + LLM session continuity',
+      description: 'Learn Voila Framework + Project Management (5 Essential Commands)',
       usage: [
-        'npm run context voila:framework',
-        'npm run context voila:comments', 
-        'npm run context voila:planning',
-        'npm run context voila:examples',
-        'npm run context voila:all',
-        'npm run context state:resume',
-        'npm run context state:latest',
-        'npm run context state:reset',
-        'npm run context workflow:status',
-        'npm run context workflow:next'
+        'npm run context framework',
+        'npm run context status',
+        'npm run context next',
+        'npm run context complete "<action>"',
+        'npm run context reset'
       ],
       examples: [
-        'npm run context voila:framework    # Learn complete framework',
-        'npm run context voila:comments     # Learn documentation standards',
-        'npm run context state:resume       # 🎯 INSTANT PROJECT RESTORE',
-        'npm run context state:latest       # 📋 Last 5 actions',
-        'npm run context state:reset        # 🔄 Fresh start',
-        'npm run context workflow:status    # Show current workflow progress',
-        'npm run context workflow:next      # Get next step to execute',
-        'npm run generate workflow app  # Initialize workflow from tech spec'
+        'npm run context framework                    # Learn complete framework',
+        'npm run context status                       # Project state + progress + next steps',
+        'npm run context next                         # Get next action to execute',
+        'npm run context complete "implement feature" # Mark action done and advance',
+        'npm run context reset                        # Fresh start for new project'
       ],
       notes: [
-        'Learning contexts: Read documents to become framework expert',
-        'State contexts: Never lose development progress again!',
-        'Workflow contexts: Step-by-step development tracking',
-        'state:resume shows exactly where you left off with next steps',
-        'workflow:next shows exactly what to implement next',
-        'All major actions automatically tracked in .voila/ folder',
-        'Perfect for session crashes, next-day dev, team handoffs'
+        'Simplified 5-command interface - everything you need',
+        'framework: Learn Voila patterns and architecture',
+        'status: Shows exactly where you are + what\'s next',
+        'next: Get current step to work on',
+        'complete: Mark step done + advance to next step',
+        'reset: Clean slate for new projects',
+        'Perfect LLM session continuity - never lose context!',
+        'All actions tracked in .voila/workflow.yml + actions.log'
       ]
     },
 
@@ -435,13 +424,13 @@ EXAMPLES:
   npm run help test               # Help for test command
 
 QUICK REFERENCE:
-  📚 Learn:     npm run context voila:framework
+  📚 Learn:     npm run context framework
+  📊 Status:    npm run context status  
+  ➡️ Next:      npm run context next
+  ✅ Complete:  npm run context complete "action"
   📋 Plan:      npm run plan start myapp "description"
   🏗️ Generate:  npm run generate app:api myapp
   ⚙️ Develop:   npm run dev:api
-  🔍 Validate:  npm run validate app:api myapp
-  🧪 Test:      npm run test app:api myapp
-  🛣️ Routes:    npm run routes
 `);
 }
 

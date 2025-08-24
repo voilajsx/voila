@@ -17,7 +17,7 @@ import { promisify } from 'util';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, writeFileSync } from 'fs';
-import { VoilaState } from './voila-context.js';
+import { VoilaWorkflow } from './voila-context.js';
 
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
@@ -210,7 +210,7 @@ async function createBranch(target: string): Promise<void> {
     console.log(`   2. npm run git commit ${appName} "commit message"`);
 
     // Log state
-    VoilaState.logAction('git_branch', `Created dev branch '${branchName}' from development branch`, {
+    VoilaWorkflow.logAction('git_branch', `Created dev branch '${branchName}' from development branch`, {
       currentApp: appName,
       nextSteps: [
         `Implement app features on branch ${branchName}`,
@@ -278,7 +278,7 @@ async function commitChanges(target: string, customMessage?: string, args: strin
     console.log(`   npm run git push ${appName}`);
 
     // Log state
-    VoilaState.logAction('git_commit', `Committed changes: "${commitMessage}"`, {
+    VoilaWorkflow.logAction('git_commit', `Committed changes: "${commitMessage}"`, {
       currentApp: appName,
       nextSteps: [
         `Run: npm run git push ${appName}`,
@@ -322,7 +322,7 @@ async function pushBranch(target: string): Promise<void> {
     console.log(`   3. Title: "Add ${appName} app"`);
 
     // Log state
-    VoilaState.logAction('git_push', `Pushed ${branchName} to remote - ready for PR`, {
+    VoilaWorkflow.logAction('git_push', `Pushed ${branchName} to remote - ready for PR`, {
       currentApp: appName,
       nextSteps: [
         `Create Pull Request via GitHub/GitLab`,

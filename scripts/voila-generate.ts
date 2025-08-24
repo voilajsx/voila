@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url';
 import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { parse as parseYaml } from 'yaml';
 import ExcelJS from 'exceljs';
-import { VoilaState } from './voila-context.js';
+import { VoilaWorkflow } from './voila-context.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -111,7 +111,7 @@ async function generateWorkflow(appName: string, options: GenerateOptions = {}):
   console.log(`   2. Get next step: npm run context workflow:next`);
   
   // Log state
-  VoilaState.logAction('generate_workflow', `Generated workflow for '${appName}' from approved tech spec`, {
+  VoilaWorkflow.logAction('generate_workflow', `Generated workflow for '${appName}' from approved tech spec`, {
     currentApp: appName,
     phase: 'workflow-generation',
     nextSteps: [
@@ -757,7 +757,7 @@ async function generateApp(appName: string, options: GenerateOptions = {}): Prom
   console.log(`   3. Run tests: npm run test all ${appName}`);
 
   // Log state
-  VoilaState.logAction('generate_app', `Generated app structure for '${appName}' - created src/api/${appName}/ with config and spec files`, {
+  VoilaWorkflow.logAction('generate_app', `Generated app structure for '${appName}' - created src/api/${appName}/ with config and spec files`, {
     currentApp: appName,
     phase: 'app-structure',
     nextSteps: [
@@ -840,7 +840,7 @@ async function generateFeature(appName: string, featureName: string, options: Ge
   console.log(`   8. Run tests: npm run test app:api ${appName}/${featureName} -- --unittest`);
 
   // Log state
-  VoilaState.logAction('generate_feature', `Generated feature '${featureName}' for ${appName} app - created contract, types, services, routes, tests templates`, {
+  VoilaWorkflow.logAction('generate_feature', `Generated feature '${featureName}' for ${appName} app - created contract, types, services, routes, tests templates`, {
     currentApp: appName,
     currentFeature: featureName,
     phase: 'feature-development',
