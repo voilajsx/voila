@@ -230,7 +230,7 @@ Each feature is complete when:
 - **@llm-rule SEQUENCE**: Follow the feature order exactly as specified
 - **@llm-rule STOP**: Do not generate next feature until current is complete
 - **@llm-rule VALIDATE**: Run validation and tests before proceeding
-- **@llm-rule WORKFLOW**: Use `npm run context workflow:next` to get next step
+- **@llm-rule WORKFLOW**: Use `npm run context next` to get next step
 
 ***
 

@@ -13,7 +13,7 @@
 import { promises as fs } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { readFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
 import { parse as parseYaml } from 'yaml';
 import ExcelJS from 'exceljs';
 import { VoilaWorkflow } from './voila-context.js';
@@ -45,16 +45,120 @@ interface TestCase {
   expected: any;
 }
 
+// Helper function to find latest Change Request version
+function findLatestCRVersion(planningDir: string, appName: string): string | null {
+  try {
+    const files = readdirSync(planningDir);
+    const businessCRPattern = new RegExp(`^${appName}-business-requirements-cr-v(\\d+\\.\\d+)\\.md$`);
+    const techCRPattern = new RegExp(`^${appName}-technical-specification-cr-v(\\d+\\.\\d+)\\.md$`);
+    
+    const businessVersions: string[] = [];
+    const techVersions: string[] = [];
+    
+    for (const file of files) {
+      const businessMatch = file.match(businessCRPattern);
+      const techMatch = file.match(techCRPattern);
+      
+      if (businessMatch) {
+        businessVersions.push(businessMatch[1]);
+      }
+      if (techMatch) {
+        techVersions.push(techMatch[1]);
+      }
+    }
+    
+    // Only return versions that have BOTH business and technical documents
+    const validVersions = businessVersions.filter(version => 
+      techVersions.includes(version)
+    );
+    
+    if (validVersions.length === 0) {
+      return null;
+    }
+    
+    // Sort versions and return the latest
+    const sortedVersions = validVersions.sort((a, b) => {
+      const [aMajor, aMinor] = a.split('.').map(Number);
+      const [bMajor, bMinor] = b.split('.').map(Number);
+      
+      if (aMajor !== bMajor) {
+        return bMajor - aMajor; // Descending major version
+      }
+      return bMinor - aMinor; // Descending minor version
+    });
+    
+    return `v${sortedVersions[0]}`;
+  } catch (error) {
+    return null;
+  }
+}
+
+// Determine workflow complexity based on change request version
+function getWorkflowComplexity(crVersion: string | null): 'simple-change' | 'complex-change' | 'initial-development' {
+  if (!crVersion) return 'initial-development';
+  
+  const version = crVersion.replace('v', '');
+  const [major, minor] = version.split('.').map(Number);
+  
+  if (major === 1) return 'simple-change';  // cr-v1.x = simple changes (content, format, minor logic)
+  if (major >= 2) return 'complex-change';  // cr-v2.x+ = major changes (new features, API changes)
+  
+  return 'initial-development';
+}
+
 // Generate workflow from approved tech spec
 async function generateWorkflow(appName: string, options: GenerateOptions = {}): Promise<void> {
   console.log(`🔧 Generating workflow for app: ${appName}`);
   
-  // Check if planning is approved
   const planningDir = join(__dirname, '..', 'docs', 'planning', appName);
-  const techSpecPath = join(planningDir, `${appName}-technical-specification-v1.md`);
   
-  if (!existsSync(techSpecPath)) {
-    throw new Error(`Technical specification not found: ${techSpecPath}. Run planning first with: npm run plan start ${appName}`);
+  // 1. DETECT CHANGE REQUEST DOCUMENTS
+  const crVersion = findLatestCRVersion(planningDir, appName);
+  
+  // 2. DETERMINE WORKFLOW COMPLEXITY
+  const workflowComplexity = getWorkflowComplexity(crVersion);
+  
+  // 3. DETERMINE SPEC FILE TO USE
+  let techSpecPath: string;
+  let workflowType: string;
+  
+  if (crVersion) {
+    // Use CR specs if available - validate both documents exist
+    const businessCRPath = join(planningDir, `${appName}-business-requirements-cr-${crVersion}.md`);
+    techSpecPath = join(planningDir, `${appName}-technical-specification-cr-${crVersion}.md`);
+    
+    if (workflowComplexity === 'simple-change') {
+      workflowType = `Simple Change Request ${crVersion}`;
+      console.log(`📋 Found Simple Change Request ${crVersion} - generating streamlined workflow`);
+    } else {
+      workflowType = `Complex Change Request ${crVersion}`;
+      console.log(`📋 Found Complex Change Request ${crVersion} - generating full workflow`);
+    }
+    
+    // Check both CR documents exist
+    if (!existsSync(businessCRPath)) {
+      throw new Error(`Change Request business requirements not found: ${businessCRPath}. Please create both CR documents.`);
+    }
+    if (!existsSync(techSpecPath)) {
+      throw new Error(`Change Request technical specification not found: ${techSpecPath}. Please create both CR documents.`);
+    }
+    
+    // Validate both CR documents are approved
+    const businessCRContent = readFileSync(businessCRPath, 'utf-8');
+    if (!businessCRContent.includes('STATUS: APPROVED')) {
+      throw new Error(`Change Request business requirements not approved. Please approve: ${businessCRPath}`);
+    }
+    
+    console.log(`✅ Both CR documents found and approved - generating ${workflowComplexity} workflow`);
+  } else {
+    // Use original spec 
+    techSpecPath = join(planningDir, `${appName}-technical-specification-v1.md`);
+    workflowType = 'Initial Development';
+    console.log(`📋 Using original specification - generating development workflow`);
+    
+    if (!existsSync(techSpecPath)) {
+      throw new Error(`Technical specification not found: ${techSpecPath}. Run planning first with: npm run plan start ${appName}`);
+    }
   }
   
   // Read and parse tech spec
@@ -65,8 +169,15 @@ async function generateWorkflow(appName: string, options: GenerateOptions = {}):
     throw new Error(`Technical specification not approved. Please approve with: npm run plan approve ${appName}`);
   }
   
-  // Parse workflow section from tech spec
-  const workflowSection = extractWorkflowFromTechSpec(techSpecContent, appName);
+  // Generate workflow based on complexity
+  let workflowSection: string;
+  
+  if (workflowComplexity === 'simple-change') {
+    workflowSection = generateSimpleChangeWorkflow(techSpecContent, appName, crVersion, workflowType);
+  } else {
+    // Use existing complex workflow for initial development and complex changes
+    workflowSection = extractWorkflowFromTechSpec(techSpecContent, appName, crVersion, workflowType);
+  }
   
   // Ensure .voila directory exists
   const voilaDir = join(__dirname, '..', '.voila');
@@ -98,8 +209,11 @@ async function generateWorkflow(appName: string, options: GenerateOptions = {}):
   const workflowPath = join(voilaDir, 'workflow.yml');
   await fs.writeFile(workflowPath, workflowSection, 'utf-8');
   
-  console.log(`✅ Workflow generated and validated successfully!`);
+  console.log(`✅ ${workflowType} workflow generated and validated successfully!`);
   console.log(`📂 Location: .voila/workflow.yml`);
+  if (crVersion) {
+    console.log(`🔄 Change Request: ${crVersion} workflow (${workflowComplexity}) will implement the requested changes`);
+  }
   console.log('');
   console.log('📊 Validation Summary:');
   console.log(`   ✅ Features: ${validationResult.featureCount}`);
@@ -107,8 +221,8 @@ async function generateWorkflow(appName: string, options: GenerateOptions = {}):
   console.log(`   ⚠️  Warnings: ${validationResult.warnings.length}`);
   console.log('');
   console.log('📝 Next steps:');
-  console.log(`   1. Check workflow status: npm run context workflow:status`);
-  console.log(`   2. Get next step: npm run context workflow:next`);
+  console.log(`   1. Check workflow status: npm run context status`);
+  console.log(`   2. Get next step: npm run context next`);
   
   // Log state
   VoilaWorkflow.logAction('generate_workflow', `Generated workflow for '${appName}' from approved tech spec`, {
@@ -116,7 +230,7 @@ async function generateWorkflow(appName: string, options: GenerateOptions = {}):
     phase: 'workflow-generation',
     nextSteps: [
       'Review generated workflow in .voila/workflow.yml',
-      'Use npm run context workflow:status to track progress',
+      'Use npm run context status to track progress',
       'Follow workflow steps one by one'
     ],
     context: {
@@ -206,7 +320,7 @@ function validateWorkflowContent(workflowContent: string, appName: string): Work
 }
 
 // Extract workflow section from technical specification
-function extractWorkflowFromTechSpec(techSpecContent: string, appName: string): string {
+function extractWorkflowFromTechSpec(techSpecContent: string, appName: string, crVersion?: string | null, workflowType?: string): string {
   console.log(`🔍 Parsing technical specification for workflow generation...`);
   
   // Parse the Implementation Workflow section
@@ -239,10 +353,16 @@ function extractWorkflowFromTechSpec(techSpecContent: string, appName: string): 
   const sortedFeatures = sortFeaturesByDependencies(features);
   
   // Generate YAML workflow with Claude Code instructions
-  let workflowYaml = `# Generated workflow from ${appName}-technical-specification-v1.md
-project: ${appName}
+  // Determine source file and project naming based on CR detection
+  const sourceFile = crVersion ? `${appName}-technical-specification-cr-${crVersion}.md` : `${appName}-technical-specification-v1.md`;
+  const projectName = crVersion ? `${appName}-cr-${crVersion}` : appName;
+  const workflowDescription = workflowType || 'Initial Development';
+  
+  let workflowYaml = `# Generated workflow from ${sourceFile}
+project: ${projectName}
+workflow_type: "${workflowDescription}"
 current_step: 1
-created_from: "docs/planning/${appName}/${appName}-technical-specification-v1.md"
+created_from: "docs/planning/${appName}/${sourceFile}"
 last_updated: "${new Date().toISOString()}"
 
 # Instructions for Claude Code
@@ -679,6 +799,212 @@ function sortFeaturesByDependencies(features: ParsedFeature[]): ParsedFeature[] 
   });
   
   return sorted;
+}
+
+// Generate streamlined workflow for simple change requests (cr-v1.x)
+function generateSimpleChangeWorkflow(techSpecContent: string, appName: string, crVersion: string | null, workflowType: string): string {
+  console.log(`🔧 Generating simple change workflow for ${appName}`);
+  console.log(`📋 Creating generic workflow - user will identify specific changes from technical specification`);
+  
+  const sourceFile = crVersion ? `${appName}-technical-specification-cr-${crVersion}.md` : `${appName}-technical-specification-v1.md`;
+  const projectName = crVersion ? `${appName}-cr-${crVersion}` : appName;
+  
+  let workflowYaml = `# Generated simple change workflow from ${sourceFile}
+project: ${projectName}
+workflow_type: "${workflowType}"
+current_step: 1
+created_from: "docs/planning/${appName}/${sourceFile}"
+last_updated: "${new Date().toISOString()}"
+
+# Instructions for Claude Code
+claude_instructions:
+  completion_rule: "ALWAYS run 'npm run context complete '<step name>' immediately after successful step execution"
+  failure_rule: "On failure, do NOT mark as complete. Analyze error and fix before proceeding"
+  validation_rule: "Steps with 'validate_success' field must pass validation before marking complete"
+  general_workflow: |
+    Simple Change Request Workflow - streamlined for content and format changes
+    Generic workflow that works for any app and any simple modifications
+    1. Read the step name and command/action
+    2. Execute the command or perform the action
+    3. Check validate_success criteria (if present)
+    4. If successful: run on_success command to mark complete
+    5. If failed: follow on_failure guidance, do NOT mark complete
+    6. Move to next step only after current step is successfully completed
+
+steps:
+  1:
+    name: "Create change request branch"
+    command: "npm run git branch ${appName}"
+    status: "pending"
+    notes: "Create branch: dev/[username]-${appName} for change request"
+    validate_success: "Verify branch dev/[username]-${appName} is created and checked out"
+    on_success: "npm run context complete 'Create change request branch'"
+    on_failure: "Check git status, resolve conflicts, ensure clean working directory, retry"
+    
+  2:
+    name: "Implement code changes"
+    action: "manual_edit"
+    status: "pending"
+    notes: "Review technical specification and implement required changes. Check 'Code Modifications' section for guidance."
+    specification_reference: "docs/planning/${appName}/${sourceFile}"
+    guidance: "User should identify and modify files according to the technical specification"
+    validate_success: "All required code modifications completed as per technical specification"
+    on_success: "npm run context complete 'Implement code changes'"
+    on_failure: "Review technical specification, fix syntax errors, ensure all changes applied"
+    
+  3:
+    name: "Update unit test expectations"
+    action: "manual_edit"
+    status: "pending"
+    notes: "Update unit tests to match the new behavior/content. Review all affected test files."
+    validate_success: "All unit test files updated with new expectations and assertions"
+    on_success: "npm run context complete 'Update unit test expectations'"
+    on_failure: "Review test files, update assertions, ensure tests match new behavior"
+    
+  4:
+    name: "Run unit tests"
+    command: "npm run test app:api ${appName} -- --unittest"
+    status: "pending"
+    notes: "Ensure all unit tests pass with the changes and maintain >=95% coverage"
+    validate_success: "All unit tests pass with >=95% coverage and no failures"
+    on_success: "npm run context complete 'Run unit tests'"
+    on_failure: "Fix failing unit tests, update test expectations, ensure code works correctly"
+    
+  5:
+    name: "Update API test cases"
+    action: "manual_edit"
+    status: "pending"
+    notes: "Update API test specifications if response format or content changed"
+    files: "src/api/${appName}/spec/${appName}.api.spec.yml and any generated test cases"
+    validate_success: "API test specifications updated to match new behavior"
+    on_success: "npm run generate app:api ${appName} -- --testcases && npm run context complete 'Update API test cases'"
+    on_failure: "Review API specification, update test expectations, ensure API tests are accurate"
+    
+  6:
+    name: "Run API integration tests"
+    command: "npm run test app:api ${appName} -- --apitest"
+    status: "pending"
+    notes: "Execute API tests against running server to verify endpoint behavior"
+    validate_success: "All API tests pass with correct responses and status codes"
+    on_success: "npm run context complete 'Run API integration tests'"
+    on_failure: "Start development server, fix endpoint implementations, update API test cases"
+    
+  7:
+    name: "Run compliance testing"
+    command: "npm run test app:api ${appName} -- --compliance"
+    status: "pending"
+    notes: "Verify API compliance against requirements and update config with results"
+    validate_success: "Compliance tests pass and config updated with results"
+    on_success: "npm run context complete 'Run compliance testing'"
+    on_failure: "Review compliance requirements, fix API specification, update implementations"
+    
+  8:
+    name: "Full validation"
+    command: "npm run validate app:api ${appName}"
+    status: "pending"
+    notes: "Run comprehensive validation to ensure all changes meet quality standards"
+    validate_success: "All validation checks pass with no errors"
+    on_success: "npm run context complete 'Full validation'"
+    on_failure: "Review validation errors, fix issues, ensure all quality gates pass"
+    
+  9:
+    name: "Commit change request"
+    command: "npm run git -- commit ${appName} --fix"
+    status: "pending"
+    notes: "Commit changes with conventional commit message (fix for minor changes)"
+    validate_success: "Git commit succeeds and shows commit hash"
+    on_success: "npm run context complete 'Commit change request'"
+    on_failure: "Review git status, fix validation errors, ensure clean working directory, retry commit"
+    
+  10:
+    name: "Push change request for PR"
+    command: "npm run git -- push ${appName}"
+    status: "pending"
+    notes: "Push branch for Pull Request creation"
+    validate_success: "Branch pushed successfully to remote repository"
+    on_success: "npm run context complete 'Push change request for PR'"
+    on_failure: "Check remote repository access, resolve merge conflicts, retry push"
+
+# Git workflow integration
+git_workflow:
+  branch_structure: "main → development → dev/username-appname"
+  branch_strategy: "single change branch: dev/username-appname"
+  commit_strategy: "single commit for simple changes with conventional commit message"
+  validation_gates: "unit tests, API tests, compliance tests, and validation must pass"
+  pr_target: "dev/username-appname → development"
+  
+# User customizations
+user_notes: "Generated simple change workflow for content/format modifications. Comprehensive testing included."
+`;
+
+  return workflowYaml;
+}
+
+// Extract file changes from technical specification
+function extractFileChangesFromTechSpec(techSpecContent: string): { file: string; description: string }[] {
+  const changes: { file: string; description: string }[] = [];
+  
+  // Look for "Code Modifications" or "Files to Modify" sections
+  const codeModsMatch = techSpecContent.match(/### Code Modifications[\s\S]*?(?=###|##|$)/);
+  const filesToModifyMatch = techSpecContent.match(/### Files to Modify[\s\S]*?(?=###|##|$)/);
+  
+  const relevantSection = codeModsMatch || filesToModifyMatch;
+  
+  if (relevantSection) {
+    const sectionText = relevantSection[0];
+    
+    // Pattern 1: "- File: `path/to/file.ts` - description"
+    const filePattern1 = /- `([^`]+)` - ([^\n]+)/g;
+    let match;
+    while ((match = filePattern1.exec(sectionText)) !== null) {
+      changes.push({
+        file: match[1],
+        description: match[2].trim()
+      });
+    }
+    
+    // Pattern 2: "**File:** `path/to/file.ts`" followed by description
+    const filePattern2 = /\*\*[^*]+\*\*[^`]*`([^`]+)`[^\n]*\n[^-]*- [^:]*: ([^\n]+)/g;
+    while ((match = filePattern2.exec(sectionText)) !== null) {
+      changes.push({
+        file: match[1],
+        description: match[2].trim()
+      });
+    }
+    
+    // Pattern 3: Simple file listing format from our CR doc
+    const lines = sectionText.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.includes('File:') && line.includes('`')) {
+        const fileMatch = line.match(/File: `([^`]+)`/);
+        if (fileMatch && i + 1 < lines.length) {
+          const nextLine = lines[i + 1].trim();
+          if (nextLine.includes('Line:') || nextLine.includes('Change:')) {
+            changes.push({
+              file: fileMatch[1],
+              description: nextLine
+            });
+          }
+        }
+      }
+    }
+  }
+  
+  // If no specific changes found, add a generic note
+  if (changes.length === 0) {
+    changes.push({
+      file: "See technical specification for specific files",
+      description: "Refer to Code Modifications section in technical specification"
+    });
+  }
+  
+  console.log(`  📝 Found ${changes.length} file changes to implement`);
+  changes.forEach(change => {
+    console.log(`     - ${change.file}: ${change.description}`);
+  });
+  
+  return changes;
 }
 
 // Generate default workflow if no workflow section found in tech spec

@@ -43,7 +43,7 @@ export class GreetService {
       const response: GreetResponse = {
         success: true,
         data: {
-          message: `Hello from welcome/greet, ${name}!`,
+          message: `Hi from welcome/greet ${name}!!`,
           app: 'welcome',
           feature: 'greet',
           name,
@@ -74,7 +74,7 @@ export class GreetService {
       const response: GreetResponse = {
         success: true,
         data: {
-          message: 'Hello from welcome/greet!',
+          message: 'Hi from welcome/greet!!',
           app: 'welcome',
           feature: 'greet',
           name: 'World',

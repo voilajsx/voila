@@ -78,7 +78,7 @@ describe('Greet Feature', () => {
       expect(response.body).toMatchObject({
         success: true,
         data: {
-          message: 'Hello from welcome/greet!',
+          message: 'Hi from welcome/greet!!',
           app: 'welcome',
           feature: 'greet',
           name: 'World',
@@ -108,7 +108,7 @@ describe('Greet Feature', () => {
       expect(response.body).toMatchObject({
         success: true,
         data: {
-          message: 'Hello from welcome/greet, Alice!',
+          message: 'Hi from welcome/greet Alice!!',
           app: 'welcome',
           feature: 'greet',
           name: 'Alice',

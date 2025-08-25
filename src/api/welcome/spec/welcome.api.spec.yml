@@ -40,14 +40,13 @@ specifications:
           body_message_pattern: "^Hello, World!"
           body_timestamp_exists: true
 
-  # Personalized greeting endpoint with name parameter
+  # Default greeting endpoint
   - id: SPEC-WELCOME-002
-    title: Personalized Greeting Endpoint
+    title: Default Greeting Endpoint
     description: |
-      Personalized greeting endpoint at `GET /api/welcome/greet?name={name}` 
-      that returns a greeting with the provided name.
-      Response MUST be HTTP 200 with the name parameter included in the greeting message.
-      If no name provided, should use default greeting behavior.
+      Default greeting endpoint at `GET /api/welcome/greet` 
+      that returns a default greeting message.
+      Response MUST be HTTP 200 with a standard greeting message.
     endpoint:
       method: GET
       path: /api/welcome/greet
@@ -59,33 +58,58 @@ specifications:
       - body_timestamp_exists: true
     tests:
       - id: TC-WELCOME-GREET-01
-        description: "Verify personalized greeting with name parameter."
-        input:
-          query_parameters:
-            name: Alice
-        expected:
-          status_code: 200
-          body_message_pattern: "Hello, Alice!"
-          body_name_equals: "Alice"
-          body_timestamp_exists: true
-      - id: TC-WELCOME-GREET-02
-        description: "Verify greeting without name parameter uses default."
+        description: "Verify default greeting response."
         input: {}
         expected:
           status_code: 200
-          body_message_exists: true
+          body_message_pattern: "Hi from welcome/greet!!"
+          body_name_equals: "World"
           body_timestamp_exists: true
-      - id: TC-WELCOME-GREET-03
+      - id: TC-WELCOME-GREET-02
+        description: "Verify Content-Type header includes application/json."
+        input: {}
+        expected:
+          headers:
+            content-type: application/json
+
+  # Personalized greeting endpoint with name path parameter
+  - id: SPEC-WELCOME-003
+    title: Personalized Greeting Endpoint
+    description: |
+      Personalized greeting endpoint at `GET /api/welcome/greet/{name}` 
+      that returns a greeting with the provided name from the URL path.
+      Response MUST be HTTP 200 with the name parameter included in the greeting message.
+    endpoint:
+      method: GET
+      path: /api/welcome/greet/{name}
+    validations:
+      - status_code: 200
+      - content_type_includes: application/json
+      - body_message_exists: true
+      - body_name_exists: true
+      - body_timestamp_exists: true
+    tests:
+      - id: TC-WELCOME-GREET-NAMED-01
+        description: "Verify personalized greeting with name in path."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          status_code: 200
+          body_message_pattern: "Hi from welcome/greet Alice!!"
+          body_name_equals: "Alice"
+          body_timestamp_exists: true
+      - id: TC-WELCOME-GREET-NAMED-02
         description: "Verify Content-Type header includes application/json."
         input:
-          query_parameters:
+          path_parameters:
             name: Bob
         expected:
           headers:
             content-type: application/json
 
   # Status/health check endpoint
-  - id: SPEC-WELCOME-003
+  - id: SPEC-WELCOME-004
     title: Status Health Check Endpoint
     description: |
       Health check endpoint at `GET /api/welcome/status` 

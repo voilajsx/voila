@@ -600,7 +600,7 @@ async function initWorkflow(appName?: string): Promise<void> {
     console.log('\n💡 Manual alternative:');
     console.log(`   1. Review docs/planning/${appName}/${appName}-technical-specification-v1.md`);
     console.log('   2. Follow the Implementation Workflow section manually');
-    console.log(`   3. Use npm run context workflow:status to track progress\n`);
+    console.log(`   3. Use npm run context status to track progress\n`);
   }
 }
 
@@ -768,6 +768,23 @@ async function provideContext(contextType: string): Promise<void> {
       // Handle framework learning (same as voila:framework)
       contextType = 'voila:framework';
       break;
+      
+    case 'change-request':
+      contextType = 'voila:change-request';
+      break;
+      
+    case 'app:api':
+      const targetAppName = process.argv[3]; // Get app name from next argument
+      if (!targetAppName) {
+        console.log('❌ App name required. Usage:');
+        console.log('   npm run context app:api <app-name>\n');
+        console.log('Examples:');
+        console.log('   npm run context app:api welcome');
+        console.log('   npm run context app:api greeting');
+        return;
+      }
+      await handleAppContext(targetAppName);
+      return;
   }
 
   // Handle legacy voila: commands and framework learning
@@ -833,6 +850,27 @@ Read this document to understand documentation patterns:
    - Follow ecosystem-wide standards
 
 ✅ AFTER READING: You'll write comments that match VoilaJSX ecosystem standards.`
+    },
+
+    'voila:change-request': {
+      name: 'Voila Change Request System',
+      description: 'Learn the change request workflow for business-driven modifications',
+      docs: [
+        'docs/lib/VOILA-CHANGE-REQUEST.md'
+      ],
+      instructions: `
+📋 LEARN VOILA CHANGE REQUEST SYSTEM
+
+Read this document to understand systematic change handling:
+
+1. **Change Request Process** - Read docs/lib/VOILA-CHANGE-REQUEST.md
+   - Master two-document approach (business + technical)
+   - Understand version classification (minor cr-v1.1 vs major cr-v2.0)
+   - Learn complete workflow from documentation to deployment
+   - Follow real examples and implementation commands
+   - Integrate with existing Voila workflow generation
+
+✅ AFTER READING: You'll systematically implement business-driven changes with proper documentation, workflow generation, and validation gates.`
     },
 
     'voila:planning': {
@@ -968,6 +1006,132 @@ Read ALL these documents for comprehensive understanding:
   console.log('\n🤖 Ready to learn! Read the documents above in the specified order.');
 }
 
+async function handleAppContext(appName: string): Promise<void> {
+  console.log(`📱 App Context: ${appName}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+  // Check if app exists
+  const appPath = `src/api/${appName}`;
+  if (!fs.existsSync(appPath)) {
+    console.log(`❌ App not found: ${appName}`);
+    console.log(`   Expected location: ${appPath}\n`);
+    console.log('💡 Available options:');
+    console.log('   1. Generate app: npm run generate app:api ' + appName);
+    console.log('   2. Check existing apps in src/api/');
+    return;
+  }
+
+  // Collect app documents to read
+  const appDocs: string[] = [];
+  
+  // Add framework foundation documents
+  appDocs.push('docs/lib/VOILA-ARCHITECTURE.md');
+  appDocs.push('docs/lib/APPKIT-QUICK-REF.md');
+  
+  // Add planning documents if they exist
+  const planningDir = `docs/planning/${appName}`;
+  if (fs.existsSync(planningDir)) {
+    const planningFiles = fs.readdirSync(planningDir);
+    planningFiles.forEach(file => {
+      if (file.endsWith('.md')) {
+        appDocs.push(`${planningDir}/${file}`);
+      }
+    });
+  }
+  
+  // Add app files
+  const addAppFiles = (dir: string) => {
+    if (!fs.existsSync(dir)) return;
+    
+    const files = fs.readdirSync(dir, { withFileTypes: true });
+    files.forEach(file => {
+      const fullPath = path.join(dir, file.name);
+      if (file.isDirectory()) {
+        addAppFiles(fullPath);
+      } else if (file.name.endsWith('.ts') || file.name.endsWith('.js') || file.name.endsWith('.json') || file.name.endsWith('.md')) {
+        // Normalize path for cross-platform compatibility
+        appDocs.push(fullPath.replace(/\\/g, '/'));
+      }
+    });
+  };
+  
+  addAppFiles(appPath);
+  
+  // Display instructions
+  console.log(`🎯 LEARN ${appName.toUpperCase()} APPLICATION\n`);
+  console.log('Read these documents to understand the complete application:\n');
+  
+  console.log('📚 FRAMEWORK FOUNDATION:');
+  console.log('1. Read docs/lib/VOILA-ARCHITECTURE.md - Contract-driven architecture & patterns');
+  console.log('2. Read docs/lib/APPKIT-QUICK-REF.md - Essential patterns and utilities\n');
+  
+  if (fs.existsSync(planningDir)) {
+    console.log('📋 PLANNING DOCUMENTS:');
+    let counter = 3;
+    const planningFiles = fs.readdirSync(planningDir);
+    planningFiles.forEach(file => {
+      if (file.endsWith('.md')) {
+        console.log(`${counter}. Read ${planningDir}/${file} - ${getDocDescription(file)}`);
+        counter++;
+      }
+    });
+    console.log('');
+  }
+  
+  console.log('🔧 APPLICATION CODE:');
+  const codeFiles = appDocs.filter(doc => doc.includes(`api/${appName}`));
+  let codeCounter = appDocs.length - codeFiles.length + 1;
+  
+  // Show config first
+  const configFiles = codeFiles.filter(f => f.includes('.config.') || f.includes('.json'));
+  configFiles.forEach(file => {
+    console.log(`${codeCounter}. Read ${file} - Configuration`);
+    codeCounter++;
+  });
+  
+  // Show feature index files
+  const indexFiles = codeFiles.filter(f => f.includes('.index.ts') && !configFiles.includes(f));
+  indexFiles.forEach(file => {
+    console.log(`${codeCounter}. Read ${file} - Feature contracts`);
+    codeCounter++;
+  });
+  
+  // Show other implementation files
+  const implFiles = codeFiles.filter(f => !f.includes('.index.ts') && !configFiles.includes(f) && !f.includes('test') && !f.includes('__'));
+  implFiles.forEach(file => {
+    const fileName = path.basename(file);
+    const fileType = fileName.includes('.types.') ? 'Types & schemas' :
+                    fileName.includes('.services.') ? 'Business logic' :
+                    fileName.includes('.routes.') ? 'API routes' :
+                    fileName.includes('.models.') ? 'Data models' :
+                    'Implementation';
+    console.log(`${codeCounter}. Read ${file} - ${fileType}`);
+    codeCounter++;
+  });
+  
+  // Show test files last
+  const testFiles = codeFiles.filter(f => f.includes('test') || f.includes('__'));
+  testFiles.forEach(file => {
+    console.log(`${codeCounter}. Read ${file} - Tests`);
+    codeCounter++;
+  });
+  
+  console.log('\n✅ AFTER READING: You\'ll understand the complete application structure, business logic, and implementation patterns.');
+}
+
+function getDocDescription(filename: string): string {
+  if (filename.includes('business-requirements')) {
+    return filename.includes('cr-') ? 'Change request business requirements' : 'Business requirements';
+  }
+  if (filename.includes('technical-specification')) {
+    return filename.includes('cr-') ? 'Change request technical specification' : 'Technical specification';
+  }
+  if (filename.includes('functional-specification')) {
+    return 'Functional specification';
+  }
+  return 'Documentation';
+}
+
 function showHelp() {
   console.log(`
 🧠 Voila Context Script - Clean & Powerful
@@ -977,6 +1141,8 @@ USAGE:
 
 LEARNING:
   framework          - Learn complete Voila Framework patterns
+  change-request     - Learn change request workflow for modifications
+  app:api <name>     - Learn specific application structure and code
 
 PROJECT MANAGEMENT:
   status             - Show project state, progress & next steps
@@ -988,6 +1154,8 @@ PROJECT MANAGEMENT:
 EXAMPLES:
   # Learn Voila
   npm run context framework
+  npm run context change-request
+  npm run context app:api welcome
   
   # Project workflow
   npm run context status

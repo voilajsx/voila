@@ -304,20 +304,21 @@ async function showCommandHelp(command: string): Promise<void> {
 
     workflow: {
       name: 'workflow',
-      description: 'Step-by-step development workflow management with built-in validation',
+      description: 'Step-by-step development workflow management with built-in validation. Supports Change Requests.',
       usage: [
         'npm run generate workflow <app>',
-        'npm run context workflow:status',
-        'npm run context workflow:next'
+        'npm run context status',
+        'npm run context next'
       ],
       examples: [
-        'npm run generate workflow converter    # Generate workflow from tech spec',
-        'npm run context workflow:status        # Show current progress',
-        'npm run context workflow:next          # Get next step to do'
+        'npm run generate workflow converter    # Generate workflow from tech spec (or latest Change Request)',
+        'npm run context status                 # Show current progress',
+        'npm run context next                   # Get next step to do'
       ],
       notes: [
         'Built-in validation prevents invalid workflows from being created',
         'Workflows generated from approved technical specifications only',
+        'Automatically detects Change Request specifications (appname-technical-specification-cr-vX.X.md)',
         'Enforces one-feature-at-a-time development approach',
         'Tracks progress in .voila/workflow.yml file',
         'Prevents Claude from skipping steps or rushing ahead',

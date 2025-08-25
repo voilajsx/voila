@@ -14,8 +14,8 @@ npm run git init https://github.com/user/repo.git  # Initialize Git (creates mai
 
 # Development Workflow (3 Essential Commands)
 npm run generate workflow myapp            # Generate validated workflow from approved tech spec
-npm run context workflow:status            # Show current progress
-npm run context workflow:next              # Get next step to execute
+npm run context status                     # Show current progress
+npm run context next                       # Get next step to execute
 
 # App-Level Development (super simple!)
 npm run generate app:api myapp             # Generate app structure
@@ -47,17 +47,17 @@ npm run deploy production                          # Deploy to production
 ### Phase 2: Workflow Setup (REQUIRED after planning approval)
 **⚠️ CRITICAL: Do this immediately after planning approval, before any generation**
 1. `npm run generate workflow myapp` - Generate and validate step-by-step workflow from approved tech spec
-2. `npm run context workflow:status` - View workflow progress and validation summary
-3. `npm run context workflow:next` - Get next step to execute
+2. `npm run context status` - View workflow progress and validation summary
+3. `npm run context next` - Get next step to execute
 
 **Built-in validation ensures only proper workflows are generated. No manual fixes needed.**
 
 ### Phase 3: Systematic Development (Follow Workflow)
 **⚠️ CRITICAL: Use workflow commands instead of manual decisions**
 
-1. `npm run context workflow:next` - Get current step to work on
-2. Execute the command or action shown by workflow:next
-3. `npm run context workflow:status` - Mark progress and get next step
+1. `npm run context next` - Get current step to work on
+2. Execute the command or action shown by next
+3. `npm run context status` - Mark progress and get next step
 4. Repeat until workflow complete
 
 **Original Phase 3-4 commands are now managed by the workflow system.**
@@ -81,7 +81,7 @@ npm run deploy production                          # Deploy to production
    - `feature.routes.ts` - Express routes with validation
    - `feature.test.ts` - Unit tests (95% coverage required)
 5. `npm run test app:api myapp -- --unittest` - Validate implementation
-6. `npm run context workflow:status` - Mark feature complete, get next steps
+6. `npm run context status` - Mark feature complete, get next steps
 
 ### Phase 5: Integration & Deployment
 1. `npm run generate app:api myapp -- --testcases` - Generate Excel API tests

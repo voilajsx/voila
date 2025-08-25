@@ -370,8 +370,8 @@ steps:
 **Essential Workflow Commands** (only 3):
 ```bash
 npm run generate workflow myapp        # Generate validated workflow 
-npm run context workflow:status        # Show current progress
-npm run context workflow:next          # Get next step to execute
+npm run context status                 # Show current progress
+npm run context next                    # Get next step to execute
 ```
 
 **Sample Workflow Status Output**:
@@ -406,7 +406,7 @@ npm run context workflow:next          # Get next step to execute
 **Perfect LLM Integration**:
 ```bash
 # Lost context? Workflow shows exactly what to do next:
-npm run context workflow:next
+npm run context next
 # → "Next Step: #4 - Implement currency contract"
 # → "File: src/api/converter/features/currency/currency.index.ts"
 # → "Action: implement"
