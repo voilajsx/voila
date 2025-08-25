@@ -1,7 +1,7 @@
 /**
  * hello feature unit tests
- * @module demo/hello
- * @file src/api/demo/features/hello/hello.test.ts
+ * @module helloworld/hello
+ * @file src/api/helloworld/features/hello/hello.test.ts
  * 
  * @llm-rule WHEN: Testing hello service endpoints with mocked AppKit dependencies
  * @llm-rule AVOID: Testing with real AppKit instances - use mocks for isolation
@@ -70,7 +70,7 @@ describe('Hello Feature', () => {
   });
 
   describe('GET /hello', () => {
-    it('should return hello world greeting from demo/hello', async () => {
+    it('should return Hello World message', async () => {
       const response = await request(app)
         .get('/hello')
         .expect(200);
@@ -78,17 +78,24 @@ describe('Hello Feature', () => {
       expect(response.body).toMatchObject({
         success: true,
         data: {
-          message: 'Hello, World!'
+          message: 'Hello World'
         }
       });
     });
 
-    it('should include proper headers', async () => {
+    it('should return JSON response with success true', async () => {
       const response = await request(app)
         .get('/hello')
         .expect(200);
 
+      expect(response.body.success).toBe(true);
       expect(response.headers['content-type']).toMatch(/application\/json/);
+    });
+
+    it('should respond with status 200', async () => {
+      await request(app)
+        .get('/hello')
+        .expect(200);
     });
   });
 });

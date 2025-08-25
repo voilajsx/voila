@@ -435,7 +435,7 @@ export class VoilaContractRegistry {
     const feature = contract.name;
     
     for (const [fileName, fileDeps] of Object.entries(contract.dependencies.files)) {
-      const filePath = path.join(basePath, contract.app, contract.name, fileName);
+      const filePath = path.join(basePath, contract.app, 'features', contract.name, fileName);
       
       try {
         if (!fs.existsSync(filePath)) {
@@ -692,10 +692,11 @@ export class VoilaContractRegistry {
     warnings: ContractValidationError[]
   ): Promise<void> {
     const feature = contract.name;
+    const featurePath = path.join(basePath, contract.app, 'features', contract.name);
     
     try {
       // Look for service files
-      const serviceFiles = this.findFiles(basePath, /\.services\.(ts|js)$/);
+      const serviceFiles = this.findFiles(featurePath, /\.services\.(ts|js)$/);
       
       if (serviceFiles.length === 0) {
         errors.push({
@@ -759,9 +760,10 @@ export class VoilaContractRegistry {
     warnings: ContractValidationError[]
   ): Promise<void> {
     const feature = contract.name;
+    const featurePath = path.join(basePath, contract.app, 'features', contract.name);
     
     try {
-      const testFiles = this.findFiles(basePath, /\.test\.(ts|js)$/);
+      const testFiles = this.findFiles(featurePath, /\.test\.(ts|js)$/);
       
       if (testFiles.length === 0) {
         warnings.push({
@@ -818,8 +820,8 @@ export class VoilaContractRegistry {
     const feature = contract.name;
     
     try {
-      // Look for the specific feature's route file: {app}/{feature}/{feature}.routes.ts
-      const expectedRouteFile = path.join(basePath, contract.app, contract.name, `${contract.name}.routes.ts`);
+      // Look for the specific feature's route file: {app}/features/{feature}/{feature}.routes.ts
+      const expectedRouteFile = path.join(basePath, contract.app, 'features', contract.name, `${contract.name}.routes.ts`);
       
       if (!fs.existsSync(expectedRouteFile)) {
         errors.push({

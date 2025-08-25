@@ -1,13 +1,13 @@
-# Generated workflow from welcome-technical-specification-v1.md
-project: welcome
+# Generated workflow from helloworld-technical-specification-v1.md
+project: helloworld
 current_step: 11
-created_from: "docs/planning/welcome/welcome-technical-specification-v1.md"
-last_updated: "2025-08-24T16:15:48.732Z"
+created_from: 'docs/planning/helloworld/helloworld-technical-specification-v1.md'
+last_updated: '2025-08-25T00:53:50.704Z'
 
 # Instructions for Claude Code
 claude_instructions:
   completion_rule: "ALWAYS run 'npm run context complete '<step name>' immediately after successful step execution"
-  failure_rule: "On failure, do NOT mark as complete. Analyze error and fix before proceeding"
+  failure_rule: 'On failure, do NOT mark as complete. Analyze error and fix before proceeding'
   validation_rule: "Steps with 'validate_success' field must pass validation before marking complete"
   general_workflow: |
     1. Read the step name and command/action
@@ -19,301 +19,374 @@ claude_instructions:
 
 steps:
   1:
-    name: "Generate app structure"
-    command: "npm run generate app:api welcome"
-    status: "completed"
-    validate_success: "Check that src/api/welcome/ directory exists with config, readme, and spec files"
+    name: 'Generate app structure'
+    command: 'npm run generate app:api helloworld'
+    status: 'completed'
+    validate_success: 'Check that src/api/helloworld/ directory exists with config, readme, and spec files'
     on_success: "npm run context complete 'Generate app structure'"
-    on_failure: "Analyze error output, check planning approval, retry command"
-    
+    on_failure: 'Analyze error output, check planning approval, retry command'
+
   2:
-    name: "Initialize Git repository"
-    command: "npm run git init"
-    status: "completed"
-    notes: "Initialize git repo, create main/dev branches, add .gitignore"
-    validate_success: "Check that git status works and .git directory exists"
+    name: 'Initialize Git repository'
+    command: 'npm run git init'
+    status: 'completed'
+    notes: 'Initialize git repo, create main/dev branches, add .gitignore'
+    validate_success: 'Check that git status works and .git directory exists'
     on_success: "npm run context complete 'Initialize Git repository'"
-    on_failure: "Check git installation, resolve git config issues, retry"
-    
+    on_failure: 'Check git installation, resolve git config issues, retry'
+
   3:
-    name: "Create welcome app branch"
-    command: "npm run git branch welcome"
-    status: "completed"
-    notes: "Create app branch: dev/[username]-welcome"
-    validate_success: "Verify branch dev/[username]-welcome is created and checked out"
-    on_success: "npm run context complete 'Create welcome app branch'"
-    on_failure: "Check git status, resolve conflicts, ensure clean working directory, retry"
-    
+    name: 'Create helloworld app branch'
+    command: 'npm run git branch helloworld'
+    status: 'completed'
+    notes: 'Create app branch: dev/[username]-helloworld'
+    validate_success: 'Verify branch dev/[username]-helloworld is created and checked out'
+    on_success: "npm run context complete 'Create helloworld app branch'"
+    on_failure: 'Check git status, resolve conflicts, ensure clean working directory, retry'
+
   4:
-    name: "Update API specification"
-    action: "manual_edit"
-    file: "src/api/welcome/spec/welcome.api.spec.yml"
-    status: "completed"
-    notes: "Define all API endpoints from technical specification"
-    validate_success: "Check that spec file contains all endpoints from technical specification"
+    name: 'Update API specification'
+    action: 'manual_edit'
+    file: 'src/api/helloworld/spec/helloworld.api.spec.yml'
+    status: 'completed'
+    notes: 'Define all API endpoints from technical specification'
+    validate_success: 'Check that spec file contains all endpoints from technical specification'
     on_success: "npm run context complete 'Update API specification'"
-    on_failure: "Review technical specification, fix YAML syntax, add missing endpoints"
-    
+    on_failure: 'Review technical specification, fix YAML syntax, add missing endpoints'
+
   5:
-    name: "Validate app structure"
-    command: "npm run validate app:api welcome"
-    status: "completed"
+    name: 'Validate app structure'
+    command: 'npm run validate app:api helloworld'
+    status: 'completed'
     validate_success: "Command exits with code 0 and shows 'Validation successful'"
     on_success: "npm run context complete 'Validate app structure'"
-    on_failure: "Review validation errors, fix contract issues, retry validation"
-
+    on_failure: 'Review validation errors, fix contract issues, retry validation'
 
   6:
-    name: "Generate status feature"
-    command: "npm run generate app:api welcome/status"
-    status: "completed"
-    priority: "High"
-    complexity: "Low"
-    validate_success: "Check that src/api/welcome/features/status/ directory exists with all template files"
-    on_success: "npm run context complete 'Generate status feature'"
-    on_failure: "Check app exists, fix naming issues, retry generation"
-    
-  7:
-    name: "Implement status contract"
-    action: "implement"
-    file: "src/api/welcome/features/status/status.index.ts"
-    status: "completed"
-    notes: "Define VoilaFeatureContract with API endpoints"
-    validate_success: "VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections"
-    on_success: "npm run context complete 'Implement status contract'"
-    on_failure: "Review VoilaFeatureContract interface, fix syntax errors, add required fields"
-    
-  8:
-    name: "Implement status types"
-    action: "implement"
-    file: "src/api/welcome/features/status/status.types.ts"
-    status: "completed"
-    notes: "Add Zod schemas and TypeScript interfaces"
-    validate_success: "Zod schemas defined and TypeScript types exported for request/response"
-    on_success: "npm run context complete 'Implement status types'"
-    on_failure: "Review Zod documentation, fix schema validation, ensure type exports"
-    
-  9:
-    name: "Implement status services"
-    action: "implement"
-    file: "src/api/welcome/features/status/status.services.ts"
-    status: "completed"
-    notes: "Add business logic with AppKit integration"
-    validate_success: "Service class exported with methods matching contract endpoints"
-    on_success: "npm run context complete 'Implement status services'"
-    on_failure: "Review AppKit patterns, fix import errors, implement missing methods"
-    
-  10:
-    name: "Implement status routes"
-    action: "implement"
-    file: "src/api/welcome/features/status/status.routes.ts"
-    status: "completed"
-    notes: "Add Express routes with validation"
-    validate_success: "Express router exported with routes matching contract endpoints"
-    on_success: "npm run context complete 'Implement status routes'"
-    on_failure: "Review Express routing, fix validation middleware, ensure route exports"
-    
-  11:
-    name: "Validate status feature"
-    command: "npm run validate app:api welcome/status"
-    status: "completed"
-    validate_success: "Command exits with code 0 and shows validation success"
-    on_success: "npm run context complete 'Validate status feature'"
-    on_failure: "Review validation errors, fix contract issues, ensure all files implemented correctly"
-    
-  12:
-    name: "Test status feature"
-    command: "npm run test app:api welcome/status -- --unittest"
-    status: "completed"
-    notes: "Ensure 95% test coverage before proceeding"
-    validate_success: "Tests pass with >=95% coverage and no failures"
-    on_success: "npm run context complete 'Test status feature'"
-    on_failure: "Fix failing tests, add missing test cases, ensure 95% coverage"
-    
-  13:
-    name: "Commit status feature"
-    command: "npm run git commit welcome -- --message='implement status feature'"
-    status: "completed"
-    notes: "Commit completed status feature with validation"
-    validate_success: "Git commit succeeds and shows commit hash"
-    on_success: "npm run context complete 'Commit status feature'"
-    on_failure: "Review git status, fix validation errors, ensure clean working directory, retry commit"
+    name: 'Generate hello feature'
+    command: 'npm run generate app:api helloworld/hello'
+    status: 'completed'
+    priority: 'High'
+    complexity: 'Low'
+    validate_success: 'Check that src/api/helloworld/features/hello/ directory exists with all template files'
+    on_success: "npm run context complete 'Generate hello feature'"
+    on_failure: 'Check app exists, fix naming issues, retry generation'
 
+  7:
+    name: 'Implement hello contract'
+    action: 'implement'
+    file: 'src/api/helloworld/features/hello/hello.index.ts'
+    status: 'completed'
+    notes: 'Define VoilaFeatureContract with API endpoints'
+    validate_success: 'VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections'
+    on_success: "npm run context complete 'Implement hello contract'"
+    on_failure: 'Review VoilaFeatureContract interface, fix syntax errors, add required fields'
+
+  8:
+    name: 'Implement hello types'
+    action: 'implement'
+    file: 'src/api/helloworld/features/hello/hello.types.ts'
+    status: 'completed'
+    notes: 'Add Zod schemas and TypeScript interfaces'
+    validate_success: 'Zod schemas defined and TypeScript types exported for request/response'
+    on_success: "npm run context complete 'Implement hello types'"
+    on_failure: 'Review Zod documentation, fix schema validation, ensure type exports'
+
+  9:
+    name: 'Implement hello services'
+    action: 'implement'
+    file: 'src/api/helloworld/features/hello/hello.services.ts'
+    status: 'completed'
+    notes: 'Add business logic with AppKit integration'
+    validate_success: 'Service class exported with methods matching contract endpoints'
+    on_success: "npm run context complete 'Implement hello services'"
+    on_failure: 'Review AppKit patterns, fix import errors, implement missing methods'
+
+  10:
+    name: 'Implement hello routes'
+    action: 'implement'
+    file: 'src/api/helloworld/features/hello/hello.routes.ts'
+    status: pending
+    notes: 'Add Express routes with validation'
+    validate_success: 'Express router exported with routes matching contract endpoints'
+    on_success: "npm run context complete 'Implement hello routes'"
+    on_failure: 'Review Express routing, fix validation middleware, ensure route exports'
+
+  11:
+    name: 'Validate hello feature'
+    command: 'npm run validate app:api helloworld/hello'
+    status: pending
+    validate_success: 'Command exits with code 0 and shows validation success'
+    on_success: "npm run context complete 'Validate hello feature'"
+    on_failure: 'Review validation errors, fix contract issues, ensure all files implemented correctly'
+
+  12:
+    name: 'Test hello feature'
+    command: 'npm run test app:api helloworld/hello -- --unittest'
+    status: pending
+    notes: 'Ensure 95% test coverage before proceeding'
+    validate_success: 'Tests pass with >=95% coverage and no failures'
+    on_success: "npm run context complete 'Test hello feature'"
+    on_failure: 'Fix failing tests, add missing test cases, ensure 95% coverage'
+
+  13:
+    name: 'Commit hello feature'
+    command: "npm run git commit helloworld -- --message='implement hello feature'"
+    status: pending
+    notes: 'Commit completed hello feature with validation'
+    validate_success: 'Git commit succeeds and shows commit hash'
+    on_success: "npm run context complete 'Commit hello feature'"
+    on_failure: 'Review git status, fix validation errors, ensure clean working directory, retry commit'
 
   14:
-    name: "Generate greeting feature"
-    command: "npm run generate app:api welcome/greeting"
-    status: "completed"
-    priority: "High"
-    complexity: "Medium"
-    validate_success: "Check that src/api/welcome/features/greeting/ directory exists with all template files"
+    name: 'Generate greeting feature'
+    command: 'npm run generate app:api helloworld/greeting'
+    status: pending
+    priority: 'High'
+    complexity: 'Medium'
+    validate_success: 'Check that src/api/helloworld/features/greeting/ directory exists with all template files'
     on_success: "npm run context complete 'Generate greeting feature'"
-    on_failure: "Check app exists, fix naming issues, retry generation"
-    
-  15:
-    name: "Implement greeting contract"
-    action: "implement"
-    file: "src/api/welcome/features/greeting/greeting.index.ts"
-    status: "completed"
-    notes: "Define VoilaFeatureContract with API endpoints"
-    validate_success: "VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections"
-    on_success: "npm run context complete 'Implement greeting contract'"
-    on_failure: "Review VoilaFeatureContract interface, fix syntax errors, add required fields"
-    
-  16:
-    name: "Implement greeting types"
-    action: "implement"
-    file: "src/api/welcome/features/greeting/greeting.types.ts"
-    status: "completed"
-    notes: "Add Zod schemas and TypeScript interfaces"
-    validate_success: "Zod schemas defined and TypeScript types exported for request/response"
-    on_success: "npm run context complete 'Implement greeting types'"
-    on_failure: "Review Zod documentation, fix schema validation, ensure type exports"
-    
-  17:
-    name: "Implement greeting services"
-    action: "implement"
-    file: "src/api/welcome/features/greeting/greeting.services.ts"
-    status: "completed"
-    notes: "Add business logic with AppKit integration"
-    validate_success: "Service class exported with methods matching contract endpoints"
-    on_success: "npm run context complete 'Implement greeting services'"
-    on_failure: "Review AppKit patterns, fix import errors, implement missing methods"
-    
-  18:
-    name: "Implement greeting routes"
-    action: "implement"
-    file: "src/api/welcome/features/greeting/greeting.routes.ts"
-    status: "completed"
-    notes: "Add Express routes with validation"
-    validate_success: "Express router exported with routes matching contract endpoints"
-    on_success: "npm run context complete 'Implement greeting routes'"
-    on_failure: "Review Express routing, fix validation middleware, ensure route exports"
-    
-  19:
-    name: "Validate greeting feature"
-    command: "npm run validate app:api welcome/greeting"
-    status: "completed"
-    validate_success: "Command exits with code 0 and shows validation success"
-    on_success: "npm run context complete 'Validate greeting feature'"
-    on_failure: "Review validation errors, fix contract issues, ensure all files implemented correctly"
-    
-  20:
-    name: "Test greeting feature"
-    command: "npm run test app:api welcome/greeting -- --unittest"
-    status: "pending"
-    notes: "Ensure 95% test coverage before proceeding"
-    validate_success: "Tests pass with >=95% coverage and no failures"
-    on_success: "npm run context complete 'Test greeting feature'"
-    on_failure: "Fix failing tests, add missing test cases, ensure 95% coverage"
-    
-  21:
-    name: "Commit greeting feature"
-    command: "npm run git commit welcome -- --message='implement greeting feature'"
-    status: "completed"
-    notes: "Commit completed greeting feature with validation"
-    validate_success: "Git commit succeeds and shows commit hash"
-    on_success: "npm run context complete 'Commit greeting feature'"
-    on_failure: "Review git status, fix validation errors, ensure clean working directory, retry commit"
+    on_failure: 'Check app exists, fix naming issues, retry generation'
 
+  15:
+    name: 'Implement greeting contract'
+    action: 'implement'
+    file: 'src/api/helloworld/features/greeting/greeting.index.ts'
+    status: pending
+    notes: 'Define VoilaFeatureContract with API endpoints'
+    validate_success: 'VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections'
+    on_success: "npm run context complete 'Implement greeting contract'"
+    on_failure: 'Review VoilaFeatureContract interface, fix syntax errors, add required fields'
+
+  16:
+    name: 'Implement greeting types'
+    action: 'implement'
+    file: 'src/api/helloworld/features/greeting/greeting.types.ts'
+    status: pending
+    notes: 'Add Zod schemas and TypeScript interfaces'
+    validate_success: 'Zod schemas defined and TypeScript types exported for request/response'
+    on_success: "npm run context complete 'Implement greeting types'"
+    on_failure: 'Review Zod documentation, fix schema validation, ensure type exports'
+
+  17:
+    name: 'Implement greeting services'
+    action: 'implement'
+    file: 'src/api/helloworld/features/greeting/greeting.services.ts'
+    status: pending
+    notes: 'Add business logic with AppKit integration'
+    validate_success: 'Service class exported with methods matching contract endpoints'
+    on_success: "npm run context complete 'Implement greeting services'"
+    on_failure: 'Review AppKit patterns, fix import errors, implement missing methods'
+
+  18:
+    name: 'Implement greeting routes'
+    action: 'implement'
+    file: 'src/api/helloworld/features/greeting/greeting.routes.ts'
+    status: pending
+    notes: 'Add Express routes with validation'
+    validate_success: 'Express router exported with routes matching contract endpoints'
+    on_success: "npm run context complete 'Implement greeting routes'"
+    on_failure: 'Review Express routing, fix validation middleware, ensure route exports'
+
+  19:
+    name: 'Validate greeting feature'
+    command: 'npm run validate app:api helloworld/greeting'
+    status: pending
+    validate_success: 'Command exits with code 0 and shows validation success'
+    on_success: "npm run context complete 'Validate greeting feature'"
+    on_failure: 'Review validation errors, fix contract issues, ensure all files implemented correctly'
+
+  20:
+    name: 'Test greeting feature'
+    command: 'npm run test app:api helloworld/greeting -- --unittest'
+    status: pending
+    notes: 'Ensure 95% test coverage before proceeding'
+    validate_success: 'Tests pass with >=95% coverage and no failures'
+    on_success: "npm run context complete 'Test greeting feature'"
+    on_failure: 'Fix failing tests, add missing test cases, ensure 95% coverage'
+
+  21:
+    name: 'Commit greeting feature'
+    command: "npm run git commit helloworld -- --message='implement greeting feature'"
+    status: pending
+    notes: 'Commit completed greeting feature with validation'
+    validate_success: 'Git commit succeeds and shows commit hash'
+    on_success: "npm run context complete 'Commit greeting feature'"
+    on_failure: 'Review git status, fix validation errors, ensure clean working directory, retry commit'
 
   22:
-    name: "Full app validation"
-    command: "npm run validate app:api welcome"
-    status: "completed"
-    validate_success: "All features pass validation with no errors"
-    on_success: "npm run context complete 'Full app validation'"
-    on_failure: "Review validation errors for each feature, fix contracts and implementations"
-    
+    name: 'Generate status feature'
+    command: 'npm run generate app:api helloworld/status'
+    status: pending
+    priority: 'Medium'
+    complexity: 'Low'
+    validate_success: 'Check that src/api/helloworld/features/status/ directory exists with all template files'
+    on_success: "npm run context complete 'Generate status feature'"
+    on_failure: 'Check app exists, fix naming issues, retry generation'
+
   23:
-    name: "Full unit test suite"
-    command: "npm run test app:api welcome -- --unittest"
-    status: "completed"
-    notes: "Run all feature unit tests to ensure 95% coverage"
-    validate_success: "All tests pass with >=95% total coverage"
-    on_success: "npm run context complete 'Full unit test suite'"
-    on_failure: "Fix failing tests, add missing test cases, ensure coverage requirements"
-    
+    name: 'Implement status contract'
+    action: 'implement'
+    file: 'src/api/helloworld/features/status/status.index.ts'
+    status: pending
+    notes: 'Define VoilaFeatureContract with API endpoints'
+    validate_success: 'VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections'
+    on_success: "npm run context complete 'Implement status contract'"
+    on_failure: 'Review VoilaFeatureContract interface, fix syntax errors, add required fields'
+
   24:
-    name: "Generate API test cases"
-    command: "npm run generate app:api welcome -- --testcases"
-    status: "completed"
-    notes: "Generate Excel-based API test cases from specifications"
-    validate_success: "Excel test case file generated successfully in __apitest__ directory"
-    on_success: "npm run context complete 'Generate API test cases'"
-    on_failure: "Check API specification, fix YAML format, ensure endpoints are defined"
-    
+    name: 'Implement status types'
+    action: 'implement'
+    file: 'src/api/helloworld/features/status/status.types.ts'
+    status: pending
+    notes: 'Add Zod schemas and TypeScript interfaces'
+    validate_success: 'Zod schemas defined and TypeScript types exported for request/response'
+    on_success: "npm run context complete 'Implement status types'"
+    on_failure: 'Review Zod documentation, fix schema validation, ensure type exports'
+
   25:
-    name: "Run API integration tests"
-    command: "npm run test app:api welcome -- --apitest"
-    status: "completed"
-    notes: "Execute API tests against running server, verify endpoint behavior"
-    validate_success: "All API tests pass with correct responses and status codes"
-    on_success: "npm run context complete 'Run API integration tests'"
-    on_failure: "Start development server, fix endpoint implementations, verify test cases"
-    
+    name: 'Implement status services'
+    action: 'implement'
+    file: 'src/api/helloworld/features/status/status.services.ts'
+    status: pending
+    notes: 'Add business logic with AppKit integration'
+    validate_success: 'Service class exported with methods matching contract endpoints'
+    on_success: "npm run context complete 'Implement status services'"
+    on_failure: 'Review AppKit patterns, fix import errors, implement missing methods'
+
   26:
-    name: "Run compliance testing"
-    command: "npm run test app:api welcome -- --compliance"
-    status: "completed"
-    notes: "Verify API compliance against requirements, update config with results"
-    validate_success: "Compliance tests pass and config updated with results"
-    on_success: "npm run context complete 'Run compliance testing'"
-    on_failure: "Review compliance requirements, fix API specification, update implementations"
-    
+    name: 'Implement status routes'
+    action: 'implement'
+    file: 'src/api/helloworld/features/status/status.routes.ts'
+    status: pending
+    notes: 'Add Express routes with validation'
+    validate_success: 'Express router exported with routes matching contract endpoints'
+    on_success: "npm run context complete 'Implement status routes'"
+    on_failure: 'Review Express routing, fix validation middleware, ensure route exports'
+
   27:
-    name: "Full test suite validation"
-    command: "npm run test app:api welcome"
-    status: "completed"
-    notes: "Run complete test pipeline: unit + API + compliance"
-    validate_success: "All tests pass: unit tests, API tests, and compliance checks"
-    on_success: "npm run context complete 'Full test suite validation'"
-    on_failure: "Review all test failures, fix issues systematically, ensure all test types pass"
-    
+    name: 'Validate status feature'
+    command: 'npm run validate app:api helloworld/status'
+    status: pending
+    validate_success: 'Command exits with code 0 and shows validation success'
+    on_success: "npm run context complete 'Validate status feature'"
+    on_failure: 'Review validation errors, fix contract issues, ensure all files implemented correctly'
+
   28:
-    name: "Update README documentation"
-    action: "implement"
-    file: "src/api/welcome/welcome.readme.md"
-    status: "completed"
-    notes: "Update README with API documentation, endpoints, and usage examples"
-    validate_success: "README contains complete API documentation with examples and usage instructions"
-    on_success: "npm run context complete 'Update README documentation'"
-    on_failure: "Review API endpoints, add usage examples, include setup and testing instructions"
-    
+    name: 'Test status feature'
+    command: 'npm run test app:api helloworld/status -- --unittest'
+    status: pending
+    notes: 'Ensure 95% test coverage before proceeding'
+    validate_success: 'Tests pass with >=95% coverage and no failures'
+    on_success: "npm run context complete 'Test status feature'"
+    on_failure: 'Fix failing tests, add missing test cases, ensure 95% coverage'
+
   29:
-    name: "Commit welcome app"
-    command: "npm run git commit welcome"
-    status: "completed"
-    notes: "Commit completed app with validation"
-    validate_success: "Git commit succeeds with conventional commit message"
-    on_success: "npm run context complete 'Commit welcome app'"
-    on_failure: "Review git status, fix validation issues, ensure clean commit"
-    
+    name: 'Commit status feature'
+    command: "npm run git commit helloworld -- --message='implement status feature'"
+    status: pending
+    notes: 'Commit completed status feature with validation'
+    validate_success: 'Git commit succeeds and shows commit hash'
+    on_success: "npm run context complete 'Commit status feature'"
+    on_failure: 'Review git status, fix validation errors, ensure clean working directory, retry commit'
+
   30:
-    name: "Push welcome app for PR"
-    command: "npm run git push welcome"
-    status: "pending"
-    notes: "Push app branch for Pull Request creation"
-    validate_success: "Branch pushed successfully to remote repository"
-    on_success: "npm run context complete 'Push welcome app for PR'"
-    on_failure: "Check remote repository access, resolve merge conflicts, retry push"
-    
+    name: 'Full app validation'
+    command: 'npm run validate app:api helloworld'
+    status: pending
+    validate_success: 'All features pass validation with no errors'
+    on_success: "npm run context complete 'Full app validation'"
+    on_failure: 'Review validation errors for each feature, fix contracts and implementations'
+
   31:
-    name: "Create Pull Request"
-    action: "manual"
-    status: "completed"
-    notes: "Create PR via GitHub/GitLab: dev/[username]-welcome → development"
-    validate_success: "Pull Request created successfully with proper title and description"
+    name: 'Full unit test suite'
+    command: 'npm run test app:api helloworld -- --unittest'
+    status: pending
+    notes: 'Run all feature unit tests to ensure 95% coverage'
+    validate_success: 'All tests pass with >=95% total coverage'
+    on_success: "npm run context complete 'Full unit test suite'"
+    on_failure: 'Fix failing tests, add missing test cases, ensure coverage requirements'
+
+  32:
+    name: 'Generate API test cases'
+    command: 'npm run generate app:api helloworld -- --testcases'
+    status: pending
+    notes: 'Generate Excel-based API test cases from specifications'
+    validate_success: 'Excel test case file generated successfully in __apitest__ directory'
+    on_success: "npm run context complete 'Generate API test cases'"
+    on_failure: 'Check API specification, fix YAML format, ensure endpoints are defined'
+
+  33:
+    name: 'Run API integration tests'
+    command: 'npm run test app:api helloworld -- --apitest'
+    status: pending
+    notes: 'Execute API tests against running server, verify endpoint behavior'
+    validate_success: 'All API tests pass with correct responses and status codes'
+    on_success: "npm run context complete 'Run API integration tests'"
+    on_failure: 'Start development server, fix endpoint implementations, verify test cases'
+
+  34:
+    name: 'Run compliance testing'
+    command: 'npm run test app:api helloworld -- --compliance'
+    status: pending
+    notes: 'Verify API compliance against requirements, update config with results'
+    validate_success: 'Compliance tests pass and config updated with results'
+    on_success: "npm run context complete 'Run compliance testing'"
+    on_failure: 'Review compliance requirements, fix API specification, update implementations'
+
+  35:
+    name: 'Full test suite validation'
+    command: 'npm run test app:api helloworld'
+    status: pending
+    notes: 'Run complete test pipeline: unit + API + compliance'
+    validate_success: 'All tests pass: unit tests, API tests, and compliance checks'
+    on_success: "npm run context complete 'Full test suite validation'"
+    on_failure: 'Review all test failures, fix issues systematically, ensure all test types pass'
+
+  36:
+    name: 'Update README documentation'
+    action: 'implement'
+    file: 'src/api/helloworld/helloworld.readme.md'
+    status: pending
+    notes: 'Update README with API documentation, endpoints, and usage examples'
+    validate_success: 'README contains complete API documentation with examples and usage instructions'
+    on_success: "npm run context complete 'Update README documentation'"
+    on_failure: 'Review API endpoints, add usage examples, include setup and testing instructions'
+
+  37:
+    name: 'Commit helloworld app'
+    command: 'npm run git commit helloworld'
+    status: pending
+    notes: 'Commit completed app with validation'
+    validate_success: 'Git commit succeeds with conventional commit message'
+    on_success: "npm run context complete 'Commit helloworld app'"
+    on_failure: 'Review git status, fix validation issues, ensure clean commit'
+
+  38:
+    name: 'Push helloworld app for PR'
+    command: 'npm run git push helloworld'
+    status: pending
+    notes: 'Push app branch for Pull Request creation'
+    validate_success: 'Branch pushed successfully to remote repository'
+    on_success: "npm run context complete 'Push helloworld app for PR'"
+    on_failure: 'Check remote repository access, resolve merge conflicts, retry push'
+
+  39:
+    name: 'Create Pull Request'
+    action: 'manual'
+    status: pending
+    notes: 'Create PR via GitHub/GitLab: dev/[username]-helloworld → development'
+    validate_success: 'Pull Request created successfully with proper title and description'
     on_success: "npm run context complete 'Create Pull Request'"
-    on_failure: "Check repository permissions, ensure branch is pushed, create PR manually via web interface"
+    on_failure: 'Check repository permissions, ensure branch is pushed, create PR manually via web interface'
 
 # Git workflow integration
 git_workflow:
-  branch_structure: "main → development → dev/username-appname"
-  branch_strategy: "single app branch: dev/username-appname"
-  commit_strategy: "progressive commits per feature, push for PR to development"
-  validation_gates: "before every commit and push"
-  pr_target: "dev/username-appname → development"
-  
+  branch_structure: 'main → development → dev/username-appname'
+  branch_strategy: 'single app branch: dev/username-appname'
+  commit_strategy: 'progressive commits per feature, push for PR to development'
+  validation_gates: 'before every commit and push'
+  pr_target: 'dev/username-appname → development'
+
 # User customizations
-user_notes: "Generated from technical specification. Customize as needed."
+user_notes: 'Generated from technical specification. Customize as needed.'

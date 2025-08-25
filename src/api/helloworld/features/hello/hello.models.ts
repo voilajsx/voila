@@ -1,7 +1,7 @@
 /**
  * hello feature database models and data persistence
- * @module demo/hello
- * @file src/api/demo/features/hello/hello.models.ts
+ * @module helloworld/hello
+ * @file src/api/helloworld/features/hello/hello.models.ts
  * 
  * @llm-rule WHEN: hello feature needs database interaction or data persistence
  * @llm-rule AVOID: Using this file for API types - use hello.types.ts instead

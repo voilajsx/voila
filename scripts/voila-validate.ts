@@ -11,10 +11,70 @@
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { spawn } from 'child_process';
+import { readdirSync, statSync, existsSync } from 'fs';
+import fs from 'fs';
 import { validateContracts } from '../src/lib/contracts.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Helper function to calculate Levenshtein distance for typo detection
+
+// Find available apps and features
+function getAvailableAppsAndFeatures(apiPath: string): { apps: string[], features: Record<string, string[]> } {
+  const apps: string[] = [];
+  const features: Record<string, string[]> = {};
+  
+  if (!existsSync(apiPath)) {
+    return { apps, features };
+  }
+  
+  try {
+    const items = readdirSync(apiPath);
+    
+    for (const item of items) {
+      const itemPath = join(apiPath, item);
+      if (statSync(itemPath).isDirectory()) {
+        apps.push(item);
+        
+        // Look for features in this app
+        const featuresPath = join(itemPath, 'features');
+        if (existsSync(featuresPath)) {
+          try {
+            const featureItems = readdirSync(featuresPath);
+            features[item] = featureItems.filter(f => {
+              const featurePath = join(featuresPath, f);
+              return statSync(featurePath).isDirectory();
+            });
+          } catch (e) {
+            features[item] = [];
+          }
+        } else {
+          features[item] = [];
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore errors
+  }
+  
+  return { apps, features };
+}
+
+// Suggest corrections for typos
+function suggestCorrections(input: string, availableOptions: string[], maxSuggestions = 3): string[] {
+  const suggestions = availableOptions
+    .map(option => ({
+      option,
+      distance: levenshteinDistance(input.toLowerCase(), option.toLowerCase())
+    }))
+    .filter(({ distance }) => distance <= Math.max(2, Math.floor(input.length * 0.4))) // Allow up to 40% character differences
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, maxSuggestions)
+    .map(({ option }) => option);
+    
+  return suggestions;
+}
 
 async function main() {
   const args = process.argv.slice(2);
@@ -73,7 +133,10 @@ async function validateApp(appName?: string, featureName?: string) {
 
   // Step 1: Contract Validation
   console.log('📋 Step 1: Contract Validation');
-  const contractResult = await validateContracts(apiPath, appName, featureName);
+  
+  let contractResult: any;
+  try {
+    contractResult = await validateContracts(apiPath, appName, featureName);
   
   if (!contractResult.success) {
     allValidationsPassed = false;
@@ -81,13 +144,62 @@ async function validateApp(appName?: string, featureName?: string) {
     totalWarnings += contractResult.warnings.length;
     
     console.log(`❌ Contract validation failed!`);
-    contractResult.errors.forEach(error => {
-      console.log(`   🚫 [${error.feature}] ${error.details}`);
-    });
+    console.log(`   📊 Summary: ${contractResult.errors.length} errors, ${contractResult.warnings.length} warnings\n`);
     
+    // Group errors by type for better readability
+    const errorsByType = contractResult.errors.reduce((acc, error) => {
+      const key = `${error.type}_${error.feature}`;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(error);
+      return acc;
+    }, {} as Record<string, any[]>);
+    
+    // Report errors with detailed context
+    for (const [key, errors] of Object.entries(errorsByType)) {
+      const firstError = errors[0];
+      console.log(`\n   🔍 [${firstError.feature}] ${firstError.type.toUpperCase()} ISSUES (${errors.length}):`);
+      
+      if (firstError.type === 'missing_test') {
+        console.log(`      📝 Contract expects these tests, but they're not implemented:`);
+        const uniqueTests = [...new Set(errors.map(e => e.details.replace('Contract test not implemented: "', '').replace('"', '')))];
+        uniqueTests.forEach(test => console.log(`         • "${test}"`));
+        console.log(`      💡 Add these test cases to your .test.ts file`);
+        console.log(`      📁 Test file: src/api/${appName}/features/${firstError.feature}/${firstError.feature}.test.ts`);
+      }
+      
+      else if (firstError.type === 'missing_file') {
+        const uniqueErrors = [...new Set(errors.map(e => e.details))];
+        uniqueErrors.forEach(detail => {
+          console.log(`      🚫 ${detail}`);
+          if (detail.includes('Route file not found')) {
+            const expectedPath = detail.replace('Route file not found: ', '');
+            const actualPath = expectedPath.replace(`/${appName}/`, `/${appName}/features/`);
+            console.log(`      📍 Expected: ${expectedPath}`);
+            console.log(`      📍 Actual:   ${actualPath}`);
+            console.log(`      💡 This looks like a validator bug - file exists but wrong path expected`);
+          }
+          else if (detail.includes('missing @llm-rule comment')) {
+            console.log(`      💡 Add @llm-rule WHEN/AVOID/NOTE comments to methods and file headers`);
+          }
+        });
+      }
+      
+      else {
+        // Generic error reporting
+        const uniqueErrors = [...new Set(errors.map(e => e.details))];
+        uniqueErrors.forEach(detail => console.log(`      🚫 ${detail}`));
+      }
+    }
+    
+    // Report warnings with context  
     if (contractResult.warnings.length > 0) {
-      contractResult.warnings.forEach(warning => {
-        console.log(`   ⚠️  [${warning.feature}] ${warning.details}`);
+      console.log(`\n   ⚠️  WARNINGS (${contractResult.warnings.length}):`);
+      const uniqueWarnings = [...new Set(contractResult.warnings.map(w => w.details))];
+      uniqueWarnings.forEach(detail => {
+        console.log(`      ⚠️  ${detail}`);
+        if (detail.includes('declared in dependencies but not found')) {
+          console.log(`      💡 This is likely due to the path resolution bug mentioned above`);
+        }
       });
     }
   } else {
@@ -96,35 +208,133 @@ async function validateApp(appName?: string, featureName?: string) {
     console.log(`   Features: ${contractResult.stats.features}`);
     console.log(`   Endpoints: ${contractResult.stats.endpoints}`);
   }
+  
+  } catch (error: any) {
+    // Simple error handling - just check if folder exists
+    allValidationsPassed = false;
+    totalErrors += 1;
+    
+    // Set default contractResult for scope access
+    contractResult = {
+      success: false,
+      errors: [],
+      warnings: [],
+      stats: { apps: 0, features: 0, endpoints: 0 }
+    };
+    
+    console.log(`❌ Contract validation failed!`);
+    console.log(`   📊 Summary: 1 errors, 0 warnings\n`);
+    
+    // Simple check - if app/feature specified, check if folder exists
+    if (appName) {
+      const appPath = join(apiPath, appName);
+      
+      if (!fs.existsSync(appPath)) {
+        console.log(`   🔍 [system] FOLDER_MISSING ISSUES (1):`);
+        console.log(`      📁 App folder missing: ${appPath}`);
+        console.log(`      💡 Create the app folder first: mkdir -p ${appPath}`);
+      } else if (featureName) {
+        const featurePath = join(appPath, 'features', featureName);
+        if (!fs.existsSync(featurePath)) {
+          console.log(`   🔍 [system] FOLDER_MISSING ISSUES (1):`);
+          console.log(`      📁 Feature folder missing: ${featurePath}`);
+          console.log(`      💡 Create the feature folder first: mkdir -p ${featurePath}`);
+        } else {
+          console.log(`   🔍 [system] VALIDATION_ERROR ISSUES (1):`);
+          console.log(`      🚫 ${error.message}`);
+        }
+      } else {
+        console.log(`   🔍 [system] VALIDATION_ERROR ISSUES (1):`);
+        console.log(`      🚫 ${error.message}`);
+      }
+    } else {
+      console.log(`   🔍 [system] VALIDATION_ERROR ISSUES (1):`);
+      console.log(`      🚫 ${error.message}`);
+    }
+  }
 
   // Step 2: TypeScript Type Checking
   console.log('\n🔍 Step 2: TypeScript Type Checking');
-  const typeCheckResult = await validateTypeScript(apiPath, appName, featureName);
+  let typeCheckResult: ValidationResult;
   
-  if (!typeCheckResult.success) {
-    allValidationsPassed = false;
-    totalErrors += typeCheckResult.errors.length;
-    console.log(`❌ TypeScript validation failed!`);
-    typeCheckResult.errors.forEach(error => {
-      console.log(`   🚫 ${error}`);
-    });
+  // If Step 1 failed due to missing folder, skip Step 2
+  if (!contractResult.success && appName) {
+    const appPath = join(apiPath, appName);
+    const featurePath = featureName ? join(appPath, 'features', featureName) : null;
+    
+    if (!fs.existsSync(appPath) || (featureName && !fs.existsSync(featurePath!))) {
+      typeCheckResult = { success: false, errors: ['Target folder not found'] };
+      allValidationsPassed = false;
+      totalErrors += 1;
+      console.log(`❌ TypeScript validation failed!`);
+      console.log(`   🚫 Target folder not found`);
+    } else {
+      typeCheckResult = await validateTypeScript(apiPath, appName, featureName);
+      if (!typeCheckResult.success) {
+        allValidationsPassed = false;
+        totalErrors += typeCheckResult.errors.length;
+        console.log(`❌ TypeScript validation failed!`);
+        typeCheckResult.errors.forEach(error => {
+          console.log(`   🚫 ${error}`);
+        });
+      } else {
+        console.log(`✅ TypeScript validation passed!`);
+      }
+    }
   } else {
-    console.log(`✅ TypeScript validation passed!`);
+    typeCheckResult = await validateTypeScript(apiPath, appName, featureName);
+    if (!typeCheckResult.success) {
+      allValidationsPassed = false;
+      totalErrors += typeCheckResult.errors.length;
+      console.log(`❌ TypeScript validation failed!`);
+      typeCheckResult.errors.forEach(error => {
+        console.log(`   🚫 ${error}`);
+      });
+    } else {
+      console.log(`✅ TypeScript validation passed!`);
+    }
   }
 
   // Step 3: Syntax and Import Validation
   console.log('\n⚙️  Step 3: Syntax and Import Validation');
-  const syntaxResult = await validateSyntax(apiPath, appName, featureName);
+  let syntaxResult: ValidationResult;
   
-  if (!syntaxResult.success) {
-    allValidationsPassed = false;
-    totalErrors += syntaxResult.errors.length;
-    console.log(`❌ Syntax validation failed!`);
-    syntaxResult.errors.forEach(error => {
-      console.log(`   🚫 ${error}`);
-    });
+  // If Step 1 failed due to missing folder, skip Step 3
+  if (!contractResult.success && appName) {
+    const appPath = join(apiPath, appName);
+    const featurePath = featureName ? join(appPath, 'features', featureName) : null;
+    
+    if (!fs.existsSync(appPath) || (featureName && !fs.existsSync(featurePath!))) {
+      syntaxResult = { success: false, errors: ['Target folder not found'] };
+      allValidationsPassed = false;
+      totalErrors += 1;
+      console.log(`❌ Syntax validation failed!`);
+      console.log(`   🚫 Target folder not found`);
+    } else {
+      syntaxResult = await validateSyntax(apiPath, appName, featureName);
+      if (!syntaxResult.success) {
+        allValidationsPassed = false;
+        totalErrors += syntaxResult.errors.length;
+        console.log(`❌ Syntax validation failed!`);
+        syntaxResult.errors.forEach(error => {
+          console.log(`   🚫 ${error}`);
+        });
+      } else {
+        console.log(`✅ Syntax validation passed!`);
+      }
+    }
   } else {
-    console.log(`✅ Syntax validation passed!`);
+    syntaxResult = await validateSyntax(apiPath, appName, featureName);
+    if (!syntaxResult.success) {
+      allValidationsPassed = false;
+      totalErrors += syntaxResult.errors.length;
+      console.log(`❌ Syntax validation failed!`);
+      syntaxResult.errors.forEach(error => {
+        console.log(`   🚫 ${error}`);
+      });
+    } else {
+      console.log(`✅ Syntax validation passed!`);
+    }
   }
 
   // Final Result

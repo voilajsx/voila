@@ -1,8 +1,8 @@
-# demo API
+# helloworld API
 
 ## Overview
 
-The demo API provides [brief description of the API's purpose and functionality].
+The helloworld API provides [brief description of the API's purpose and functionality].
 
 ## Features
 
@@ -24,30 +24,30 @@ This API includes the following features:
    npm run dev:api
    ```
 
-2. The API will be available at `http://localhost:3000/api/demo`
+2. The API will be available at `http://localhost:3000/api/helloworld`
 
 ### Testing
 
 Run unit tests:
 ```bash
-npm run test unit:run demo
+npm run test unit:run helloworld
 ```
 
 Run API tests:
 ```bash
-npm run test api:run demo
+npm run test api:run helloworld
 ```
 
 Run all tests:
 ```bash
-npm run test all demo
+npm run test all helloworld
 ```
 
 ## API Documentation
 
 ### Base URL
-- Development: `http://localhost:3000/api/demo`
-- Production: `https://your-domain.com/api/demo`
+- Development: `http://localhost:3000/api/helloworld`
+- Production: `https://your-domain.com/api/helloworld`
 
 ### Endpoints
 
@@ -55,16 +55,16 @@ npm run test all demo
 
 ## Configuration
 
-The API behavior can be configured through `demo.config.json`.
+The API behavior can be configured through `helloworld.config.json`.
 
 ## Compliance
 
 This API follows Voila framework compliance standards. Run compliance checks with:
 
 ```bash
-npm run compliance demo
+npm run compliance helloworld
 ```
 
 ## Support
 
-For questions or issues, contact the demo Team.
+For questions or issues, contact the helloworld Team.

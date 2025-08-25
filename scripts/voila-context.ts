@@ -84,15 +84,13 @@ class VoilaWorkflow {
       }
 
       // Mark current step as completed and advance
+      // Fixed regex to match exact step number only, not partial matches
+      const stepPattern = new RegExp(`(^\\s*${workflow.current_step}:[\\s\\S]*?status: ")pending(")`, 'm');
+      const currentStepPattern = new RegExp(`(current_step: )${workflow.current_step}$`, 'm');
+      
       const updatedContent = workflowContent
-        .replace(
-          new RegExp(`(${workflow.current_step}:[\\s\\S]*?status: ")pending(")`, 'g'),
-          `$1completed$2`
-        )
-        .replace(
-          new RegExp(`(current_step: )${workflow.current_step}`),
-          `$1${workflow.current_step + 1}`
-        );
+        .replace(stepPattern, `$1completed$2`)
+        .replace(currentStepPattern, `$1${workflow.current_step + 1}`);
 
       fs.writeFileSync(workflowPath, updatedContent);
       
@@ -102,6 +100,49 @@ class VoilaWorkflow {
       return true;
     } catch (error) {
       console.log(`❌ Error updating workflow: ${error}`);
+      return false;
+    }
+  }
+
+  static gotoStep(targetStepNumber: number): boolean {
+    try {
+      const workflowPath = path.join(__dirname, '..', VoilaWorkflow.WORKFLOW_FILE);
+      
+      if (!fs.existsSync(workflowPath)) {
+        console.log('❌ No workflow found');
+        return false;
+      }
+
+      const workflowContent = fs.readFileSync(workflowPath, 'utf-8');
+      const workflow = parseWorkflowYAML(workflowContent);
+      
+      // Validate that target step exists
+      if (!workflow.steps[targetStepNumber]) {
+        console.log(`❌ Step ${targetStepNumber} does not exist`);
+        console.log(`   Available steps: 1-${Object.keys(workflow.steps).length}`);
+        return false;
+      }
+
+      // Update current_step to target
+      const currentStepPattern = new RegExp(`(current_step: )\\d+`, 'm');
+      let updatedContent = workflowContent.replace(currentStepPattern, `$1${targetStepNumber}`);
+
+      // Reset target step and all future steps to pending (Option 1: Reset Future Steps)
+      for (let stepNum = targetStepNumber; stepNum <= Object.keys(workflow.steps).length; stepNum++) {
+        if (workflow.steps[stepNum]) {
+          const stepPattern = new RegExp(`(^\\s*${stepNum}:[\\s\\S]*?status: )['"]*\\w+['"]*`, 'm');
+          updatedContent = updatedContent.replace(stepPattern, `$1pending`);
+        }
+      }
+
+      fs.writeFileSync(workflowPath, updatedContent);
+      
+      // Log the step jump
+      VoilaWorkflow.logAction('step_goto', `Jumped to Step ${targetStepNumber}: Reset steps ${targetStepNumber}+ to pending`);
+      
+      return true;
+    } catch (error) {
+      console.log(`❌ Error jumping to step: ${error}`);
       return false;
     }
   }
@@ -598,15 +639,15 @@ function parseWorkflowYAML(content: string): WorkflowData {
         status: 'pending'
       };
     } else if (currentStep && trimmed.includes('name:')) {
-      currentStep.name = trimmed.split('name:')[1]?.trim().replace(/"/g, '') || '';
+      currentStep.name = trimmed.split('name:')[1]?.trim().replace(/['"]/g, '') || '';
     } else if (currentStep && trimmed.includes('status:')) {
-      currentStep.status = trimmed.split('status:')[1]?.trim().replace(/"/g, '') as 'pending' | 'in_progress' | 'completed';
+      currentStep.status = trimmed.split('status:')[1]?.trim().replace(/['"]/g, '') as 'pending' | 'in_progress' | 'completed';
     } else if (currentStep && trimmed.includes('command:')) {
-      currentStep.command = trimmed.split('command:')[1]?.trim().replace(/"/g, '');
+      currentStep.command = trimmed.split('command:')[1]?.trim().replace(/['"]/g, '');
     } else if (currentStep && trimmed.includes('file:')) {
-      currentStep.file = trimmed.split('file:')[1]?.trim().replace(/"/g, '');
+      currentStep.file = trimmed.split('file:')[1]?.trim().replace(/['"]/g, '');
     } else if (currentStep && trimmed.includes('action:')) {
-      currentStep.action = trimmed.split('action:')[1]?.trim().replace(/"/g, '');
+      currentStep.action = trimmed.split('action:')[1]?.trim().replace(/['"]/g, '');
     }
   }
   
@@ -685,6 +726,38 @@ async function provideContext(contextType: string): Promise<void> {
         console.log('   Run `npm run context status` to check workflow state');
       }
       
+      return;
+      
+    case 'goto':
+    case 'jump':
+      const targetStep = parseInt(process.argv[3]);
+      if (!targetStep || isNaN(targetStep)) {
+        console.log('❌ Please specify a valid step number:');
+        console.log('');
+        console.log('USAGE:');
+        console.log('   npm run context goto 10');
+        console.log('   npm run context goto 5');
+        console.log('');
+        console.log('💡 Use `npm run context status` to see available steps');
+        return;
+      }
+      
+      console.log('🎯 Step Navigation');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      
+      const gotoSuccess = VoilaWorkflow.gotoStep(targetStep);
+      if (gotoSuccess) {
+        console.log(`✅ Jumped to step ${targetStep}`);
+        console.log('📝 Reset future steps to pending');
+        console.log('');
+        console.log('🎯 Next Steps:');
+        console.log('   1. Run `npm run context status` to see updated progress');
+        console.log('   2. Run `npm run context next` to see current action');
+      } else {
+        console.log(`❌ Failed to jump to step ${targetStep}`);
+        console.log('   Check that step number exists in workflow');
+        console.log('   Run `npm run context status` to see available steps');
+      }
       return;
       
     case 'reset':
@@ -909,6 +982,7 @@ PROJECT MANAGEMENT:
   status             - Show project state, progress & next steps
   next               - Get next action to execute  
   complete <action>  - Mark action done and advance
+  goto <step>        - Jump to specific step, reset future steps to pending
   reset              - Fresh start for new project
 
 EXAMPLES:
@@ -919,6 +993,7 @@ EXAMPLES:
   npm run context status
   npm run context next
   npm run context complete "implement greeting feature"
+  npm run context goto 10
   npm run context reset
 
 THE MAGIC: Perfect LLM session continuity - never lose context again!

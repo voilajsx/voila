@@ -17,8 +17,8 @@ const {{FEATURE_NAME_PASCAL}}FeatureContract: VoilaFeatureContract = createFeatu
   name: '{{FEATURE_NAME}}',
   app: '{{APP_NAME}}',
   description: '{{FEATURE_NAME_PASCAL}} feature for {{APP_NAME}} application with modern API patterns',
-  contract_validation: 'none', // strict | basic | none
-  llm_comments: 'none', // strict | basic | none
+  contract_validation: 'strict', // strict | basic | none
+  llm_comments: 'strict', // strict | basic | none
   
   // === API DEFINITION ===
   api: {
