@@ -1,6 +1,6 @@
 # Generated workflow from welcome-technical-specification-v1.md
 project: welcome
-current_step: 13
+current_step: 22
 created_from: "docs/planning/welcome/welcome-technical-specification-v1.md"
 last_updated: "2025-08-25T06:19:18.682Z"
 
@@ -135,7 +135,7 @@ steps:
   13:
     name: "Commit hello feature"
     command: "npm run git commit welcome -- --message='implement hello feature'"
-    status: "pending"
+    status: "completed"
     notes: "Commit completed hello feature with validation"
     validate_success: "Git commit succeeds and shows commit hash"
     on_success: "npm run context complete 'Commit hello feature'"
@@ -145,7 +145,7 @@ steps:
   14:
     name: "Generate greet feature"
     command: "npm run generate app:api welcome/greet"
-    status: "pending"
+    status: "completed"
     priority: "High"
     complexity: "Medium"
     validate_success: "Check that src/api/welcome/features/greet/ directory exists with all template files"
@@ -156,7 +156,7 @@ steps:
     name: "Implement greet contract"
     action: "implement"
     file: "src/api/welcome/features/greet/greet.index.ts"
-    status: "pending"
+    status: "completed"
     notes: "Define VoilaFeatureContract with API endpoints"
     validate_success: "VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections"
     on_success: "npm run context complete 'Implement greet contract'"
@@ -166,7 +166,7 @@ steps:
     name: "Implement greet types"
     action: "implement"
     file: "src/api/welcome/features/greet/greet.types.ts"
-    status: "pending"
+    status: "completed"
     notes: "Add Zod schemas and TypeScript interfaces"
     validate_success: "Zod schemas defined and TypeScript types exported for request/response"
     on_success: "npm run context complete 'Implement greet types'"
@@ -176,7 +176,7 @@ steps:
     name: "Implement greet services"
     action: "implement"
     file: "src/api/welcome/features/greet/greet.services.ts"
-    status: "pending"
+    status: "completed"
     notes: "Add business logic with AppKit integration"
     validate_success: "Service class exported with methods matching contract endpoints"
     on_success: "npm run context complete 'Implement greet services'"
@@ -186,7 +186,7 @@ steps:
     name: "Implement greet routes"
     action: "implement"
     file: "src/api/welcome/features/greet/greet.routes.ts"
-    status: "pending"
+    status: "completed"
     notes: "Add Express routes with validation"
     validate_success: "Express router exported with routes matching contract endpoints"
     on_success: "npm run context complete 'Implement greet routes'"
@@ -195,7 +195,7 @@ steps:
   19:
     name: "Skim greet feature"
     command: "npm run validate app:api welcome/greet -- --skim"
-    status: "pending"
+    status: "completed"
     validate_success: "Command exits with code 0 and shows validation success"
     on_success: "npm run context complete 'Skim greet feature'"
     on_failure: "Review validation errors, fix TypeScript and syntax issues"
@@ -204,7 +204,7 @@ steps:
     name: "Implement greet tests"
     action: "implement"
     file: "src/api/welcome/features/greet/greet.test.ts"
-    status: "pending"
+    status: "completed"
     notes: "Write unit tests matching contract requirements"
     validate_success: "Test file contains tests matching contract test declarations"
     on_success: "npm run context complete 'Implement greet tests'"
@@ -213,7 +213,7 @@ steps:
   21:
     name: "Run greet tests"
     command: "npm run test app:api welcome/greet -- --unittest"
-    status: "pending"
+    status: "completed"
     notes: "Ensure 95% test coverage before proceeding"
     validate_success: "Tests pass with >=95% coverage and no failures"
     on_success: "npm run context complete 'Run greet tests'"

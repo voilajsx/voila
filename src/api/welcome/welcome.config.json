@@ -15,6 +15,15 @@
         "production"
       ],
       "description": "Hello feature for welcome application"
+    },
+    "greet": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Greet feature for welcome application"
     }
   },
   "metadata": {

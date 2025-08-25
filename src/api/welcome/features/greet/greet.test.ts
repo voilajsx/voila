@@ -1,9 +1,9 @@
 /**
- * hello feature unit tests
- * @module helloworld/hello
- * @file src/api/helloworld/features/hello/hello.test.ts
+ * greet feature unit tests
+ * @module welcome/greet
+ * @file src/api/welcome/features/greet/greet.test.ts
  * 
- * @llm-rule WHEN: Testing hello service endpoints with mocked AppKit dependencies
+ * @llm-rule WHEN: Testing greet service endpoints with mocked AppKit dependencies
  * @llm-rule AVOID: Testing with real AppKit instances - use mocks for isolation
  * @llm-rule NOTE: Uses supertest for HTTP testing and vitest for test framework
  */
@@ -58,44 +58,75 @@ vi.mock('@voilajsx/appkit/security', () => ({
 }));
 
 // Import after mocking
-import helloRoutes from './hello.routes.js';
+import greetRoutes from './greet.routes.js';
 
-describe('Hello Feature', () => {
+describe('Greet Feature', () => {
   let app: express.Application;
 
   beforeEach(() => {
     app = express();
     app.use(express.json());
-    app.use('/hello', helloRoutes);
+    app.use('/greet', greetRoutes);
   });
 
-  describe('GET /hello', () => {
-    it('should return Hello World message', async () => {
+  describe('GET /greet', () => {
+    it('should return default greeting from welcome/greet', async () => {
       const response = await request(app)
-        .get('/hello')
+        .get('/greet')
         .expect(200);
 
       expect(response.body).toMatchObject({
         success: true,
         data: {
-          message: 'Hello World'
+          message: 'Hello from welcome/greet!',
+          app: 'welcome',
+          feature: 'greet',
+          name: 'World',
+          version: '1.0.0',
+          requestId: 'test-uuid-1234'
         }
       });
+
+      expect(response.body.data.timestamp).toBeDefined();
     });
 
-    it('should return JSON response with success true', async () => {
+    it('should include proper headers', async () => {
       const response = await request(app)
-        .get('/hello')
+        .get('/greet')
         .expect(200);
 
-      expect(response.body.success).toBe(true);
       expect(response.headers['content-type']).toMatch(/application\/json/);
     });
+  });
 
-    it('should respond with status 200', async () => {
-      await request(app)
-        .get('/hello')
+  describe('GET /greet/:name', () => {
+    it('should return personalized greeting from welcome/greet', async () => {
+      const response = await request(app)
+        .get('/greet/Alice')
         .expect(200);
+
+      expect(response.body).toMatchObject({
+        success: true,
+        data: {
+          message: 'Hello from welcome/greet, Alice!',
+          app: 'welcome',
+          feature: 'greet',
+          name: 'Alice',
+          version: '1.0.0',
+          requestId: 'test-uuid-1234'
+        }
+      });
+
+      expect(response.body.data.timestamp).toBeDefined();
+    });
+
+    it('should handle names with special characters', async () => {
+      const response = await request(app)
+        .get('/greet/José')
+        .expect(200);
+
+      expect(response.body.data.name).toBe('José');
+      expect(response.body.data.message).toContain('José');
     });
   });
 });

@@ -14,7 +14,7 @@ import { HelloService } from './hello.services.js';
 const router = express.Router();
 
 // GET /api/welcome/hello - Hello world greeting
-router.get('/hello', async (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
     const result = await HelloService.getHelloWorld();
     res.json(result);

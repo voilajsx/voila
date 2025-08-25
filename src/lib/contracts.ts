@@ -312,6 +312,20 @@ export class VoilaContractRegistry {
         }
       });
 
+      // Validate basePath matches feature folder structure
+      if (contract.api?.basePath) {
+        const expectedBasePath = `/api/${contract.app}/${contract.name}`;
+        if (contract.api.basePath !== expectedBasePath) {
+          errors.push({
+            type: 'invalid_endpoint',
+            severity: 'error',
+            feature,
+            details: `BasePath mismatch: expected '${expectedBasePath}' but got '${contract.api.basePath}'. BasePath must match /api/{app}/{feature} pattern.`,
+            suggestions: [`Change basePath to '${expectedBasePath}' in contract`, `Ensure basePath follows /api/{app}/{feature} pattern for consistency`]
+          });
+        }
+      }
+
       // Bidirectional validation if basePath provided and validation level allows
       if (basePath && validationLevel === 'strict') {
         await this.validateImplementationFiles(contract, basePath, errors, warnings);

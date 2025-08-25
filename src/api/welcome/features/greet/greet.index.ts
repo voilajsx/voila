@@ -1,7 +1,7 @@
 /**
- * Hello Feature Contract - Living Documentation & Configuration
- * @module welcome/hello
- * @file src/api/welcome/features/hello/hello.index.ts
+ * Greet Feature Contract - Living Documentation & Configuration
+ * @module welcome/greet
+ * @file src/api/welcome/features/greet/greet.index.ts
  * 
  * @llm-rule WHEN: Defining feature contracts for Voila framework validation
  * @llm-rule AVOID: Changing contract structure without updating validation logic
@@ -12,25 +12,33 @@ import type { VoilaFeatureContract } from '@/lib/contracts.js';
 import { createFeatureContract } from '@/lib/contracts.js';
 
 // ✅ EXPLICIT CONTRACT: Everything about this feature in one place
-const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
+const GreetFeatureContract: VoilaFeatureContract = createFeatureContract({
   // === FEATURE IDENTITY ===
-  name: 'hello',
+  name: 'greet',
   app: 'welcome',
-  description: 'Hello feature for welcome application with modern API patterns',
+  description: 'Greet feature for welcome application with modern API patterns',
   contract_validation: 'none', // strict | basic | none
   llm_comments: 'none', // strict | basic | none
   
   // === API DEFINITION ===
   api: {
-    basePath: '/api/welcome/hello',
+    basePath: '/api/welcome/greet',
     endpoints: [
       {
         method: 'GET',
         path: '/',
-        handler: 'HelloService.getHelloWorld',
-        summary: 'Get hello world greeting message',
+        handler: 'GreetService.getDefault',
+        summary: 'Get default greeting from welcome/greet',
         requestSchema: null,
-        responseSchema: 'HelloResponse'
+        responseSchema: 'GreetResponse'
+      },
+      {
+        method: 'GET',
+        path: '/:name',
+        handler: 'GreetService.greetByName',
+        summary: 'Get personalized greeting from welcome/greet',
+        requestSchema: null,
+        responseSchema: 'GreetResponse'
       }
     ]
   },
@@ -38,21 +46,21 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
   // === DEPENDENCIES (File-specific imports) ===
   dependencies: {
     files: {
-      "hello.services.ts": {
+      "greet.services.ts": {
         appkit: ["util", "logger", "error"],
         external: ["express"]
       },
-      "hello.routes.ts": {
+      "greet.routes.ts": {
         external: ["express"]
       },
-      "hello.types.ts": {
+      "greet.types.ts": {
         external: ["zod"]
       },
-      "hello.models.ts": {
+      "greet.models.ts": {
         appkit: ["database"],
         external: []
       },
-      "hello.test.ts": {
+      "greet.test.ts": {
         external: ["vitest", "supertest"]
       }
     }
@@ -60,10 +68,10 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
 
   // === PROVIDES (What this feature offers to the system) ===
   provides: {
-    services: ['HelloService'],
-    routes: ['/api/welcome/hello'],
-    types: ['HelloResponse'],
-    schemas: ['HelloResponseSchema']
+    services: ['GreetService'],
+    routes: ['/api/welcome/greet', '/api/welcome/greet/:name'],
+    types: ['GreetResponse', 'GreetData', 'GreetRequest'],
+    schemas: ['GreetSchema']
   },
 
   // === CONSUMES (What this feature uses from other parts) ===
@@ -76,11 +84,11 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
 
   // === TESTS ===
   tests: [
-    'should return hello world greeting message',
-    'should include timestamp in response',
-    'should return proper JSON format'
+    'should return default greeting from welcome/greet',
+    'should return personalized greeting from welcome/greet',
+    'should handle names with special characters'
   ]
 });
 
 // ✅ EXPORT: Contract for registration
-export default HelloFeatureContract;
+export default GreetFeatureContract;
