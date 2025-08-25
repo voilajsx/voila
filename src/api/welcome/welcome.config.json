@@ -1,0 +1,24 @@
+{
+  "app": "welcome",
+  "enabled": true,
+  "environments": [
+    "development",
+    "staging",
+    "production"
+  ],
+  "features": {
+    "status": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Status feature for welcome application"
+    }
+  },
+  "metadata": {
+    "owner": "welcome Team",
+    "created": "2025-08-24"
+  }
+}

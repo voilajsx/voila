@@ -238,30 +238,52 @@ function extractWorkflowFromTechSpec(techSpecContent: string, appName: string): 
   // Sort features by dependencies and priority
   const sortedFeatures = sortFeaturesByDependencies(features);
   
-  // Generate YAML workflow
+  // Generate YAML workflow with Claude Code instructions
   let workflowYaml = `# Generated workflow from ${appName}-technical-specification-v1.md
 project: ${appName}
 current_step: 1
 created_from: "docs/planning/${appName}/${appName}-technical-specification-v1.md"
 last_updated: "${new Date().toISOString()}"
 
+# Instructions for Claude Code
+claude_instructions:
+  completion_rule: "ALWAYS run 'npm run context complete '<step name>' immediately after successful step execution"
+  failure_rule: "On failure, do NOT mark as complete. Analyze error and fix before proceeding"
+  validation_rule: "Steps with 'validate_success' field must pass validation before marking complete"
+  general_workflow: |
+    1. Read the step name and command/action
+    2. Execute the command or perform the action
+    3. Check validate_success criteria (if present)
+    4. If successful: run on_success command to mark complete
+    5. If failed: follow on_failure guidance, do NOT mark complete
+    6. Move to next step only after current step is successfully completed
+
 steps:
   1:
     name: "Generate app structure"
     command: "npm run generate app:api ${appName}"
     status: "pending"
+    validate_success: "Check that src/api/${appName}/ directory exists with config, readme, and spec files"
+    on_success: "npm run context complete 'Generate app structure'"
+    on_failure: "Analyze error output, check planning approval, retry command"
     
   2:
     name: "Initialize Git repository"
     command: "npm run git init"
     status: "pending"
     notes: "Initialize git repo, create main/dev branches, add .gitignore"
+    validate_success: "Check that git status works and .git directory exists"
+    on_success: "npm run context complete 'Initialize Git repository'"
+    on_failure: "Check git installation, resolve git config issues, retry"
     
   3:
     name: "Create ${appName} app branch"
     command: "npm run git branch ${appName}"
     status: "pending"
     notes: "Create app branch: dev/[username]-${appName}"
+    validate_success: "Verify branch dev/[username]-${appName} is created and checked out"
+    on_success: "npm run context complete 'Create ${appName} app branch'"
+    on_failure: "Check git status, resolve conflicts, ensure clean working directory, retry"
     
   4:
     name: "Update API specification"
@@ -269,11 +291,17 @@ steps:
     file: "src/api/${appName}/spec/${appName}.api.spec.yml"
     status: "pending"
     notes: "Define all API endpoints from technical specification"
+    validate_success: "Check that spec file contains all endpoints from technical specification"
+    on_success: "npm run context complete 'Update API specification'"
+    on_failure: "Review technical specification, fix YAML syntax, add missing endpoints"
     
   5:
     name: "Validate app structure"
     command: "npm run validate app:api ${appName}"
     status: "pending"
+    validate_success: "Command exits with code 0 and shows 'Validation successful'"
+    on_success: "npm run context complete 'Validate app structure'"
+    on_failure: "Review validation errors, fix contract issues, retry validation"
 
 `;
 
@@ -289,6 +317,9 @@ steps:
     status: "pending"
     priority: "${feature.priority}"
     complexity: "${feature.complexity}"
+    validate_success: "Check that src/api/${appName}/features/${featureName}/ directory exists with all template files"
+    on_success: "npm run context complete 'Generate ${featureName} feature'"
+    on_failure: "Check app exists, fix naming issues, retry generation"
     
   ${stepNumber++}:
     name: "Implement ${featureName} contract"
@@ -296,6 +327,9 @@ steps:
     file: "src/api/${appName}/features/${featureName}/${featureName}.index.ts"
     status: "pending"
     notes: "Define VoilaFeatureContract with API endpoints"
+    validate_success: "VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections"
+    on_success: "npm run context complete 'Implement ${featureName} contract'"
+    on_failure: "Review VoilaFeatureContract interface, fix syntax errors, add required fields"
     
   ${stepNumber++}:
     name: "Implement ${featureName} types"
@@ -303,6 +337,9 @@ steps:
     file: "src/api/${appName}/features/${featureName}/${featureName}.types.ts"
     status: "pending"
     notes: "Add Zod schemas and TypeScript interfaces"
+    validate_success: "Zod schemas defined and TypeScript types exported for request/response"
+    on_success: "npm run context complete 'Implement ${featureName} types'"
+    on_failure: "Review Zod documentation, fix schema validation, ensure type exports"
     
   ${stepNumber++}:
     name: "Implement ${featureName} services"
@@ -310,6 +347,9 @@ steps:
     file: "src/api/${appName}/features/${featureName}/${featureName}.services.ts"
     status: "pending"
     notes: "Add business logic with AppKit integration"
+    validate_success: "Service class exported with methods matching contract endpoints"
+    on_success: "npm run context complete 'Implement ${featureName} services'"
+    on_failure: "Review AppKit patterns, fix import errors, implement missing methods"
     
   ${stepNumber++}:
     name: "Implement ${featureName} routes"
@@ -317,23 +357,35 @@ steps:
     file: "src/api/${appName}/features/${featureName}/${featureName}.routes.ts"
     status: "pending"
     notes: "Add Express routes with validation"
+    validate_success: "Express router exported with routes matching contract endpoints"
+    on_success: "npm run context complete 'Implement ${featureName} routes'"
+    on_failure: "Review Express routing, fix validation middleware, ensure route exports"
     
   ${stepNumber++}:
     name: "Validate ${featureName} feature"
     command: "npm run validate app:api ${appName}/${featureName}"
     status: "pending"
+    validate_success: "Command exits with code 0 and shows validation success"
+    on_success: "npm run context complete 'Validate ${featureName} feature'"
+    on_failure: "Review validation errors, fix contract issues, ensure all files implemented correctly"
     
   ${stepNumber++}:
     name: "Test ${featureName} feature"
     command: "npm run test app:api ${appName}/${featureName} -- --unittest"
     status: "pending"
     notes: "Ensure 95% test coverage before proceeding"
+    validate_success: "Tests pass with >=95% coverage and no failures"
+    on_success: "npm run context complete 'Test ${featureName} feature'"
+    on_failure: "Fix failing tests, add missing test cases, ensure 95% coverage"
     
   ${stepNumber++}:
     name: "Commit ${featureName} feature"
-    command: "npm run git commit ${appName} -- --message=\"implement ${featureName} feature\""
+    command: "npm run git commit ${appName} -- --message='implement ${featureName} feature'"
     status: "pending"
     notes: "Commit completed ${featureName} feature with validation"
+    validate_success: "Git commit succeeds and shows commit hash"
+    on_success: "npm run context complete 'Commit ${featureName} feature'"
+    on_failure: "Review git status, fix validation errors, ensure clean working directory, retry commit"
 
 `;
   });
@@ -344,36 +396,54 @@ steps:
     name: "Full app validation"
     command: "npm run validate app:api ${appName}"
     status: "pending"
+    validate_success: "All features pass validation with no errors"
+    on_success: "npm run context complete 'Full app validation'"
+    on_failure: "Review validation errors for each feature, fix contracts and implementations"
     
   ${stepNumber++}:
     name: "Full unit test suite"
     command: "npm run test app:api ${appName} -- --unittest"
     status: "pending"
     notes: "Run all feature unit tests to ensure 95% coverage"
+    validate_success: "All tests pass with >=95% total coverage"
+    on_success: "npm run context complete 'Full unit test suite'"
+    on_failure: "Fix failing tests, add missing test cases, ensure coverage requirements"
     
   ${stepNumber++}:
     name: "Generate API test cases"
     command: "npm run generate app:api ${appName} -- --testcases"
     status: "pending"
     notes: "Generate Excel-based API test cases from specifications"
+    validate_success: "Excel test case file generated successfully in __apitest__ directory"
+    on_success: "npm run context complete 'Generate API test cases'"
+    on_failure: "Check API specification, fix YAML format, ensure endpoints are defined"
     
   ${stepNumber++}:
     name: "Run API integration tests"
     command: "npm run test app:api ${appName} -- --apitest"
     status: "pending"
     notes: "Execute API tests against running server, verify endpoint behavior"
+    validate_success: "All API tests pass with correct responses and status codes"
+    on_success: "npm run context complete 'Run API integration tests'"
+    on_failure: "Start development server, fix endpoint implementations, verify test cases"
     
   ${stepNumber++}:
     name: "Run compliance testing"
     command: "npm run test app:api ${appName} -- --compliance"
     status: "pending"
     notes: "Verify API compliance against requirements, update config with results"
+    validate_success: "Compliance tests pass and config updated with results"
+    on_success: "npm run context complete 'Run compliance testing'"
+    on_failure: "Review compliance requirements, fix API specification, update implementations"
     
   ${stepNumber++}:
     name: "Full test suite validation"
     command: "npm run test app:api ${appName}"
     status: "pending"
     notes: "Run complete test pipeline: unit + API + compliance"
+    validate_success: "All tests pass: unit tests, API tests, and compliance checks"
+    on_success: "npm run context complete 'Full test suite validation'"
+    on_failure: "Review all test failures, fix issues systematically, ensure all test types pass"
     
   ${stepNumber++}:
     name: "Update README documentation"
@@ -381,24 +451,36 @@ steps:
     file: "src/api/${appName}/${appName}.readme.md"
     status: "pending"
     notes: "Update README with API documentation, endpoints, and usage examples"
+    validate_success: "README contains complete API documentation with examples and usage instructions"
+    on_success: "npm run context complete 'Update README documentation'"
+    on_failure: "Review API endpoints, add usage examples, include setup and testing instructions"
     
   ${stepNumber++}:
     name: "Commit ${appName} app"
     command: "npm run git commit ${appName}"
     status: "pending"
     notes: "Commit completed app with validation"
+    validate_success: "Git commit succeeds with conventional commit message"
+    on_success: "npm run context complete 'Commit ${appName} app'"
+    on_failure: "Review git status, fix validation issues, ensure clean commit"
     
   ${stepNumber++}:
     name: "Push ${appName} app for PR"
     command: "npm run git push ${appName}"
     status: "pending"
     notes: "Push app branch for Pull Request creation"
+    validate_success: "Branch pushed successfully to remote repository"
+    on_success: "npm run context complete 'Push ${appName} app for PR'"
+    on_failure: "Check remote repository access, resolve merge conflicts, retry push"
     
   ${stepNumber++}:
     name: "Create Pull Request"
     action: "manual"
     status: "pending"
     notes: "Create PR via GitHub/GitLab: dev/[username]-${appName} → development"
+    validate_success: "Pull Request created successfully with proper title and description"
+    on_success: "npm run context complete 'Create Pull Request'"
+    on_failure: "Check repository permissions, ensure branch is pushed, create PR manually via web interface"
 
 # Git workflow integration
 git_workflow:

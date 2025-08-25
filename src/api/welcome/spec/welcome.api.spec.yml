@@ -1,0 +1,107 @@
+# welcome.api.spec.yml
+# API Specifications for Welcome Application - Personalized greeting service
+
+version: 1.0.0
+service: welcome-api-backend
+
+specifications:
+
+  # Status Feature - Health check endpoint
+  - id: SPEC-WELCOME-STATUS-001
+    title: Application Status Endpoint
+    description: |
+      Health check endpoint that returns application status and uptime.
+      Response MUST have HTTP status 200 and include status and uptime information.
+    endpoint:
+      method: GET
+      path: /api/welcome/status
+    validations:
+      - status_code: 200
+      - content_type_includes: application/json
+      - body_success_equals: true
+      - body_data_status_equals: "healthy"
+    tests:
+      - id: TC-WELCOME-STATUS-01
+        description: "Verify health check returns status 200"
+        input: {}
+        expected:
+          status_code: 200
+      - id: TC-WELCOME-STATUS-02
+        description: "Verify Content-Type header is application/json"
+        input: {}
+        expected:
+          headers:
+            content-type: application/json
+      - id: TC-WELCOME-STATUS-03
+        description: "Verify response contains healthy status"
+        input: {}
+        expected:
+          body_success_equals: true
+          body_data_status_equals: "healthy"
+
+  # Greeting Feature - Personalized greeting endpoint
+  - id: SPEC-WELCOME-HELLO-001
+    title: Personalized Greeting Endpoint
+    description: |
+      Generates personalized greeting messages using provided names.
+      Accepts name as query parameter and returns formatted greeting.
+      Response MUST be HTTP 200 with personalized greeting message.
+    endpoint:
+      method: GET
+      path: /api/welcome/hello
+    validations:
+      - status_code: 200
+      - content_type_includes: application/json
+      - body_success_equals: true
+      - body_data_message_pattern: "^Hello, .*! Welcome to our service\\.$"
+    tests:
+      - id: TC-WELCOME-HELLO-01
+        description: "Verify greeting with valid name returns status 200"
+        input:
+          query_parameters:
+            name: Alice
+        expected:
+          status_code: 200
+      - id: TC-WELCOME-HELLO-02
+        description: "Verify Content-Type header is application/json"
+        input:
+          query_parameters:
+            name: Alice
+        expected:
+          headers:
+            content-type: application/json
+      - id: TC-WELCOME-HELLO-03
+        description: "Verify response contains personalized greeting"
+        input:
+          query_parameters:
+            name: Alice
+        expected:
+          body_success_equals: true
+          body_data_message_equals: "Hello, Alice! Welcome to our service."
+          body_data_timestamp_exists: true
+
+  # Greeting Feature - Error handling for missing name
+  - id: SPEC-WELCOME-HELLO-ERROR-001
+    title: Greeting Error Handling - Missing Name
+    description: |
+      When no name parameter is provided, endpoint MUST return HTTP 400
+      with appropriate error message indicating name is required.
+    endpoint:
+      method: GET
+      path: /api/welcome/hello
+    validations:
+      - status_code: 400
+      - content_type_includes: application/json
+      - body_success_equals: false
+    tests:
+      - id: TC-WELCOME-HELLO-ERROR-01
+        description: "Verify missing name parameter returns status 400"
+        input: {}
+        expected:
+          status_code: 400
+      - id: TC-WELCOME-HELLO-ERROR-02
+        description: "Verify error response format"
+        input: {}
+        expected:
+          body_success_equals: false
+          body_error_message_contains: "name"
