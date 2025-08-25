@@ -1,27 +1,27 @@
 /**
- * status feature database models and data persistence
- * @module welcome/status
- * @file src/api/welcome/features/status/status.models.ts
+ * hello feature database models and data persistence
+ * @module welcome/hello
+ * @file src/api/welcome/features/hello/hello.models.ts
  * 
- * @llm-rule WHEN: status feature needs database interaction or data persistence
- * @llm-rule AVOID: Using this file for API types - use status.types.ts instead
+ * @llm-rule WHEN: hello feature needs database interaction or data persistence
+ * @llm-rule AVOID: Using this file for API types - use hello.types.ts instead
  * @llm-rule NOTE: Optional file - only create if feature requires database operations
  */
 
 import { databaseClass } from '@voilajsx/appkit/database';
 
 /**
- * Database model for status feature data persistence
+ * Database model for hello feature data persistence
  * Implements VoilaJSX AppKit database patterns with tenant support
  * 
- * @llm-rule WHEN: Need to store status data in database
+ * @llm-rule WHEN: Need to store hello data in database
  * @llm-rule AVOID: Direct database queries - use AppKit database methods
  */
-export class StatusModel {
+export class HelloModel {
   
   /**
-   * Create a new status record in database
-   * @llm-rule WHEN: Persisting status data to database
+   * Create a new hello record in database
+   * @llm-rule WHEN: Persisting hello data to database
    * @llm-rule AVOID: Skipping tenant_id field - required for multi-tenancy
    */
   static async create(data: {
@@ -32,18 +32,18 @@ export class StatusModel {
   }) {
     const database = await databaseClass.get();
     
-    return await database.status.create({
+    return await database.hello.create({
       data: {
         ...data,
         createdAt: new Date(),
-        updatedAt: new Date(),
+        modifiedAt: new Date(),
       }
     });
   }
 
   /**
-   * Find status records by criteria
-   * @llm-rule WHEN: Querying status data from database
+   * Find hello records by criteria
+   * @llm-rule WHEN: Querying hello data from database
    * @llm-rule AVOID: Missing tenant filtering in multi-tenant apps
    */
   static async findMany(criteria: {
@@ -53,7 +53,7 @@ export class StatusModel {
   } = {}) {
     const database = await databaseClass.get();
     
-    return await database.status.findMany({
+    return await database.hello.findMany({
       where: criteria,
       take: criteria.limit || 50,
       orderBy: { createdAt: 'desc' }
@@ -61,9 +61,10 @@ export class StatusModel {
   }
 
   /**
-   * Update status record
-   * @llm-rule WHEN: Modifying existing status data
+   * Update hello record
+   * @llm-rule WHEN: Modifying existing hello data
    * @llm-rule AVOID: Missing where clause - prevents accidental mass updates
+   * @llm-rule NOTE: Always includes modifiedAt timestamp for audit trail
    */
   static async update(id: string, data: {
     name?: string;
@@ -71,24 +72,24 @@ export class StatusModel {
   }) {
     const database = await databaseClass.get();
     
-    return await database.status.update({
+    return await database.hello.update({
       where: { id },
       data: {
         ...data,
-        updatedAt: new Date(),
+        modifiedAt: new Date(),
       }
     });
   }
 
   /**
-   * Delete status record
-   * @llm-rule WHEN: Removing status data from database
+   * Delete hello record
+   * @llm-rule WHEN: Removing hello data from database
    * @llm-rule AVOID: Hard deletes in production - consider soft delete flag
    */
   static async delete(id: string) {
     const database = await databaseClass.get();
     
-    return await database.status.delete({
+    return await database.hello.delete({
       where: { id }
     });
   }

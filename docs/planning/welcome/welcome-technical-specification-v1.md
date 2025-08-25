@@ -2,7 +2,7 @@
 ## welcome Implementation Guide
 
 ### Version: v1.0.0
-### Last Updated: 2025-08-24
+### Last Updated: 2025-08-25
 
 ***
 
@@ -15,7 +15,7 @@
 | **Language** | TypeScript (strict mode) |
 | **Architecture** | Contract-driven development |
 | **Deployment** | Single server, microservice-ready |
-| **Description** | Basic welcome application to greet users with their name |
+| **Description** | Simple welcome app that greets users with hello world functionality |
 
 ***
 
@@ -32,7 +32,7 @@
 | **Logging** | VoilaJSX AppKit | Structured application logging |
 | **Security** | VoilaJSX AppKit | Input validation and sanitization |
 
-No additional technologies required - using standard Voila Framework stack
+All required technologies are included in the base stack. No additional dependencies needed.
 
 ***
 
@@ -40,8 +40,9 @@ No additional technologies required - using standard Voila Framework stack
 
 | Feature | Endpoint Pattern | Description | Priority |
 |---------|------------------|-------------|----------|
-| **Greeting Service** | `GET /api/welcome/hello` | Generate personalized greeting messages | High |
-| **Health Check** | `GET /api/welcome/status` | Application health and status monitoring | High |
+| **hello** | `GET /api/welcome/hello` | Basic hello world greeting | High |
+| **greet** | `GET /api/welcome/greet?name={name}` | Personalized greeting with name | High |
+| **status** | `GET /api/welcome/status` | Health check endpoint | Medium |
 
 ***
 
@@ -49,8 +50,9 @@ No additional technologies required - using standard Voila Framework stack
 
 | Endpoint | Method | Input | Output | Validation |
 |----------|--------|-------|--------|------------|
-| `/api/welcome/hello` | GET | `?name=string` | `GreetingResponse` | name: 1-50 chars, non-empty |
-| `/api/welcome/status` | GET | none | `StatusResponse` | none |
+| `/api/welcome/hello` | GET | None | `{message: string, timestamp: string}` | None required |
+| `/api/welcome/greet` | GET | `name: string` (query param) | `{message: string, name: string, timestamp: string}` | Name must be non-empty if provided |
+| `/api/welcome/status` | GET | None | `{status: string, uptime: number}` | None required |
 
 ***
 
@@ -58,9 +60,10 @@ No additional technologies required - using standard Voila Framework stack
 
 | Model | Schema | Validation Rules |
 |-------|--------|------------------|
-| **GreetingRequest** | `{ name: string }` | name: z.string().min(1).max(50).trim() |
-| **GreetingResponse** | `{ message: string, timestamp: string }` | message: required string, timestamp: ISO date |
-| **StatusResponse** | `{ status: string, uptime: number }` | status: "healthy", uptime: number |
+| **HelloResponse** | `{ message: string, timestamp: string }` | Message required, timestamp ISO format |
+| **GreetRequest** | `{ name?: string }` | Name optional, must be non-empty string if provided |
+| **GreetResponse** | `{ message: string, name: string, timestamp: string }` | All fields required when name provided |
+| **StatusResponse** | `{ status: string, uptime: number }` | Status must be 'ok', uptime in seconds |
 
 ***
 
@@ -74,8 +77,8 @@ No additional technologies required - using standard Voila Framework stack
 | **Uptime** | 99.9% | Health check monitoring |
 | **Code Quality** | TypeScript strict mode | Linting and type checking |
 
-| **Input Validation** | 100% | All inputs validated with Zod schemas |
-| **Documentation** | Complete | All endpoints documented with examples |
+- **Input Validation**: All user inputs properly sanitized
+- **Error Handling**: Graceful degradation with meaningful error messages
 
 ***
 
@@ -98,22 +101,13 @@ src/api/welcome/
 └── welcome.readme.md
 ```
 
-**Specific structure for welcome application:**
+**Actual structure for welcome app:**
 ```
 src/api/welcome/
 ├── features/
-│   ├── greeting/
-│   │   ├── greeting.routes.ts    # Hello endpoint
-│   │   ├── greeting.services.ts  # Greeting logic
-│   │   ├── greeting.types.ts     # Request/Response schemas
-│   │   ├── greeting.test.ts      # Unit tests
-│   │   └── greeting.index.ts     # Feature contract
-│   └── status/
-│       ├── status.routes.ts      # Status endpoint
-│       ├── status.services.ts    # Health check logic
-│       ├── status.types.ts       # Status schemas
-│       ├── status.test.ts        # Status tests
-│       └── status.index.ts       # Status contract
+│   ├── hello/           # Basic hello world endpoint
+│   ├── greet/           # Personalized greeting
+│   └── status/          # Health check
 ```
 
 ***
@@ -127,13 +121,17 @@ src/api/welcome/
 | **Error Handling** | `import { errorClass } from '@voilajsx/appkit/error'` | Centralized error management |
 | **Security** | `import { securityClass } from '@voilajsx/appkit/security'` | Input validation and sanitization |
 
-| **Validation** | `import { validator } from '@voilajsx/appkit'` | Input validation with Zod schemas |
+Only basic modules needed:
+- `util` for response formatting
+- `logger` for request logging
+- `error` for error handling
+- `validator` for input validation
 
 ***
 
 ## 9. External Integrations
 
-**No external integrations required** - This is a self-contained greeting service.
+**No external integrations required** - this is a self-contained service.
 
 ***
 
@@ -151,23 +149,24 @@ src/api/welcome/
 
 ## 11. Implementation Notes
 
-### Security Considerations
-- Input sanitization using AppKit validator
-- No sensitive data storage or processing
-- Rate limiting to prevent API abuse
-- Proper error handling without information leakage
+- Keep implementation simple and focused
+- Prioritize code readability and maintainability
+- Follow Voila Framework patterns consistently
 
-### Performance Considerations
-- Stateless service for horizontal scaling
-- Minimal processing overhead
-- Fast string operations for greeting generation
-- No database queries required
+### Security Considerations
+- Input sanitization for name parameter
+- No sensitive data handling required
+- Standard HTTP security headers
+
+### Performance Considerations  
+- Simple in-memory operations only
+- No database or external API calls
+- Target sub-200ms response times
 
 ### Error Handling Strategy
-- Use AppKit error classes for consistent responses
-- Validation errors return 400 with clear messages
-- System errors return 500 with generic messages
-- All errors logged with request context
+- Use AppKit error classes for consistent error handling
+- Return appropriate HTTP status codes
+- Provide clear error messages for debugging
 
 ***
 
@@ -176,15 +175,18 @@ src/api/welcome/
 ### Feature Implementation Order
 **⚠️ CRITICAL: Implement ONE feature at a time in this order:**
 
-1. **status** (Priority: High, Complexity: Low)
-   - Simple health check endpoint
-   - Establishes basic patterns and structure
-   - Foundation for understanding Voila patterns
+1. **hello** (Priority: High, Complexity: Low)
+   - Basic hello world endpoint
+   - Foundation for understanding application patterns
+   - Simplest implementation to start
    
-2. **greeting** (Priority: High, Complexity: Medium)
-   - Core greeting functionality with validation
-   - Implements business logic and error handling
-   - Demonstrates complete feature implementation
+2. **greet** (Priority: High, Complexity: Medium)  
+   - Personalized greeting with parameter handling
+   - Builds on hello patterns with input validation
+   
+3. **status** (Priority: Medium, Complexity: Low)
+   - Health check endpoint
+   - Standard monitoring functionality
 
 ### Per-Feature Definition of Done
 Each feature is complete when:

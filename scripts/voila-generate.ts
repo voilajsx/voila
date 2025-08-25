@@ -271,7 +271,7 @@ steps:
     name: "Initialize Git repository"
     command: "npm run git init"
     status: "pending"
-    notes: "Initialize git repo, create main/dev branches, add .gitignore"
+    notes: "Initialize git repo, create main/development branches, add .gitignore"
     validate_success: "Check that git status works and .git directory exists"
     on_success: "npm run context complete 'Initialize Git repository'"
     on_failure: "Check git installation, resolve git config issues, retry"
@@ -295,18 +295,10 @@ steps:
     on_success: "npm run context complete 'Update API specification'"
     on_failure: "Review technical specification, fix YAML syntax, add missing endpoints"
     
-  5:
-    name: "Validate app structure"
-    command: "npm run validate app:api ${appName}"
-    status: "pending"
-    validate_success: "Command exits with code 0 and shows 'Validation successful'"
-    on_success: "npm run context complete 'Validate app structure'"
-    on_failure: "Review validation errors, fix contract issues, retry validation"
-
 `;
 
   // Add feature-specific steps
-  let stepNumber = 6;
+  let stepNumber = 5;
   sortedFeatures.forEach((feature, index) => {
     const featureName = feature.name;
     
@@ -362,20 +354,30 @@ steps:
     on_failure: "Review Express routing, fix validation middleware, ensure route exports"
     
   ${stepNumber++}:
-    name: "Validate ${featureName} feature"
-    command: "npm run validate app:api ${appName}/${featureName}"
+    name: "Skim ${featureName} feature"
+    command: "npm run validate app:api ${appName}/${featureName} -- --skim"
     status: "pending"
     validate_success: "Command exits with code 0 and shows validation success"
-    on_success: "npm run context complete 'Validate ${featureName} feature'"
-    on_failure: "Review validation errors, fix contract issues, ensure all files implemented correctly"
+    on_success: "npm run context complete 'Skim ${featureName} feature'"
+    on_failure: "Review validation errors, fix TypeScript and syntax issues"
     
   ${stepNumber++}:
-    name: "Test ${featureName} feature"
+    name: "Implement ${featureName} tests"
+    action: "implement"
+    file: "src/api/${appName}/features/${featureName}/${featureName}.test.ts"
+    status: "pending"
+    notes: "Write unit tests matching contract requirements"
+    validate_success: "Test file contains tests matching contract test declarations"
+    on_success: "npm run context complete 'Implement ${featureName} tests'"
+    on_failure: "Review contract tests, implement missing test cases, ensure proper mocking"
+    
+  ${stepNumber++}:
+    name: "Run ${featureName} tests"
     command: "npm run test app:api ${appName}/${featureName} -- --unittest"
     status: "pending"
     notes: "Ensure 95% test coverage before proceeding"
     validate_success: "Tests pass with >=95% coverage and no failures"
-    on_success: "npm run context complete 'Test ${featureName} feature'"
+    on_success: "npm run context complete 'Run ${featureName} tests'"
     on_failure: "Fix failing tests, add missing test cases, ensure 95% coverage"
     
   ${stepNumber++}:

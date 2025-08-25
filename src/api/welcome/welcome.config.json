@@ -7,18 +7,18 @@
     "production"
   ],
   "features": {
-    "status": {
+    "hello": {
       "enabled": true,
       "environments": [
         "development",
         "staging",
         "production"
       ],
-      "description": "Status feature for welcome application"
+      "description": "Hello feature for welcome application"
     }
   },
   "metadata": {
     "owner": "welcome Team",
-    "created": "2025-08-24"
+    "created": "2025-08-25"
   }
 }
