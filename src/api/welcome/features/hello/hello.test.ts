@@ -53,7 +53,7 @@ describe('Hello Feature', () => {
   beforeEach(() => {
     app = express();
     app.use(express.json());
-    app.use('/api/welcome', helloRoutes);
+    app.use('/api/welcome/hello', helloRoutes);
   });
 
   describe('GET /api/welcome/hello', () => {

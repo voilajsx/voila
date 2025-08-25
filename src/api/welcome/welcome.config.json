@@ -38,5 +38,16 @@
   "metadata": {
     "owner": "welcome Team",
     "created": "2025-08-25"
+  },
+  "api_compliance": {
+    "last_test_run": "2025-08-25T07:50:07.257Z",
+    "total_tests": 9,
+    "passed_tests": 9,
+    "failed_tests": 0,
+    "success_rate": "100%",
+    "overall_status": "COMPLIANT",
+    "requirements_met": true,
+    "test_results_file": "welcome.testresults-2025-08-25T07-50-07.xlsx",
+    "updated_at": "2025-08-25T07:50:07.456Z"
   }
 }
