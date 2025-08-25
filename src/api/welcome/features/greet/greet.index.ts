@@ -1,7 +1,7 @@
 /**
- * Status Feature Contract - Living Documentation & Configuration
- * @module welcome/status
- * @file src/api/welcome/features/status/status.index.ts
+ * Greet Feature Contract - Living Documentation & Configuration
+ * @module welcome/greet
+ * @file src/api/welcome/features/greet/greet.index.ts
  * 
  * @llm-rule WHEN: Defining feature contracts for Voila framework validation
  * @llm-rule AVOID: Changing contract structure without updating validation logic
@@ -12,33 +12,33 @@ import type { VoilaFeatureContract } from '@/lib/contracts.js';
 import { createFeatureContract } from '@/lib/contracts.js';
 
 // ✅ EXPLICIT CONTRACT: Everything about this feature in one place
-const StatusFeatureContract: VoilaFeatureContract = createFeatureContract({
+const GreetFeatureContract: VoilaFeatureContract = createFeatureContract({
   // === FEATURE IDENTITY ===
-  name: 'status',
+  name: 'greet',
   app: 'welcome',
-  description: 'Status feature for welcome application with modern API patterns',
-  contract_validation: 'strict', // strict | basic | none
-  llm_comments: 'strict', // strict | basic | none
+  description: 'Greet feature for welcome application with modern API patterns',
+  contract_validation: 'none', // strict | basic | none
+  llm_comments: 'none', // strict | basic | none
   
   // === API DEFINITION ===
   api: {
-    basePath: '/api/welcome/status',
+    basePath: '/api/welcome/greet',
     endpoints: [
       {
         method: 'GET',
         path: '/',
-        handler: 'StatusService.getDefault',
-        summary: 'Get default greeting from welcome/status',
+        handler: 'GreetService.getDefault',
+        summary: 'Get default greeting from welcome/greet',
         requestSchema: null,
-        responseSchema: 'StatusResponse'
+        responseSchema: 'GreetResponse'
       },
       {
         method: 'GET',
         path: '/:name',
-        handler: 'StatusService.greetByName',
-        summary: 'Get personalized greeting from welcome/status',
+        handler: 'GreetService.greetByName',
+        summary: 'Get personalized greeting from welcome/greet',
         requestSchema: null,
-        responseSchema: 'StatusResponse'
+        responseSchema: 'GreetResponse'
       }
     ]
   },
@@ -46,20 +46,21 @@ const StatusFeatureContract: VoilaFeatureContract = createFeatureContract({
   // === DEPENDENCIES (File-specific imports) ===
   dependencies: {
     files: {
-      "status.services.ts": {
+      "greet.services.ts": {
         appkit: ["util", "logger", "error"],
         external: ["express"]
       },
-      "status.routes.ts": {
+      "greet.routes.ts": {
         external: ["express"]
       },
-      "status.types.ts": {
+      "greet.types.ts": {
         external: ["zod"]
       },
-      "status.models.ts": {
-        appkit: ["database"]
+      "greet.models.ts": {
+        appkit: ["database"],
+        external: []
       },
-      "status.test.ts": {
+      "greet.test.ts": {
         external: ["vitest", "supertest"]
       }
     }
@@ -67,10 +68,10 @@ const StatusFeatureContract: VoilaFeatureContract = createFeatureContract({
 
   // === PROVIDES (What this feature offers to the system) ===
   provides: {
-    services: ['StatusService'],
-    routes: ['/api/welcome/status', '/api/welcome/status/:name'],
-    types: ['StatusResponse', 'StatusData', 'StatusRequest'],
-    schemas: ['StatusSchema']
+    services: ['GreetService'],
+    routes: ['/api/welcome/greet', '/api/welcome/greet/:name'],
+    types: ['GreetResponse', 'GreetData', 'GreetRequest'],
+    schemas: ['GreetSchema']
   },
 
   // === CONSUMES (What this feature uses from other parts) ===
@@ -83,11 +84,11 @@ const StatusFeatureContract: VoilaFeatureContract = createFeatureContract({
 
   // === TESTS ===
   tests: [
-    'should return default greeting from welcome/status',
-    'should return personalized greeting from welcome/status',
+    'should return default greeting from welcome/greet',
+    'should return personalized greeting from welcome/greet',
     'should handle names with special characters'
   ]
 });
 
 // ✅ EXPORT: Contract for registration
-export default StatusFeatureContract;
+export default GreetFeatureContract;

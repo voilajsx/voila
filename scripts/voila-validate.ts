@@ -87,7 +87,13 @@ async function main() {
   const command = args[0];
   const target = args[1]; // Can be 'app' or 'app/feature'
   
+  // Check for --skim flag in remaining arguments
+  const skimMode = args.includes('--skim');
+  
   console.log('🔍 Voila Contract Validation');
+  if (skimMode) {
+    console.log('⚡ SKIM MODE: Comments and types only');
+  }
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   try {
@@ -110,7 +116,7 @@ async function main() {
         console.log(`🎯 Target: All apps`);
       }
       
-      await validateApp(appName, featureName);
+      await validateApp(appName, featureName, skimMode);
     } else {
       console.log(`❌ Unknown command: ${command}`);
       showHelp();
@@ -125,18 +131,27 @@ async function main() {
   }
 }
 
-async function validateApp(appName?: string, featureName?: string) {
+async function validateApp(appName?: string, featureName?: string, skimMode: boolean = false) {
   const apiPath = join(__dirname, '..', 'src', 'api');
   let allValidationsPassed = true;
   let totalErrors = 0;
   let totalWarnings = 0;
 
-  // Step 1: Contract Validation
-  console.log('📋 Step 1: Contract Validation');
-  
+  // Step 1: Contract Validation (skip in skim mode)
   let contractResult: any;
-  try {
-    contractResult = await validateContracts(apiPath, appName, featureName);
+  if (skimMode) {
+    console.log('📋 Step 1: Contract Validation - ⏭️  SKIPPED (skim mode)');
+    contractResult = {
+      success: true,
+      errors: [],
+      warnings: [],
+      stats: { apps: 1, features: 1, endpoints: 0 }
+    };
+  } else {
+    console.log('📋 Step 1: Contract Validation');
+    
+    try {
+      contractResult = await validateContracts(apiPath, appName, featureName);
   
   if (!contractResult.success) {
     allValidationsPassed = false;
@@ -251,6 +266,7 @@ async function validateApp(appName?: string, featureName?: string) {
       console.log(`   🔍 [system] VALIDATION_ERROR ISSUES (1):`);
       console.log(`      🚫 ${error.message}`);
     }
+  }
   }
 
   // Step 2: TypeScript Type Checking
@@ -448,18 +464,22 @@ function showHelp() {
 🔍 Voila Contract Validation - Comprehensive API Validation Suite
 
 USAGE:
-  npm run validate app:api [app-name[/feature-name]]
+  npm run validate app:api [app-name[/feature-name]] [--skim]
 
 COMMANDS:
   app:api [target]       Validate app API structure and contracts
+
+FLAGS:
+  --skim                 Skip contracts and tests, only check comments and types
 
 EXAMPLES:
   npm run validate app:api                    # Validate all apps
   npm run validate app:api converter          # Validate specific app (all features)
   npm run validate app:api converter/currency # Validate specific feature only
+  npm run validate app:api welcome -- --skim  # Quick validation: comments and types only
 
 VALIDATION PIPELINE:
-  📋 Step 1: Contract Validation
+  📋 Step 1: Contract Validation (skipped in --skim mode)
      ✅ Feature contract structure (VoilaFeatureContract)
      ✅ API endpoint definitions
      ✅ Service and route file existence

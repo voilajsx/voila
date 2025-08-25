@@ -1,22 +1,22 @@
 /**
- * status feature TypeScript types and validation schemas
- * @module welcome/status
- * @file src/api/welcome/features/status/status.types.ts
+ * greet feature TypeScript types and validation schemas
+ * @module welcome/greet
+ * @file src/api/welcome/features/greet/greet.types.ts
  * 
- * @llm-rule WHEN: Need TypeScript types and Zod validation for status endpoints
- * @llm-rule AVOID: Using plain objects without validation - always use StatusSchema
+ * @llm-rule WHEN: Need TypeScript types and Zod validation for greet endpoints
+ * @llm-rule AVOID: Using plain objects without validation - always use GreetSchema
  * @llm-rule NOTE: Matches frontend types exactly for type safety across full stack
  */
 
 import { z } from 'zod';
 
 // Request validation schemas
-export const StatusSchema = z.object({
+export const GreetSchema = z.object({
   name: z.string().min(1).max(50).optional(),
 });
 
 // TypeScript interfaces for API responses
-export interface StatusData {
+export interface GreetData {
   message: string;
   app: string;
   feature: string;
@@ -26,16 +26,16 @@ export interface StatusData {
   version: string;
 }
 
-export interface StatusResponse {
+export interface GreetResponse {
   success: boolean;
-  data: StatusData;
+  data: GreetData;
 }
 
 // Export schema-inferred types
-export type StatusRequest = z.infer<typeof StatusSchema>;
+export type GreetRequest = z.infer<typeof GreetSchema>;
 
 // Error response types
-export interface StatusErrorResponse {
+export interface GreetErrorResponse {
   success: false;
   error: {
     type: string;

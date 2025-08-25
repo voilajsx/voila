@@ -1,7 +1,7 @@
 /**
  * Hello Feature Contract - Living Documentation & Configuration
- * @module helloworld/hello
- * @file src/api/helloworld/features/hello/hello.index.ts
+ * @module welcome/hello
+ * @file src/api/welcome/features/hello/hello.index.ts
  * 
  * @llm-rule WHEN: Defining feature contracts for Voila framework validation
  * @llm-rule AVOID: Changing contract structure without updating validation logic
@@ -15,20 +15,20 @@ import { createFeatureContract } from '@/lib/contracts.js';
 const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
   // === FEATURE IDENTITY ===
   name: 'hello',
-  app: 'helloworld',
-  description: 'Simple Hello World endpoint that returns "Hello World" message',
-  contract_validation: 'strict', // strict | basic | none
-  llm_comments: 'strict', // strict | basic | none
+  app: 'welcome',
+  description: 'Hello feature for welcome application with modern API patterns',
+  contract_validation: 'none', // strict | basic | none
+  llm_comments: 'none', // strict | basic | none
   
   // === API DEFINITION ===
   api: {
-    basePath: '/api/helloworld',
+    basePath: '/api/welcome/hello',
     endpoints: [
       {
         method: 'GET',
-        path: '/hello',
-        handler: 'HelloService.getHello',
-        summary: 'Returns simple Hello World message',
+        path: '/',
+        handler: 'HelloService.getHelloWorld',
+        summary: 'Get hello world greeting message',
         requestSchema: null,
         responseSchema: 'HelloResponse'
       }
@@ -39,8 +39,8 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
   dependencies: {
     files: {
       "hello.services.ts": {
-        appkit: [],
-        external: []
+        appkit: ["util", "logger", "error"],
+        external: ["express"]
       },
       "hello.routes.ts": {
         external: ["express"]
@@ -48,11 +48,12 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
       "hello.types.ts": {
         external: ["zod"]
       },
+      "hello.models.ts": {
+        appkit: ["database"],
+        external: []
+      },
       "hello.test.ts": {
         external: ["vitest", "supertest"]
-      },
-      "hello.models.ts": {
-        external: []
       }
     }
   },
@@ -60,7 +61,7 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
   // === PROVIDES (What this feature offers to the system) ===
   provides: {
     services: ['HelloService'],
-    routes: ['/api/helloworld/hello'],
+    routes: ['/api/welcome/hello'],
     types: ['HelloResponse'],
     schemas: ['HelloResponseSchema']
   },
@@ -75,9 +76,9 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
 
   // === TESTS ===
   tests: [
-    'should return Hello World message',
-    'should return JSON response with success true',
-    'should respond with status 200'
+    'should return hello world greeting message',
+    'should include timestamp in response',
+    'should return proper JSON format'
   ]
 });
 

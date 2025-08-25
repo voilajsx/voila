@@ -1,9 +1,9 @@
 /**
- * status feature business logic and service layer
- * @module welcome/status
- * @file src/api/welcome/features/status/status.services.ts
+ * greet feature business logic and service layer
+ * @module welcome/greet
+ * @file src/api/welcome/features/greet/greet.services.ts
  * 
- * @llm-rule WHEN: Need business logic for status operations
+ * @llm-rule WHEN: Need business logic for greet operations
  * @llm-rule AVOID: Direct database access - use repository pattern if needed
  * @llm-rule NOTE: All methods should be static for easy testing and imports
  */
@@ -13,16 +13,16 @@ import { utilClass } from '@voilajsx/appkit/util';
 import { loggerClass } from '@voilajsx/appkit/logger';
 import { errorClass } from '@voilajsx/appkit/error';
 import { securityClass } from '@voilajsx/appkit/security';
-import { StatusSchema, StatusResponse, StatusData } from './status.types.js';
+import { GreetSchema, GreetResponse, GreetData } from './greet.types.js';
 
 const utils = utilClass.get();
-const log = loggerClass.get('status.service');
+const log = loggerClass.get('greet.service');
 const err = errorClass.get();
 const secure = securityClass.get();
 
-export class StatusService {
+export class GreetService {
   /**
-   * Generate personalized greeting from welcome/status for specific name
+   * Generate personalized greeting from welcome/greet for specific name
    * @llm-rule WHEN: User provides name parameter in URL path
    * @llm-rule AVOID: Using req.params.name directly - always sanitize with secure.input()
    */
@@ -40,12 +40,12 @@ export class StatusService {
         throw err.badRequest('Name must be 50 characters or less');
       }
 
-      const response: StatusResponse = {
+      const response: GreetResponse = {
         success: true,
         data: {
-          message: `Hello from welcome/status, ${name}!`,
+          message: `Hello from welcome/greet, ${name}!`,
           app: 'welcome',
-          feature: 'status',
+          feature: 'greet',
           name,
           timestamp: new Date().toISOString(),
           requestId,
@@ -53,17 +53,17 @@ export class StatusService {
         }
       };
       
-      log.info('Status greeting completed', { requestId, name });
+      log.info('Greet greeting completed', { requestId, name });
       res.json(response);
       
     } catch (error: any) {
-      log.error('Status greeting failed', { requestId, error: error.message });
+      log.error('Greet greeting failed', { requestId, error: error.message });
       throw error;
     }
   }
 
   /**
-   * Generate default "Hello from welcome/status" greeting
+   * Generate default "Hello from welcome/greet" greeting
    * @llm-rule WHEN: No name parameter provided - fallback greeting
    * @llm-rule AVOID: Hardcoding timestamps - use new Date().toISOString()
    */
@@ -71,12 +71,12 @@ export class StatusService {
     const requestId = utils.uuid();
     
     try {
-      const response: StatusResponse = {
+      const response: GreetResponse = {
         success: true,
         data: {
-          message: 'Hello from welcome/status!',
+          message: 'Hello from welcome/greet!',
           app: 'welcome',
-          feature: 'status',
+          feature: 'greet',
           name: 'World',
           timestamp: new Date().toISOString(),
           requestId,
@@ -84,11 +84,11 @@ export class StatusService {
         }
       };
       
-      log.info('Default status greeting completed', { requestId });
+      log.info('Default greet greeting completed', { requestId });
       res.json(response);
       
     } catch (error: any) {
-      log.error('Default status greeting failed', { requestId, error: error.message });
+      log.error('Default greet greeting failed', { requestId, error: error.message });
       throw err.serverError('Failed to generate greeting');
     }
   }
