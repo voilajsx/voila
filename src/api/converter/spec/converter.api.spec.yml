@@ -1,299 +1,83 @@
 # converter.api.spec.yml
-# Specifications and test cases for Converter Application Backend — Version 1.0.0
+# Specifications and test cases for converter Application Backend — Version 1.0.0
 
 version: 1.0.0
 service: converter-api-backend
-description: Simple converter app for currency, temperature and time conversions
 
 specifications:
 
-  # Currency Conversion Endpoint
+  # Default greeting endpoint - template for all features
   - id: SPEC-CONVERTER-001
-    title: Currency Conversion Endpoint
+    title: Default Feature Greeting Endpoint
     description: |
-      Convert between currencies of top 20 countries.
-      POST /api/converter/currency with from, to, and amount parameters.
-      Response MUST include converted amount, exchange rate, and timestamp.
-      SHALL return HTTP 400 for unsupported currencies with clear error message.
-    endpoint:
-      method: POST
-      path: /api/converter/currency
-    validations:
-      - status_code: 200
-      - content_type_includes: application/json
-      - body_success_equals: true
-      - body_data_converted_amount_exists: true
-      - body_data_rate_exists: true
-      - body_data_timestamp_exists: true
-    tests:
-      - id: TC-CONVERTER-CURRENCY-01
-        description: "Convert USD to EUR successfully"
-        input:
-          body:
-            from: "USD"
-            to: "EUR"
-            amount: 100
-        expected:
-          status_code: 200
-          body_success_equals: true
-      - id: TC-CONVERTER-CURRENCY-02
-        description: "Return 400 for unsupported currency"
-        input:
-          body:
-            from: "XYZ"
-            to: "USD"
-            amount: 100
-        expected:
-          status_code: 400
-          body_success_equals: false
-
-  # Temperature Conversion Endpoint
-  - id: SPEC-CONVERTER-002
-    title: Temperature Conversion Endpoint
-    description: |
-      Convert between Celsius and Fahrenheit.
-      POST /api/converter/temperature with value, from_unit, and to_unit parameters.
-      Response MUST include converted value and formula used.
-      SHALL return HTTP 400 for invalid units or values.
-    endpoint:
-      method: POST
-      path: /api/converter/temperature
-    validations:
-      - status_code: 200
-      - content_type_includes: application/json
-      - body_success_equals: true
-      - body_data_converted_value_exists: true
-      - body_data_formula_used_exists: true
-    tests:
-      - id: TC-CONVERTER-TEMPERATURE-01
-        description: "Convert Celsius to Fahrenheit successfully"
-        input:
-          body:
-            value: 0
-            from_unit: "C"
-            to_unit: "F"
-        expected:
-          status_code: 200
-          body_success_equals: true
-          body_data_converted_value_equals: 32
-      - id: TC-CONVERTER-TEMPERATURE-02
-        description: "Convert Fahrenheit to Celsius successfully"
-        input:
-          body:
-            value: 32
-            from_unit: "F"
-            to_unit: "C"
-        expected:
-          status_code: 200
-          body_success_equals: true
-          body_data_converted_value_equals: 0
-      - id: TC-CONVERTER-TEMPERATURE-03
-        description: "Return 400 for invalid temperature unit"
-        input:
-          body:
-            value: 100
-            from_unit: "K"
-            to_unit: "C"
-        expected:
-          status_code: 400
-          body_success_equals: false
-
-  # Time Format Conversion Endpoint
-  - id: SPEC-CONVERTER-003
-    title: Time Format Conversion Endpoint
-    description: |
-      Convert between 12-hour and 24-hour time formats.
-      POST /api/converter/time with time, from_format, and to_format parameters.
-      Response MUST include converted time and format information.
-      SHALL return HTTP 400 for invalid time formats.
-    endpoint:
-      method: POST
-      path: /api/converter/time
-    validations:
-      - status_code: 200
-      - content_type_includes: application/json
-      - body_success_equals: true
-      - body_data_converted_time_exists: true
-      - body_data_format_info_exists: true
-    tests:
-      - id: TC-CONVERTER-TIME-01
-        description: "Convert 24-hour to 12-hour format successfully"
-        input:
-          body:
-            time: "14:30"
-            from_format: "24h"
-            to_format: "12h"
-        expected:
-          status_code: 200
-          body_success_equals: true
-          body_data_converted_time_equals: "2:30 PM"
-      - id: TC-CONVERTER-TIME-02
-        description: "Convert 12-hour to 24-hour format successfully"
-        input:
-          body:
-            time: "2:30 PM"
-            from_format: "12h"
-            to_format: "24h"
-        expected:
-          status_code: 200
-          body_success_equals: true
-          body_data_converted_time_equals: "14:30"
-      - id: TC-CONVERTER-TIME-03
-        description: "Handle midnight conversion correctly"
-        input:
-          body:
-            time: "00:00"
-            from_format: "24h"
-            to_format: "12h"
-        expected:
-          status_code: 200
-          body_success_equals: true
-          body_data_converted_time_equals: "12:00 AM"
-      - id: TC-CONVERTER-TIME-04
-        description: "Return 400 for invalid time format"
-        input:
-          body:
-            time: "25:00"
-            from_format: "24h"
-            to_format: "12h"
-        expected:
-          status_code: 400
-          body_success_equals: false
-
-  # Supported Options Endpoint
-  - id: SPEC-CONVERTER-004
-    title: Supported Options Endpoint
-    description: |
-      List all supported currencies, temperature units, and time formats.
-      GET /api/converter/supported returns available options for all conversion types.
-      Response MUST include arrays of supported currencies, temperature units, and time formats.
+      Each feature in the converter app SHALL have a default greeting endpoint at 
+      `GET /api/converter/{feature}` that returns "Hello from converter/{feature}!".
+      Response MUST have HTTP status 200 and a JSON body with success=true and proper data structure.
     endpoint:
       method: GET
-      path: /api/converter/supported
-    validations:
-      - status_code: 200
-      - content_type_includes: application/json
-      - body_success_equals: true
-      - body_data_currencies_exists: true
-      - body_data_temperature_units_exists: true
-      - body_data_time_formats_exists: true
-    tests:
-      - id: TC-CONVERTER-SUPPORTED-01
-        description: "Get supported options successfully"
-        input: {}
-        expected:
-          status_code: 200
-          body_success_equals: true
-      - id: TC-CONVERTER-SUPPORTED-02
-        description: "Verify currencies array contains top 20 currencies"
-        input: {}
-        expected:
-          status_code: 200
-          body_data_currencies_contains: ["USD", "EUR", "GBP", "JPY"]
-      - id: TC-CONVERTER-SUPPORTED-03
-        description: "Verify temperature units array contains C and F"
-        input: {}
-        expected:
-          status_code: 200
-          body_data_temperature_units_contains: ["C", "F"]
-      - id: TC-CONVERTER-SUPPORTED-04
-        description: "Verify time formats array contains 12h and 24h"
-        input: {}
-        expected:
-          status_code: 200
-          body_data_time_formats_contains: ["12h", "24h"]
-
-  # Health Check Endpoint
-  - id: SPEC-CONVERTER-005
-    title: Health Check Endpoint
-    description: |
-      Basic health check for the converter API.
-      GET /api/converter/health returns application status and timestamp.
-      Response MUST include status and timestamp fields.
-    endpoint:
-      method: GET
-      path: /api/converter/health
-    validations:
-      - status_code: 200
-      - content_type_includes: application/json
-      - body_success_equals: true
-      - body_data_status_exists: true
-      - body_data_timestamp_exists: true
-    tests:
-      - id: TC-CONVERTER-HEALTH-01
-        description: "Health check returns 200"
-        input: {}
-        expected:
-          status_code: 200
-          body_success_equals: true
-          body_data_status_equals: "healthy"
-
-  # Error Handling Specifications
-  - id: SPEC-CONVERTER-006
-    title: Clear Error Messages for Unsupported Operations
-    description: |
-      When users request unsupported conversions, the API SHALL return HTTP 400
-      with clear error messages and list of supported options.
-      Error responses MUST include helpful guidance for valid alternatives.
-    endpoint:
-      method: POST
       path: /api/converter/{feature}
     validations:
-      - status_code: 400
+      - status_code: 200
       - content_type_includes: application/json
-      - body_success_equals: false
-      - body_error_exists: true
-      - body_supported_options_exists: true
+      - body_success_equals: true
+      - body_data_message_pattern: "^Hello from converter/.*!"
     tests:
-      - id: TC-CONVERTER-ERROR-01
-        description: "Unsupported currency returns helpful error"
-        input:
-          body:
-            from: "INVALID"
-            to: "USD"
-            amount: 100
+      - id: TC-CONVERTER-GET-FEATURE-DEFAULT-01
+        description: "Verify response status is 200."
+        input: {}
         expected:
-          status_code: 400
-          body_success_equals: false
-          body_error_includes: "supported currencies"
-      - id: TC-CONVERTER-ERROR-02
-        description: "Invalid temperature unit returns helpful error"
-        input:
-          body:
-            value: 100
-            from_unit: "KELVIN"
-            to_unit: "C"
+          status_code: 200
+      - id: TC-CONVERTER-GET-FEATURE-DEFAULT-02
+        description: "Verify Content-Type header includes application/json."
+        input: {}
         expected:
-          status_code: 400
-          body_success_equals: false
-          body_error_includes: "supported units are C and F"
+          headers:
+            content-type: application/json
+      - id: TC-CONVERTER-GET-FEATURE-DEFAULT-03
+        description: "Verify response contains success true and proper data structure."
+        input: {}
+        expected:
+          body_success_equals: true
+          body_data_app_equals: "converter"
+          body_data_version_equals: "1.0.0"
 
-# Supported Currency List (Top 20 Countries)
-supported_currencies:
-  - USD  # United States Dollar
-  - EUR  # Euro
-  - GBP  # British Pound Sterling
-  - JPY  # Japanese Yen
-  - AUD  # Australian Dollar
-  - CAD  # Canadian Dollar
-  - CHF  # Swiss Franc
-  - CNY  # Chinese Yuan
-  - SEK  # Swedish Krona
-  - NZD  # New Zealand Dollar
-  - MXN  # Mexican Peso
-  - SGD  # Singapore Dollar
-  - HKD  # Hong Kong Dollar
-  - NOK  # Norwegian Krone
-  - INR  # Indian Rupee
-  - KRW  # South Korean Won
-  - TRY  # Turkish Lira
-  - RUB  # Russian Ruble
-  - BRL  # Brazilian Real
-  - ZAR  # South African Rand
-
-# Quality Requirements
-quality_requirements:
-  - response_time_max: 200ms
-  - test_coverage_min: 95%
-  - error_rate_max: 1%
-  - uptime_min: 99.9%
+  # Personalized greeting endpoint - template for all features  
+  - id: SPEC-CONVERTER-002
+    title: Personalized Feature Greeting Endpoint
+    description: |
+      Each feature in the converter app SHALL have a personalized greeting endpoint at
+      `GET /api/converter/{feature}/{name}` that returns "Hello from converter/{feature}, {name}!".
+      Response MUST be HTTP 200 with the name parameter included in the greeting message.
+    endpoint:
+      method: GET
+      path: /api/converter/{feature}/{name}
+    validations:
+      - status_code: 200
+      - content_type_includes: application/json
+      - body_success_equals: true
+      - body_data_message_pattern: "^Hello from converter/.*, Alice!$"
+    tests:
+      - id: TC-CONVERTER-GET-FEATURE-NAME-01
+        description: "Verify response status is 200."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          status_code: 200
+      - id: TC-CONVERTER-GET-FEATURE-NAME-02
+        description: "Verify Content-Type header includes application/json."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          headers:
+            content-type: application/json
+      - id: TC-CONVERTER-GET-FEATURE-NAME-03
+        description: "Verify response contains success true and Alice in data."
+        input:
+          path_parameters:
+            name: Alice
+        expected:
+          body_success_equals: true
+          body_data_name_equals: "Alice"
+          body_data_app_equals: "converter"

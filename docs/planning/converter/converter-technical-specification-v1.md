@@ -2,7 +2,7 @@
 ## converter Implementation Guide
 
 ### Version: v1.0.0
-### Last Updated: 2025-08-24
+### Last Updated: 2025-08-25
 
 ***
 
@@ -15,7 +15,7 @@
 | **Language** | TypeScript (strict mode) |
 | **Architecture** | Contract-driven development |
 | **Deployment** | Single server, microservice-ready |
-| **Description** | simple app for currency, temperate and time |
+| **Description** | An application to convert temperatures between Celsius and Fahrenheit |
 
 ***
 
@@ -32,23 +32,14 @@
 | **Logging** | VoilaJSX AppKit | Structured application logging |
 | **Security** | VoilaJSX AppKit | Input validation and sanitization |
 
-**Additional Technologies:**
-- **Currency Data**: Static exchange rates or simple API integration
-- **Mathematical Operations**: Native JavaScript for temperature/time conversions
-- **Input Validation**: Comprehensive Zod schemas for all conversion types
-- **Error Handling**: Custom error classes for clear user feedback
-
 ***
 
 ## 3. Feature Specifications
 
 | Feature | Endpoint Pattern | Description | Priority |
 |---------|------------------|-------------|----------|
-| **Currency Conversion** | `POST /api/converter/currency` | Convert between top 20 country currencies | High |
-| **Temperature Conversion** | `POST /api/converter/temperature` | Convert Celsius ↔ Fahrenheit | High |
-| **Time Format Conversion** | `POST /api/converter/time` | Convert 12-hour ↔ 24-hour format | High |
-| **Supported Options** | `GET /api/converter/supported` | List all supported currencies, formats, etc. | Medium |
-| **Health Check** | `GET /api/converter/health` | API status and availability | Low |
+| Celsius to Fahrenheit | `POST /celsius-to-fahrenheit` | Converts a temperature from Celsius to Fahrenheit. | High |
+| Fahrenheit to Celsius | `POST /fahrenheit-to-celsius` | Converts a temperature from Fahrenheit to Celsius. | High |
 
 ***
 
@@ -56,11 +47,8 @@
 
 | Endpoint | Method | Input | Output | Validation |
 |----------|--------|-------|--------|------------|
-| `/api/converter/currency` | POST | `{from, to, amount}` | `{converted_amount, rate, timestamp}` | Valid ISO currency codes, positive amount |
-| `/api/converter/temperature` | POST | `{value, from_unit, to_unit}` | `{converted_value, formula_used}` | Numeric value, valid units (C/F) |
-| `/api/converter/time` | POST | `{time, from_format, to_format}` | `{converted_time, format_info}` | Valid time format, supported formats |
-| `/api/converter/supported` | GET | None | `{currencies[], temperature_units[], time_formats[]}` | None |
-| `/api/converter/health` | GET | None | `{status, timestamp, version}` | None |
+| `/api/converter/celsius-to-fahrenheit` | POST | `{"temperature": number}` | `{"temperature": number}` | Input must be a valid number. |
+| `/api/converter/fahrenheit-to-celsius` | POST | `{"temperature": number}` | `{"temperature": number}` | Input must be a valid number. |
 
 ***
 
@@ -68,13 +56,8 @@
 
 | Model | Schema | Validation Rules |
 |-------|--------|------------------|
-| **CurrencyRequest** | `{from: string, to: string, amount: number}` | ISO currency codes, amount > 0 |
-| **CurrencyResponse** | `{converted_amount: number, rate: number, timestamp: string}` | Positive numbers, ISO timestamp |
-| **TemperatureRequest** | `{value: number, from_unit: 'C'|'F', to_unit: 'C'|'F'}` | Numeric value, valid units |
-| **TemperatureResponse** | `{converted_value: number, formula_used: string}` | Numeric result, formula description |
-| **TimeRequest** | `{time: string, from_format: '12h'|'24h', to_format: '12h'|'24h'}` | Valid time string, supported formats |
-| **TimeResponse** | `{converted_time: string, format_info: string}` | Valid time string, format explanation |
-| **ErrorResponse** | `{error: string, supported_options?: array}` | Clear error message, optional guidance |
+| **TemperatureRequest** | `{ "temperature": z.number() }` | `temperature` must be a number. |
+| **TemperatureResponse** | `{ "temperature": z.number() }` | `temperature` must be a number. |
 
 ***
 
@@ -88,12 +71,6 @@
 | **Uptime** | 99.9% | Health check monitoring |
 | **Code Quality** | TypeScript strict mode | Linting and type checking |
 
-**Additional Requirements:**
-- **API Documentation**: Clear Swagger/OpenAPI documentation
-- **Input Validation**: Comprehensive validation with helpful error messages
-- **Error Recovery**: Graceful handling of edge cases
-- **Scope Clarity**: Clear communication of supported vs unsupported operations
-
 ***
 
 ## 7. Component Structure
@@ -101,12 +78,18 @@
 ```
 src/api/converter/
 ├── features/
-│   ├── [feature-name]/
-│   │   ├── [feature].routes.ts    # Express routes
-│   │   ├── [feature].services.ts  # Business logic
-│   │   ├── [feature].models.ts    # Zod schemas
-│   │   ├── [feature].test.ts      # Unit tests
-│   │   └── [feature].index.ts     # Feature contract
+│   ├── celsius-to-fahrenheit/
+│   │   ├── celsius-to-fahrenheit.routes.ts
+│   │   ├── celsius-to-fahrenheit.services.ts
+│   │   ├── celsius-to-fahrenheit.types.ts
+│   │   ├── celsius-to-fahrenheit.test.ts
+│   │   └── celsius-to-fahrenheit.index.ts
+│   ├── fahrenheit-to-celsius/
+│   │   ├── fahrenheit-to-celsius.routes.ts
+│   │   ├── fahrenheit-to-celsius.services.ts
+│   │   ├── fahrenheit-to-celsius.types.ts
+│   │   ├── fahrenheit-to-celsius.test.ts
+│   │   └── fahrenheit-to-celsius.index.ts
 ├── spec/
 │   └── converter.api.spec.yml
 ├── __apitest__/
@@ -115,62 +98,22 @@ src/api/converter/
 └── converter.readme.md
 ```
 
-**Customized Feature Structure:**
-```
-src/api/converter/
-├── features/
-│   ├── currency/
-│   │   ├── currency.routes.ts    # POST /currency endpoint
-│   │   ├── currency.services.ts  # Exchange rate logic
-│   │   ├── currency.types.ts     # Zod schemas & TypeScript types
-│   │   ├── currency.test.ts      # Currency conversion tests
-│   │   └── currency.index.ts     # Currency feature contract
-│   ├── temperature/
-│   │   ├── temperature.routes.ts    # POST /temperature endpoint
-│   │   ├── temperature.services.ts  # Conversion formulas
-│   │   ├── temperature.types.ts     # Zod schemas & TypeScript types
-│   │   ├── temperature.test.ts      # Temperature tests
-│   │   └── temperature.index.ts     # Temperature feature contract
-│   ├── time/
-│   │   ├── time.routes.ts        # POST /time endpoint
-│   │   ├── time.services.ts      # Time format logic
-│   │   ├── time.types.ts         # Zod schemas & TypeScript types
-│   │   ├── time.test.ts          # Time conversion tests
-│   │   └── time.index.ts         # Time feature contract
-│   └── supported/
-│       ├── supported.routes.ts   # GET /supported endpoint
-│       ├── supported.services.ts # List all supported options
-│       ├── supported.types.ts    # Zod schemas & TypeScript types
-│       ├── supported.test.ts     # Support listing tests
-│       └── supported.index.ts    # Support feature contract
-```
-
 ***
 
 ## 8. VoilaJSX AppKit Integration
 
 | Component | Import | Usage |
 |-----------|--------|-------|
-| **Utilities** | `import { utilClass } from '@voilajsx/appkit/util'` | Helper functions and utilities |
-| **Logging** | `import { loggerClass } from '@voilajsx/appkit/logger'` | Structured logging with request IDs |
-| **Error Handling** | `import { errorClass } from '@voilajsx/appkit/error'` | Centralized error management |
-| **Security** | `import { securityClass } from '@voilajsx/appkit/security'` | Input validation and sanitization |
-
-**Additional AppKit Modules:**
-| **Validation** | `import { validator } from '@voilajsx/appkit'` | Input validation with Zod schemas |
-| **HTTP Client** | `import { http } from '@voilajsx/appkit'` | External API calls for currency rates |
-| **Configuration** | `import { config } from '@voilajsx/appkit'` | Environment variables and settings |
+| **Utilities** | `import { util } from '@voilajsx/appkit'` | Helper functions and utilities |
+| **Logging** | `import { logger } from '@voilajsx/appkit'` | Structured logging with request IDs |
+| **Error Handling** | `import { error } from '@voilajsx/appkit'` | Centralized error management |
+| **Validation** | `import { validator } from '@voilajsx/appkit'` | Input validation and sanitization |
 
 ***
 
 ## 9. External Integrations
 
-| Service | Purpose | API Details | Error Handling |
-|---------|---------|-------------|---------------|
-| **Exchange Rate API (Optional)** | Live currency rates | Free tier API or static data | Fallback to cached rates, graceful degradation |
-| **None Required** | Temperature/Time conversions use mathematical formulas | Native JavaScript calculations | Input validation prevents calculation errors |
-
-**Note**: App can function entirely with static data - external API integration is optional enhancement.
+There are no external API integrations for this application.
 
 ***
 
@@ -188,42 +131,57 @@ src/api/converter/
 
 ## 11. Implementation Notes
 
-**Key Implementation Details:**
-- All conversions use precise mathematical formulas
-- Currency codes validated against predefined list of top 20 countries
-- Time parsing handles multiple input formats gracefully
-- Response caching for better performance
-
 ### Security Considerations
-- Input sanitization for all user data
-- Rate limiting on API endpoints
-- No sensitive data stored or logged
-- Validation prevents injection attacks
-- CORS properly configured
+- All input will be validated to ensure it is of the correct type.
 
-### Performance Considerations  
-- Mathematical conversions are near-instantaneous
-- Static currency rate data cached in memory
-- Response compression enabled
-- Minimal external dependencies
-- Efficient validation with early returns
+### Performance Considerations
+- The conversion logic is simple and should not have any performance issues.
 
 ### Error Handling Strategy
-- **Validation Errors**: Clear field-specific error messages
-- **Unsupported Operations**: List available alternatives
-- **System Errors**: Generic error with request ID for debugging
-- **Graceful Degradation**: Static data fallbacks when external APIs fail
-- **Consistent Format**: All errors follow same response structure
+- Errors will be handled by the Voila framework and returned as JSON objects with a 400 status code.
 
 ***
 
-## 12. Implementation Approval
+## 12. Implementation Workflow
+
+### Feature Implementation Order
+**⚠️ CRITICAL: Implement ONE feature at a time in this order:**
+
+1. **celsius-to-fahrenheit** (Priority: High, Complexity: Low)
+   - Implement the Celsius to Fahrenheit conversion.
+2. **fahrenheit-to-celsius** (Priority: High, Complexity: Low)
+   - Implement the Fahrenheit to Celsius conversion.
+
+### Per-Feature Definition of Done
+Each feature is complete when:
+- [ ] Feature generated (`npm run generate app:api converter/feature`)
+- [ ] Contract implemented (VoilaFeatureContract with endpoints)
+- [ ] Types implemented (Zod schemas + TypeScript interfaces)
+- [ ] Services implemented (business logic with error handling)
+- [ ] Routes implemented (Express endpoints with validation)
+- [ ] Feature validated (`npm run validate app:api converter/feature`)
+- [ ] Feature tested (`npm run test app:api converter/feature -- --unittest`)
+
+### Workflow Rules
+- **🛑 STOP**: Complete current feature 100% before starting next
+- **✅ GATE**: All validation and tests must pass before proceeding
+- **📋 TRACK**: Update workflow status after each completed feature
+
+### LLM Development Instructions
+- **@llm-rule SEQUENCE**: Follow the feature order exactly as specified
+- **@llm-rule STOP**: Do not generate next feature until current is complete
+- **@llm-rule VALIDATE**: Run validation and tests before proceeding
+- **@llm-rule WORKFLOW**: Use `npm run context workflow:next` to get next step
+
+***
+
+## 13. Implementation Approval
 
 ### Technical Review Status
-- ✅ Architecture design approved - simple, focused converter
-- ✅ Technology stack confirmed - Voila framework with TypeScript
-- ✅ Quality requirements defined - 95% coverage, clear error handling
-- ✅ Implementation approach validated - contract-driven development
+- 📋 Architecture design approved
+- 📋 Technology stack confirmed
+- 📋 Quality requirements defined
+- 📋 Implementation approach validated
 
 ### Development Ready
 **STATUS: APPROVED**

@@ -1,8 +1,8 @@
-# Generated workflow from welcome-technical-specification-v1.md
-project: welcome
-current_step: 42
-created_from: "docs/planning/welcome/welcome-technical-specification-v1.md"
-last_updated: "2025-08-25T06:19:18.682Z"
+# Generated workflow from converter-technical-specification-v1.md
+project: converter
+current_step: 3
+created_from: "docs/planning/converter/converter-technical-specification-v1.md"
+last_updated: "2025-08-25T09:01:43.382Z"
 
 # Instructions for Claude Code
 claude_instructions:
@@ -20,9 +20,9 @@ claude_instructions:
 steps:
   1:
     name: "Generate app structure"
-    command: "npm run generate app:api welcome"
+    command: "npm run generate app:api converter"
     status: "completed"
-    validate_success: "Check that src/api/welcome/ directory exists with config, readme, and spec files"
+    validate_success: "Check that src/api/converter/ directory exists with config, readme, and spec files"
     on_success: "npm run context complete 'Generate app structure'"
     on_failure: "Analyze error output, check planning approval, retry command"
     
@@ -36,19 +36,19 @@ steps:
     on_failure: "Check git installation, resolve git config issues, retry"
     
   3:
-    name: "Create welcome app branch"
-    command: "npm run git branch welcome"
-    status: "completed"
-    notes: "Create app branch: dev/[username]-welcome"
-    validate_success: "Verify branch dev/[username]-welcome is created and checked out"
-    on_success: "npm run context complete 'Create welcome app branch'"
+    name: "Create converter app branch"
+    command: "npm run git branch converter"
+    status: "pending"
+    notes: "Create app branch: dev/[username]-converter"
+    validate_success: "Verify branch dev/[username]-converter is created and checked out"
+    on_success: "npm run context complete 'Create converter app branch'"
     on_failure: "Check git status, resolve conflicts, ensure clean working directory, retry"
     
   4:
     name: "Update API specification"
     action: "manual_edit"
-    file: "src/api/welcome/spec/welcome.api.spec.yml"
-    status: "completed"
+    file: "src/api/converter/spec/converter.api.spec.yml"
+    status: "pending"
     notes: "Define all API endpoints from technical specification"
     validate_success: "Check that spec file contains all endpoints from technical specification"
     on_success: "npm run context complete 'Update API specification'"
@@ -56,352 +56,265 @@ steps:
     
 
   5:
-    name: "Generate hello feature"
-    command: "npm run generate app:api welcome/hello"
-    status: "completed"
+    name: "Generate celsius-to-fahrenheit feature"
+    command: "npm run generate app:api converter/celsius-to-fahrenheit"
+    status: "pending"
     priority: "High"
     complexity: "Low"
-    validate_success: "Check that src/api/welcome/features/hello/ directory exists with all template files"
-    on_success: "npm run context complete 'Generate hello feature'"
+    validate_success: "Check that src/api/converter/features/celsius-to-fahrenheit/ directory exists with all template files"
+    on_success: "npm run context complete 'Generate celsius-to-fahrenheit feature'"
     on_failure: "Check app exists, fix naming issues, retry generation"
     
   6:
-    name: "Implement hello contract"
+    name: "Implement celsius-to-fahrenheit contract"
     action: "implement"
-    file: "src/api/welcome/features/hello/hello.index.ts"
-    status: "completed"
+    file: "src/api/converter/features/celsius-to-fahrenheit/celsius-to-fahrenheit.index.ts"
+    status: "pending"
     notes: "Define VoilaFeatureContract with API endpoints"
     validate_success: "VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections"
-    on_success: "npm run context complete 'Implement hello contract'"
+    on_success: "npm run context complete 'Implement celsius-to-fahrenheit contract'"
     on_failure: "Review VoilaFeatureContract interface, fix syntax errors, add required fields"
     
   7:
-    name: "Implement hello types"
+    name: "Implement celsius-to-fahrenheit types"
     action: "implement"
-    file: "src/api/welcome/features/hello/hello.types.ts"
-    status: "completed"
+    file: "src/api/converter/features/celsius-to-fahrenheit/celsius-to-fahrenheit.types.ts"
+    status: "pending"
     notes: "Add Zod schemas and TypeScript interfaces"
     validate_success: "Zod schemas defined and TypeScript types exported for request/response"
-    on_success: "npm run context complete 'Implement hello types'"
+    on_success: "npm run context complete 'Implement celsius-to-fahrenheit types'"
     on_failure: "Review Zod documentation, fix schema validation, ensure type exports"
     
   8:
-    name: "Implement hello services"
+    name: "Implement celsius-to-fahrenheit services"
     action: "implement"
-    file: "src/api/welcome/features/hello/hello.services.ts"
-    status: "completed"
+    file: "src/api/converter/features/celsius-to-fahrenheit/celsius-to-fahrenheit.services.ts"
+    status: "pending"
     notes: "Add business logic with AppKit integration"
     validate_success: "Service class exported with methods matching contract endpoints"
-    on_success: "npm run context complete 'Implement hello services'"
+    on_success: "npm run context complete 'Implement celsius-to-fahrenheit services'"
     on_failure: "Review AppKit patterns, fix import errors, implement missing methods"
     
   9:
-    name: "Implement hello routes"
+    name: "Implement celsius-to-fahrenheit routes"
     action: "implement"
-    file: "src/api/welcome/features/hello/hello.routes.ts"
-    status: "completed"
+    file: "src/api/converter/features/celsius-to-fahrenheit/celsius-to-fahrenheit.routes.ts"
+    status: "pending"
     notes: "Add Express routes with validation"
     validate_success: "Express router exported with routes matching contract endpoints"
-    on_success: "npm run context complete 'Implement hello routes'"
+    on_success: "npm run context complete 'Implement celsius-to-fahrenheit routes'"
     on_failure: "Review Express routing, fix validation middleware, ensure route exports"
     
   10:
-    name: "Skim hello feature"
-    command: "npm run validate app:api welcome/hello -- --skim"
-    status: "completed"
+    name: "Skim celsius-to-fahrenheit feature"
+    command: "npm run validate app:api converter/celsius-to-fahrenheit -- --skim"
+    status: "pending"
     validate_success: "Command exits with code 0 and shows validation success"
-    on_success: "npm run context complete 'Skim hello feature'"
+    on_success: "npm run context complete 'Skim celsius-to-fahrenheit feature'"
     on_failure: "Review validation errors, fix TypeScript and syntax issues"
     
   11:
-    name: "Implement hello tests"
+    name: "Implement celsius-to-fahrenheit tests"
     action: "implement"
-    file: "src/api/welcome/features/hello/hello.test.ts"
-    status: "completed"
+    file: "src/api/converter/features/celsius-to-fahrenheit/celsius-to-fahrenheit.test.ts"
+    status: "pending"
     notes: "Write unit tests matching contract requirements"
     validate_success: "Test file contains tests matching contract test declarations"
-    on_success: "npm run context complete 'Implement hello tests'"
+    on_success: "npm run context complete 'Implement celsius-to-fahrenheit tests'"
     on_failure: "Review contract tests, implement missing test cases, ensure proper mocking"
     
   12:
-    name: "Run hello tests"
-    command: "npm run test app:api welcome/hello -- --unittest"
-    status: "completed"
+    name: "Run celsius-to-fahrenheit tests"
+    command: "npm run test app:api converter/celsius-to-fahrenheit -- --unittest"
+    status: "pending"
     notes: "Ensure 95% test coverage before proceeding"
     validate_success: "Tests pass with >=95% coverage and no failures"
-    on_success: "npm run context complete 'Run hello tests'"
+    on_success: "npm run context complete 'Run celsius-to-fahrenheit tests'"
     on_failure: "Fix failing tests, add missing test cases, ensure 95% coverage"
     
   13:
-    name: "Commit hello feature"
-    command: "npm run git commit welcome -- --message='implement hello feature'"
-    status: "completed"
-    notes: "Commit completed hello feature with validation"
+    name: "Commit celsius-to-fahrenheit feature"
+    command: "npm run git commit converter -- --message='implement celsius-to-fahrenheit feature'"
+    status: "pending"
+    notes: "Commit completed celsius-to-fahrenheit feature with validation"
     validate_success: "Git commit succeeds and shows commit hash"
-    on_success: "npm run context complete 'Commit hello feature'"
+    on_success: "npm run context complete 'Commit celsius-to-fahrenheit feature'"
     on_failure: "Review git status, fix validation errors, ensure clean working directory, retry commit"
 
 
   14:
-    name: "Generate greet feature"
-    command: "npm run generate app:api welcome/greet"
-    status: "completed"
+    name: "Generate fahrenheit-to-celsius feature"
+    command: "npm run generate app:api converter/fahrenheit-to-celsius"
+    status: "pending"
     priority: "High"
-    complexity: "Medium"
-    validate_success: "Check that src/api/welcome/features/greet/ directory exists with all template files"
-    on_success: "npm run context complete 'Generate greet feature'"
+    complexity: "Low"
+    validate_success: "Check that src/api/converter/features/fahrenheit-to-celsius/ directory exists with all template files"
+    on_success: "npm run context complete 'Generate fahrenheit-to-celsius feature'"
     on_failure: "Check app exists, fix naming issues, retry generation"
     
   15:
-    name: "Implement greet contract"
+    name: "Implement fahrenheit-to-celsius contract"
     action: "implement"
-    file: "src/api/welcome/features/greet/greet.index.ts"
-    status: "completed"
+    file: "src/api/converter/features/fahrenheit-to-celsius/fahrenheit-to-celsius.index.ts"
+    status: "pending"
     notes: "Define VoilaFeatureContract with API endpoints"
     validate_success: "VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections"
-    on_success: "npm run context complete 'Implement greet contract'"
+    on_success: "npm run context complete 'Implement fahrenheit-to-celsius contract'"
     on_failure: "Review VoilaFeatureContract interface, fix syntax errors, add required fields"
     
   16:
-    name: "Implement greet types"
+    name: "Implement fahrenheit-to-celsius types"
     action: "implement"
-    file: "src/api/welcome/features/greet/greet.types.ts"
-    status: "completed"
+    file: "src/api/converter/features/fahrenheit-to-celsius/fahrenheit-to-celsius.types.ts"
+    status: "pending"
     notes: "Add Zod schemas and TypeScript interfaces"
     validate_success: "Zod schemas defined and TypeScript types exported for request/response"
-    on_success: "npm run context complete 'Implement greet types'"
+    on_success: "npm run context complete 'Implement fahrenheit-to-celsius types'"
     on_failure: "Review Zod documentation, fix schema validation, ensure type exports"
     
   17:
-    name: "Implement greet services"
+    name: "Implement fahrenheit-to-celsius services"
     action: "implement"
-    file: "src/api/welcome/features/greet/greet.services.ts"
-    status: "completed"
+    file: "src/api/converter/features/fahrenheit-to-celsius/fahrenheit-to-celsius.services.ts"
+    status: "pending"
     notes: "Add business logic with AppKit integration"
     validate_success: "Service class exported with methods matching contract endpoints"
-    on_success: "npm run context complete 'Implement greet services'"
+    on_success: "npm run context complete 'Implement fahrenheit-to-celsius services'"
     on_failure: "Review AppKit patterns, fix import errors, implement missing methods"
     
   18:
-    name: "Implement greet routes"
+    name: "Implement fahrenheit-to-celsius routes"
     action: "implement"
-    file: "src/api/welcome/features/greet/greet.routes.ts"
-    status: "completed"
+    file: "src/api/converter/features/fahrenheit-to-celsius/fahrenheit-to-celsius.routes.ts"
+    status: "pending"
     notes: "Add Express routes with validation"
     validate_success: "Express router exported with routes matching contract endpoints"
-    on_success: "npm run context complete 'Implement greet routes'"
+    on_success: "npm run context complete 'Implement fahrenheit-to-celsius routes'"
     on_failure: "Review Express routing, fix validation middleware, ensure route exports"
     
   19:
-    name: "Skim greet feature"
-    command: "npm run validate app:api welcome/greet -- --skim"
-    status: "completed"
+    name: "Skim fahrenheit-to-celsius feature"
+    command: "npm run validate app:api converter/fahrenheit-to-celsius -- --skim"
+    status: "pending"
     validate_success: "Command exits with code 0 and shows validation success"
-    on_success: "npm run context complete 'Skim greet feature'"
+    on_success: "npm run context complete 'Skim fahrenheit-to-celsius feature'"
     on_failure: "Review validation errors, fix TypeScript and syntax issues"
     
   20:
-    name: "Implement greet tests"
+    name: "Implement fahrenheit-to-celsius tests"
     action: "implement"
-    file: "src/api/welcome/features/greet/greet.test.ts"
-    status: "completed"
+    file: "src/api/converter/features/fahrenheit-to-celsius/fahrenheit-to-celsius.test.ts"
+    status: "pending"
     notes: "Write unit tests matching contract requirements"
     validate_success: "Test file contains tests matching contract test declarations"
-    on_success: "npm run context complete 'Implement greet tests'"
+    on_success: "npm run context complete 'Implement fahrenheit-to-celsius tests'"
     on_failure: "Review contract tests, implement missing test cases, ensure proper mocking"
     
   21:
-    name: "Run greet tests"
-    command: "npm run test app:api welcome/greet -- --unittest"
-    status: "completed"
+    name: "Run fahrenheit-to-celsius tests"
+    command: "npm run test app:api converter/fahrenheit-to-celsius -- --unittest"
+    status: "pending"
     notes: "Ensure 95% test coverage before proceeding"
     validate_success: "Tests pass with >=95% coverage and no failures"
-    on_success: "npm run context complete 'Run greet tests'"
+    on_success: "npm run context complete 'Run fahrenheit-to-celsius tests'"
     on_failure: "Fix failing tests, add missing test cases, ensure 95% coverage"
     
   22:
-    name: "Commit greet feature"
-    command: "npm run git commit welcome -- --message='implement greet feature'"
-    status: "completed"
-    notes: "Commit completed greet feature with validation"
+    name: "Commit fahrenheit-to-celsius feature"
+    command: "npm run git commit converter -- --message='implement fahrenheit-to-celsius feature'"
+    status: "pending"
+    notes: "Commit completed fahrenheit-to-celsius feature with validation"
     validate_success: "Git commit succeeds and shows commit hash"
-    on_success: "npm run context complete 'Commit greet feature'"
+    on_success: "npm run context complete 'Commit fahrenheit-to-celsius feature'"
     on_failure: "Review git status, fix validation errors, ensure clean working directory, retry commit"
 
 
   23:
-    name: "Generate status feature"
-    command: "npm run generate app:api welcome/status"
-    status: "completed"
-    priority: "Medium"
-    complexity: "Low"
-    validate_success: "Check that src/api/welcome/features/status/ directory exists with all template files"
-    on_success: "npm run context complete 'Generate status feature'"
-    on_failure: "Check app exists, fix naming issues, retry generation"
-    
-  24:
-    name: "Implement status contract"
-    action: "implement"
-    file: "src/api/welcome/features/status/status.index.ts"
-    status: "completed"
-    notes: "Define VoilaFeatureContract with API endpoints"
-    validate_success: "VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections"
-    on_success: "npm run context complete 'Implement status contract'"
-    on_failure: "Review VoilaFeatureContract interface, fix syntax errors, add required fields"
-    
-  25:
-    name: "Implement status types"
-    action: "implement"
-    file: "src/api/welcome/features/status/status.types.ts"
-    status: "completed"
-    notes: "Add Zod schemas and TypeScript interfaces"
-    validate_success: "Zod schemas defined and TypeScript types exported for request/response"
-    on_success: "npm run context complete 'Implement status types'"
-    on_failure: "Review Zod documentation, fix schema validation, ensure type exports"
-    
-  26:
-    name: "Implement status services"
-    action: "implement"
-    file: "src/api/welcome/features/status/status.services.ts"
-    status: "completed"
-    notes: "Add business logic with AppKit integration"
-    validate_success: "Service class exported with methods matching contract endpoints"
-    on_success: "npm run context complete 'Implement status services'"
-    on_failure: "Review AppKit patterns, fix import errors, implement missing methods"
-    
-  27:
-    name: "Implement status routes"
-    action: "implement"
-    file: "src/api/welcome/features/status/status.routes.ts"
-    status: "completed"
-    notes: "Add Express routes with validation"
-    validate_success: "Express router exported with routes matching contract endpoints"
-    on_success: "npm run context complete 'Implement status routes'"
-    on_failure: "Review Express routing, fix validation middleware, ensure route exports"
-    
-  28:
-    name: "Skim status feature"
-    command: "npm run validate app:api welcome/status -- --skim"
-    status: "completed"
-    validate_success: "Command exits with code 0 and shows validation success"
-    on_success: "npm run context complete 'Skim status feature'"
-    on_failure: "Review validation errors, fix TypeScript and syntax issues"
-    
-  29:
-    name: "Implement status tests"
-    action: "implement"
-    file: "src/api/welcome/features/status/status.test.ts"
-    status: "completed"
-    notes: "Write unit tests matching contract requirements"
-    validate_success: "Test file contains tests matching contract test declarations"
-    on_success: "npm run context complete 'Implement status tests'"
-    on_failure: "Review contract tests, implement missing test cases, ensure proper mocking"
-    
-  30:
-    name: "Run status tests"
-    command: "npm run test app:api welcome/status -- --unittest"
-    status: "completed"
-    notes: "Ensure 95% test coverage before proceeding"
-    validate_success: "Tests pass with >=95% coverage and no failures"
-    on_success: "npm run context complete 'Run status tests'"
-    on_failure: "Fix failing tests, add missing test cases, ensure 95% coverage"
-    
-  31:
-    name: "Commit status feature"
-    command: "npm run git commit welcome -- --message='implement status feature'"
-    status: "completed"
-    notes: "Commit completed status feature with validation"
-    validate_success: "Git commit succeeds and shows commit hash"
-    on_success: "npm run context complete 'Commit status feature'"
-    on_failure: "Review git status, fix validation errors, ensure clean working directory, retry commit"
-
-
-  32:
     name: "Full app validation"
-    command: "npm run validate app:api welcome"
-    status: "completed"
+    command: "npm run validate app:api converter"
+    status: "pending"
     validate_success: "All features pass validation with no errors"
     on_success: "npm run context complete 'Full app validation'"
     on_failure: "Review validation errors for each feature, fix contracts and implementations"
     
-  33:
+  24:
     name: "Full unit test suite"
-    command: "npm run test app:api welcome -- --unittest"
-    status: "completed"
+    command: "npm run test app:api converter -- --unittest"
+    status: "pending"
     notes: "Run all feature unit tests to ensure 95% coverage"
     validate_success: "All tests pass with >=95% total coverage"
     on_success: "npm run context complete 'Full unit test suite'"
     on_failure: "Fix failing tests, add missing test cases, ensure coverage requirements"
     
-  34:
+  25:
     name: "Generate API test cases"
-    command: "npm run generate app:api welcome -- --testcases"
-    status: "completed"
+    command: "npm run generate app:api converter -- --testcases"
+    status: "pending"
     notes: "Generate Excel-based API test cases from specifications"
     validate_success: "Excel test case file generated successfully in __apitest__ directory"
     on_success: "npm run context complete 'Generate API test cases'"
     on_failure: "Check API specification, fix YAML format, ensure endpoints are defined"
     
-  35:
+  26:
     name: "Run API integration tests"
-    command: "npm run test app:api welcome -- --apitest"
-    status: "completed"
+    command: "npm run test app:api converter -- --apitest"
+    status: "pending"
     notes: "Execute API tests against running server, verify endpoint behavior"
     validate_success: "All API tests pass with correct responses and status codes"
     on_success: "npm run context complete 'Run API integration tests'"
     on_failure: "Start development server, fix endpoint implementations, verify test cases"
     
-  36:
+  27:
     name: "Run compliance testing"
-    command: "npm run test app:api welcome -- --compliance"
-    status: "completed"
+    command: "npm run test app:api converter -- --compliance"
+    status: "pending"
     notes: "Verify API compliance against requirements, update config with results"
     validate_success: "Compliance tests pass and config updated with results"
     on_success: "npm run context complete 'Run compliance testing'"
     on_failure: "Review compliance requirements, fix API specification, update implementations"
     
-  37:
+  28:
     name: "Full test suite validation"
-    command: "npm run test app:api welcome"
-    status: "completed"
+    command: "npm run test app:api converter"
+    status: "pending"
     notes: "Run complete test pipeline: unit + API + compliance"
     validate_success: "All tests pass: unit tests, API tests, and compliance checks"
     on_success: "npm run context complete 'Full test suite validation'"
     on_failure: "Review all test failures, fix issues systematically, ensure all test types pass"
     
-  38:
+  29:
     name: "Update README documentation"
     action: "implement"
-    file: "src/api/welcome/welcome.readme.md"
-    status: "completed"
+    file: "src/api/converter/converter.readme.md"
+    status: "pending"
     notes: "Update README with API documentation, endpoints, and usage examples"
     validate_success: "README contains complete API documentation with examples and usage instructions"
     on_success: "npm run context complete 'Update README documentation'"
     on_failure: "Review API endpoints, add usage examples, include setup and testing instructions"
     
-  39:
-    name: "Commit welcome app"
-    command: "npm run git commit welcome"
-    status: "completed"
+  30:
+    name: "Commit converter app"
+    command: "npm run git commit converter"
+    status: "pending"
     notes: "Commit completed app with validation"
     validate_success: "Git commit succeeds with conventional commit message"
-    on_success: "npm run context complete 'Commit welcome app'"
+    on_success: "npm run context complete 'Commit converter app'"
     on_failure: "Review git status, fix validation issues, ensure clean commit"
     
-  40:
-    name: "Push welcome app for PR"
-    command: "npm run git push welcome"
-    status: "completed"
+  31:
+    name: "Push converter app for PR"
+    command: "npm run git push converter"
+    status: "pending"
     notes: "Push app branch for Pull Request creation"
     validate_success: "Branch pushed successfully to remote repository"
-    on_success: "npm run context complete 'Push welcome app for PR'"
+    on_success: "npm run context complete 'Push converter app for PR'"
     on_failure: "Check remote repository access, resolve merge conflicts, retry push"
     
-  41:
+  32:
     name: "Create Pull Request"
     action: "manual"
-    status: "completed"
-    notes: "Create PR via GitHub/GitLab: dev/[username]-welcome → development"
+    status: "pending"
+    notes: "Create PR via GitHub/GitLab: dev/[username]-converter → development"
     validate_success: "Pull Request created successfully with proper title and description"
     on_success: "npm run context complete 'Create Pull Request'"
     on_failure: "Check repository permissions, ensure branch is pushed, create PR manually via web interface"

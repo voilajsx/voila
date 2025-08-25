@@ -2,154 +2,56 @@
 ## converter Application
 
 ### Version: v1.0.0
-### Last Updated: 2025-08-24
+### Last Updated: 2025-08-25
 
 ***
 
 ## 1. Business Overview
 
 ### Purpose
-simple app for currency, temperate and time
-
-A simple, focused converter application that provides three essential conversion utilities:
-- **Currency conversion** for top 20 countries' currencies
-- **Temperature conversion** between Celsius and Fahrenheit
-- **Time format conversion** between 24-hour and 12-hour formats
-
-The app emphasizes clarity and user-friendly error handling, clearly communicating scope limitations when users request unsupported conversions.
+The purpose of this application is to provide a simple and reliable way to convert temperatures between Celsius and Fahrenheit. This will be a public-facing API that can be used by other applications or services.
 
 ### Target Users
-**Primary Users:**
-- Travelers needing quick currency and temperature conversions
-- International business professionals working across time zones
-- Students and professionals needing simple unit conversions
-- Anyone needing fast, reliable conversions without complex features
-
-**User Characteristics:**
-- Expect fast, accurate results
-- Value clear error messages when requesting unsupported conversions
-- Need simple, straightforward API responses
+The target users are developers who need to integrate temperature conversion functionality into their applications.
 
 ### Success Criteria
-**Success Metrics:**
-- **Accuracy**: 100% accurate conversions within supported scope
-- **Clarity**: Clear, helpful error messages for out-of-scope requests
-- **Performance**: <200ms response time for all conversions
-- **Reliability**: 99.9% uptime for the API
-- **User Satisfaction**: Intuitive error handling that guides users to supported options
+- The application should be able to handle a high volume of requests.
+- The conversion should be accurate to within 0.1 degrees.
+- The API should be well-documented and easy to use.
 
 ***
 
 ## 2. User Requirements
 
 ### User Stories
-
-**Currency Conversion:**
-- As a traveler, I want to convert between currencies of top 20 countries so that I can understand prices while traveling
-- As a user, I want clear error messages for unsupported currencies so that I know which currencies are available
-
-**Temperature Conversion:**
-- As a user, I want to convert Celsius to Fahrenheit so that I can understand weather in different units
-- As a user, I want to convert Fahrenheit to Celsius so that I can work with metric measurements
-
-**Time Format Conversion:**
-- As a user, I want to convert 24-hour time to 12-hour format so that I can read time in my preferred format
-- As a user, I want to convert 12-hour time to 24-hour format so that I can work with military/international time
-
-**Error Handling:**
-- As a user, I want clear messages when I request unsupported conversions so that I understand the app's limitations
-- As a user, I want to see what conversions are available so that I can use the app effectively
+- As a developer, I want to be able to convert a temperature from Celsius to Fahrenheit so that I can display it to my users in their preferred unit.
+- As a developer, I want to be able to convert a temperature from Fahrenheit to Celsius so that I can process it in my application.
 
 ### Acceptance Criteria
-**Response Time Requirements:**
-- All conversions must respond within 200ms
-- Error responses must be immediate (<50ms)
-
-**Accuracy Requirements:**
-- Currency conversions accurate to 4 decimal places
-- Temperature conversions accurate to 2 decimal places
-- Time conversions must be exact
-
-**API Interface Requirements:**
-- RESTful API with clear endpoint patterns
-- JSON responses with consistent structure
-- Proper HTTP status codes (200, 400, 404)
-
-**Error Handling Requirements:**
-- Clear, user-friendly error messages
-- List of supported options when user requests unsupported conversion
-- Consistent error response format across all endpoints
+- The API should return a JSON object with the converted temperature.
+- The API should handle invalid input gracefully.
+- The API should be available 99.9% of the time.
 
 ***
 
 ## 3. Functional Scope
 
 ### Core Features
-**1. Currency Conversion**
-- Convert between currencies of top 20 countries
-- Real-time or recent exchange rates
-- Support for major currencies: USD, EUR, GBP, JPY, AUD, CAD, CHF, CNY, SEK, NZD, MXN, SGD, HKD, NOK, INR, KRW, TRY, RUB, BRL, ZAR
-
-**2. Temperature Conversion**
-- Celsius to Fahrenheit conversion
-- Fahrenheit to Celsius conversion
-- Accurate mathematical conversion using standard formulas
-
-**3. Time Format Conversion**
-- 24-hour to 12-hour format (e.g., "14:30" → "2:30 PM")
-- 12-hour to 24-hour format (e.g., "2:30 PM" → "14:30")
-- Handle edge cases like midnight and noon
-
-**4. Clear Scope Communication**
-- Informative error messages for unsupported requests
-- List available options when user goes out of scope
-- Consistent API documentation
+- Convert Celsius to Fahrenheit.
+- Convert Fahrenheit to Celsius.
 
 ### API Requirements
-**Endpoint Patterns:**
-- `/api/converter/currency` - Currency conversions
-- `/api/converter/temperature` - Temperature conversions
-- `/api/converter/time` - Time format conversions
-- `/api/converter/supported` - List supported options
-
-**Input/Output Formats:**
-- JSON request/response format
-- Consistent response structure with `success`, `data`, `error` fields
-- Clear parameter validation with descriptive field names
-
-**Validation Rules:**
-- Currency codes must be valid ISO codes from supported list
-- Temperature values must be numeric
-- Time values must follow valid time patterns
-- Required fields must be present
-
-**Error Responses:**
-- HTTP 400 for invalid input with clear error message
-- HTTP 404 for unsupported conversions with available options
-- HTTP 500 for system errors
-- Consistent error response format
+- The API will have two endpoints:
+    - `POST /celsius-to-fahrenheit`
+    - `POST /fahrenheit-to-celsius`
+- The input for both endpoints will be a JSON object with a single key, `temperature`, which is a number.
+- The output for both endpoints will be a JSON object with a single key, `temperature`, which is a number.
+- The API will return a 400 error if the input is invalid.
 
 ### Business Rules
-**Currency Conversion Rules:**
-- Only support top 20 country currencies (predefined list)
-- Exchange rates updated daily or use reliable static rates for demo
-- Conversion amounts must be positive numbers
-- Results rounded to 4 decimal places
-
-**Temperature Conversion Rules:**
-- Standard conversion formulas: F = (C × 9/5) + 32, C = (F - 32) × 5/9
-- Accept reasonable temperature ranges (-273°C to 1000°C, -459°F to 1832°F)
-- Results rounded to 2 decimal places
-
-**Time Conversion Rules:**
-- 24-hour format: 00:00 to 23:59
-- 12-hour format: 12:00 AM to 11:59 PM
-- Handle special cases: 00:00 = 12:00 AM, 12:00 = 12:00 PM
-
-**Scope Limitations:**
-- Clearly communicate unsupported currencies, temperatures, or formats
-- Provide helpful suggestions for valid alternatives
-- No complex financial calculations or historical data
+- The conversion formulas will be:
+    - F = (C * 9/5) + 32
+    - C = (F - 32) * 5/9
 
 ***
 
@@ -162,50 +64,22 @@ The app emphasizes clarity and user-friendly error handling, clearly communicati
 - Minimum 95% test coverage
 
 ### Business Constraints
-**Scope Limitations:**
-- Currency support limited to top 20 countries only
-- No historical exchange rate data
-- No complex financial calculations or fees
-- Temperature conversions limited to Celsius/Fahrenheit only
-- Time conversions limited to 12/24 hour formats only
-
-**Timeline Constraints:**
-- MVP development: 1-2 weeks
-- Simple, focused functionality over complex features
-- Clear error handling is higher priority than feature expansion
+- The application must be developed within 2 weeks.
 
 ### External Dependencies
-**Optional Currency Data:**
-- Exchange rate API (for live rates) or static rate data for demo
-- No dependency on complex financial services
-
-**No External Dependencies Required:**
-- Temperature and time conversions use mathematical formulas
-- Can function entirely with static data if needed
-- Designed to be self-contained and reliable
+- There are no external dependencies.
 
 ***
 
 ## 5. Timeline & Approval
 
 ### Development Timeline
-**Phase 1: Core Development (5-7 days)**
-- Set up Voila app structure
-- Implement currency conversion feature
-- Implement temperature conversion feature
-- Implement time format conversion feature
-
-**Phase 2: Error Handling & Polish (2-3 days)**
-- Comprehensive error messages
-- Supported options endpoint
-- API documentation
-- Testing and validation
-
-**Total Estimated Timeline: 7-10 days**
+- Week 1: Develop and test the Celsius to Fahrenheit conversion.
+- Week 2: Develop and test the Fahrenheit to Celsius conversion and deploy the application.
 
 ### Stakeholder Approval
 - Business Requirements: **STATUS: APPROVED**
-- Technical Specification: **STATUS: APPROVED**
+- Technical Specification: **STATUS: UNDER_REVIEW**
 
 **Note:** Complete all [FILL_IN] sections, then change STATUS to APPROVED and run generation.
 
