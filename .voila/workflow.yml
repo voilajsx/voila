@@ -1,6 +1,6 @@
 # Generated workflow from welcome-technical-specification-v1.md
 project: welcome
-current_step: 22
+current_step: 31
 created_from: "docs/planning/welcome/welcome-technical-specification-v1.md"
 last_updated: "2025-08-25T06:19:18.682Z"
 
@@ -222,7 +222,7 @@ steps:
   22:
     name: "Commit greet feature"
     command: "npm run git commit welcome -- --message='implement greet feature'"
-    status: "pending"
+    status: "completed"
     notes: "Commit completed greet feature with validation"
     validate_success: "Git commit succeeds and shows commit hash"
     on_success: "npm run context complete 'Commit greet feature'"
@@ -232,7 +232,7 @@ steps:
   23:
     name: "Generate status feature"
     command: "npm run generate app:api welcome/status"
-    status: "pending"
+    status: "completed"
     priority: "Medium"
     complexity: "Low"
     validate_success: "Check that src/api/welcome/features/status/ directory exists with all template files"
@@ -243,7 +243,7 @@ steps:
     name: "Implement status contract"
     action: "implement"
     file: "src/api/welcome/features/status/status.index.ts"
-    status: "pending"
+    status: "completed"
     notes: "Define VoilaFeatureContract with API endpoints"
     validate_success: "VoilaFeatureContract exported with name, api endpoints, dependencies, and provides sections"
     on_success: "npm run context complete 'Implement status contract'"
@@ -253,7 +253,7 @@ steps:
     name: "Implement status types"
     action: "implement"
     file: "src/api/welcome/features/status/status.types.ts"
-    status: "pending"
+    status: "completed"
     notes: "Add Zod schemas and TypeScript interfaces"
     validate_success: "Zod schemas defined and TypeScript types exported for request/response"
     on_success: "npm run context complete 'Implement status types'"
@@ -263,7 +263,7 @@ steps:
     name: "Implement status services"
     action: "implement"
     file: "src/api/welcome/features/status/status.services.ts"
-    status: "pending"
+    status: "completed"
     notes: "Add business logic with AppKit integration"
     validate_success: "Service class exported with methods matching contract endpoints"
     on_success: "npm run context complete 'Implement status services'"
@@ -273,7 +273,7 @@ steps:
     name: "Implement status routes"
     action: "implement"
     file: "src/api/welcome/features/status/status.routes.ts"
-    status: "pending"
+    status: "completed"
     notes: "Add Express routes with validation"
     validate_success: "Express router exported with routes matching contract endpoints"
     on_success: "npm run context complete 'Implement status routes'"
@@ -282,7 +282,7 @@ steps:
   28:
     name: "Skim status feature"
     command: "npm run validate app:api welcome/status -- --skim"
-    status: "pending"
+    status: "completed"
     validate_success: "Command exits with code 0 and shows validation success"
     on_success: "npm run context complete 'Skim status feature'"
     on_failure: "Review validation errors, fix TypeScript and syntax issues"
@@ -291,7 +291,7 @@ steps:
     name: "Implement status tests"
     action: "implement"
     file: "src/api/welcome/features/status/status.test.ts"
-    status: "pending"
+    status: "completed"
     notes: "Write unit tests matching contract requirements"
     validate_success: "Test file contains tests matching contract test declarations"
     on_success: "npm run context complete 'Implement status tests'"
@@ -300,7 +300,7 @@ steps:
   30:
     name: "Run status tests"
     command: "npm run test app:api welcome/status -- --unittest"
-    status: "pending"
+    status: "completed"
     notes: "Ensure 95% test coverage before proceeding"
     validate_success: "Tests pass with >=95% coverage and no failures"
     on_success: "npm run context complete 'Run status tests'"
