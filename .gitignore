@@ -16,8 +16,13 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# Logs
-logs
+# Auth secrets (NEVER commit these)
+.env.auth
+.env.auth.*
+*auth-secrets*
+
+# Log files (not log directories containing source code)
+logs/
 *.log
 
 # Coverage directory used by tools like istanbul

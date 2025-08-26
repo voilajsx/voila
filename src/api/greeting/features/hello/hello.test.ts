@@ -57,17 +57,53 @@ vi.mock('@voilajsx/appkit/security', () => ({
   }
 }));
 
+vi.mock('@voilajsx/appkit/auth', () => ({
+  authClass: {
+    get: () => ({
+      requireApiToken: vi.fn(() => (req: any, res: any, next: any) => {
+        // Mock API token validation - simulate valid API token
+        req.apiToken = { keyId: 'test-service', role: 'service' };
+        next();
+      }),
+      requireLoginToken: vi.fn(() => (req: any, res: any, next: any) => {
+        // Mock login token validation - simulate valid user token
+        req.user = { userId: 'test-user-123', role: 'user', level: 'basic' };
+        next();
+      }),
+      requireUserRoles: vi.fn((roles: string[]) => (req: any, res: any, next: any) => {
+        // Mock role validation - simulate admin user for testing
+        req.user = { userId: 'test-admin-123', role: 'admin', level: 'tenant' };
+        next();
+      }),
+      user: vi.fn((req: any) => {
+        // Return mock user based on what's set by middleware
+        return req.user || null;
+      })
+    })
+  }
+}));
+
 // Import after mocking
 import { HelloService } from './hello.services.js';
+import { authClass } from '@voilajsx/appkit/auth';
 
 let app: express.Application;
 
 beforeEach(() => {
   app = express();
   app.use(express.json());
+  
+  const auth = authClass.get();
+  
+  // Setup routes with auth middleware (matching the actual routes)
   app.get('/api/greeting/hello', HelloService.greetDefault);
-  app.get('/api/greeting/hello/goodday', HelloService.greetGoodDay);
-  app.get('/api/greeting/hello/:name', HelloService.greetByName);
+  app.get('/api/greeting/hello/goodday', auth.requireApiToken(), HelloService.greetGoodDay);
+  app.get('/api/greeting/hello/thankyou', auth.requireLoginToken(), HelloService.greetThankYou);
+  app.get('/api/greeting/hello/:name', 
+    auth.requireLoginToken(), 
+    auth.requireUserRoles(['admin.tenant']), 
+    HelloService.greetByName
+  );
   
   app.use((error: any, req: Request, res: Response, next: any) => {
     res.status(error.statusCode || 500).json({
@@ -78,8 +114,8 @@ beforeEach(() => {
   });
 });
 
-describe('Hello Feature Basic Tests', () => {
-  it('should return default greeting', async () => {
+describe('Hello Feature Authentication Tests', () => {
+  it('should return default greeting (PUBLIC - no auth)', async () => {
     const response = await request(app)
       .get('/api/greeting/hello')
       .expect(200);
@@ -95,9 +131,7 @@ describe('Hello Feature Basic Tests', () => {
     });
   });
 
-  // REMOVED: should return personalized greeting (testing none validation - should be ignored)
-
-  it('should return good day greeting', async () => {
+  it('should return good day greeting (API KEY required)', async () => {
     const response = await request(app)
       .get('/api/greeting/hello/goodday')
       .expect(200);
@@ -113,7 +147,47 @@ describe('Hello Feature Basic Tests', () => {
     });
   });
 
-  it('should handle empty name parameter', async () => {
+  it('should return thank you greeting (LOGIN required)', async () => {
+    const response = await request(app)
+      .get('/api/greeting/hello/thankyou')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      success: true,
+      data: {
+        greetings: [
+          'Thank You, User test-user-123!',
+          'Gracias, Usuario test-user-123!',
+          'Merci, Utilisateur test-user-123!'
+        ],
+        name: 'User test-user-123',
+        language_count: 3,
+        feature: 'hello'
+      }
+    });
+  });
+
+  it('should return personalized greeting (ADMIN required)', async () => {
+    const response = await request(app)
+      .get('/api/greeting/hello/john')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      success: true,
+      data: {
+        greetings: [
+          'Hello, john! (Admin: test-admin-123)',
+          'Hola, john! (Admin: test-admin-123)',
+          'Bonjour, john! (Admin: test-admin-123)'
+        ],
+        name: 'john',
+        language_count: 3,
+        feature: 'hello'
+      }
+    });
+  });
+
+  it('should handle empty name parameter for admin endpoint', async () => {
     const response = await request(app)
       .get('/api/greeting/hello/')
       .expect(400);

@@ -1,0 +1,34 @@
+// Prisma schema for greeting app
+// This is your Prisma schema file - customize it for your needs
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// GREETING APP MODELS
+// ========================================
+
+model GreetingLog {
+  id          String    @id @default(uuid())
+  endpoint    String    // Which greeting endpoint was called (/hello, /goodday, etc.)
+  message     String    // The greeting message returned
+  userName    String?   @map("user_name")    // Name from URL parameter or authenticated user
+  userId      String?   @map("user_id")     // Authenticated user ID (if available)
+  userRole    String?   @map("user_role")   // User role (if authenticated)
+  ipAddress   String?   @map("ip_address")  // Client IP address
+  userAgent   String?   @map("user_agent")  // Client user agent
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("greeting_logs")
+  @@index([endpoint])
+  @@index([createdAt])
+  @@index([userId])
+}

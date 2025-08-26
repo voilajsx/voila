@@ -1046,7 +1046,7 @@ user_notes: "Default workflow - customize based on your specific requirements."
 async function main() {
   const args = process.argv.slice(2);
   
-  if (args.length < 2) {
+  if (args.length < 1) {
     showHelp();
     return;
   }
@@ -1054,6 +1054,20 @@ async function main() {
   const command = args[0];
   const target = args[1];
   const options = parseOptions(args.slice(2));
+  
+  // Special handling for commands that don't require a target
+  const noTargetCommands = ['secrets', 'tokens'];
+  const requireTargetCommands = ['prisma', 'workflow', 'app:api'];
+  
+  if (noTargetCommands.includes(command)) {
+    if (args.length < 1) {
+      showHelp();
+      return;
+    }
+  } else if (args.length < 2) {
+    showHelp();
+    return;
+  }
   
   console.log('🏗️  Voila Generator');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -1079,6 +1093,16 @@ async function main() {
       case 'workflow':
         await generateWorkflow(target, options);
         break;
+        
+      case 'secrets':
+        await generateSecrets(options);
+        break;
+        
+      case 'tokens':
+        await generateTokens(options);
+        break;
+        
+        
       default:
         console.log(`❌ Unknown command: ${command}`);
         showHelp();
@@ -1468,17 +1492,294 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
+// Generate all secrets for .env file
+async function generateSecrets(options: GenerateOptions = {}): Promise<void> {
+  console.log('🔐 Generating Application Secrets');
+  
+  const mainEnvPath = join(__dirname, '..', '.env');
+  const crypto = await import('crypto');
+  
+  // Generate secure random secrets
+  const authSecret = crypto.randomBytes(32).toString('hex');
+  const csrfSecret = crypto.randomBytes(16).toString('hex');
+  const encryptionKey = crypto.randomBytes(32).toString('hex');
+  
+  console.log('✅ Generated secure random secrets');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🔑 Auth Secret:', authSecret.substring(0, 16) + '...');
+  console.log('🔑 CSRF Secret:', csrfSecret.substring(0, 16) + '...');
+  console.log('🔑 Encryption Key:', encryptionKey.substring(0, 16) + '...');
+  console.log('');
+  
+  // Check if .env exists and has secrets
+  let envExists = existsSync(mainEnvPath);
+  let hasSecrets = false;
+  
+  if (envExists) {
+    const envContent = readFileSync(mainEnvPath, 'utf-8');
+    hasSecrets = envContent.includes('VOILA_AUTH_SECRET') || 
+                 envContent.includes('VOILA_SECURITY_CSRF_SECRET') ||
+                 envContent.includes('VOILA_SECURITY_ENCRYPTION_KEY');
+  }
+  
+  // Safety check
+  if (hasSecrets && !options.overwrite) {
+    console.log('🛑 SECRETS ALREADY EXIST IN .env');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🚨 SAFETY HALT - Preventing accidental secret overwrite');
+    console.log('');
+    console.log('✅ To regenerate with new secrets:');
+    console.log('   npm run generate secrets -- --overwrite');
+    console.log('');
+    console.log('⚠️  This will invalidate all existing tokens');
+    throw new Error('Secrets already exist - use --overwrite flag to regenerate');
+  }
+  
+  // Create/update .env file
+  let envContent = '';
+  if (envExists && !options.overwrite) {
+    envContent = readFileSync(mainEnvPath, 'utf-8');
+  } else if (envExists && options.overwrite) {
+    // Remove existing secrets and recreate
+    envContent = readFileSync(mainEnvPath, 'utf-8')
+      .replace(/VOILA_AUTH_SECRET=.*/g, '')
+      .replace(/VOILA_SECURITY_CSRF_SECRET=.*/g, '')
+      .replace(/VOILA_SECURITY_ENCRYPTION_KEY=.*/g, '')
+      .replace(/\n\n+/g, '\n\n'); // Clean up extra newlines
+  }
+  
+  // Add new secrets
+  const secretsSection = `
+# VoilaJSX Application Secrets (Generated: ${new Date().toISOString()})
+VOILA_AUTH_SECRET=${authSecret}
+VOILA_SECURITY_CSRF_SECRET=${csrfSecret}
+VOILA_SECURITY_ENCRYPTION_KEY=${encryptionKey}
+`;
+  
+  const finalContent = envContent + secretsSection;
+  await fs.writeFile(mainEnvPath, finalContent, 'utf-8');
+  
+  console.log('📁 File Status:');
+  if (options.overwrite) {
+    console.log('   🔄 Updated .env with new secrets');
+  } else {
+    console.log('   ✅ Added secrets to .env');
+  }
+  
+  console.log('');
+  console.log('🚀 Secrets Setup Complete!');
+  console.log('   📂 Location: .env (main environment file)');
+  console.log('');
+  console.log('📝 Next steps:');
+  console.log('   npm run generate tokens  # Generate all test tokens');
+}
+
+// Load environment variables from .env
+async function loadEnvVars(): Promise<Record<string, string>> {
+  const mainEnvPath = join(__dirname, '..', '.env');
+  
+  if (!existsSync(mainEnvPath)) {
+    console.error('❌ Environment file not found: .env');
+    console.error('   Run first: npm run generate secrets');
+    throw new Error('Environment configuration required');
+  }
+  
+  const envContent = readFileSync(mainEnvPath, 'utf-8');
+  const envVars: Record<string, string> = {};
+  
+  envContent.split('\n').forEach(line => {
+    line = line.trim();
+    if (line && !line.startsWith('#') && line.includes('=')) {
+      const [key, ...valueParts] = line.split('=');
+      if (key && valueParts.length > 0) {
+        envVars[key.trim()] = valueParts.join('=').trim();
+      }
+    }
+  });
+  
+  return envVars;
+}
+
+// Create JWT manually using Node.js crypto
+async function createJWT(payload: any, secret: string, expiresIn: string = '7d'): Promise<string> {
+  const crypto = await import('crypto');
+  
+  const header = {
+    alg: 'HS256',
+    typ: 'JWT'
+  };
+  
+  // Calculate expiration
+  const now = Math.floor(Date.now() / 1000);
+  let exp = now + (7 * 24 * 60 * 60); // 7 days default
+  
+  if (expiresIn.endsWith('d')) {
+    const days = parseInt(expiresIn.slice(0, -1));
+    exp = now + (days * 24 * 60 * 60);
+  } else if (expiresIn.endsWith('h')) {
+    const hours = parseInt(expiresIn.slice(0, -1));
+    exp = now + (hours * 60 * 60);
+  } else if (expiresIn.endsWith('y')) {
+    const years = parseInt(expiresIn.slice(0, -1));
+    exp = now + (years * 365 * 24 * 60 * 60);
+  }
+  
+  const tokenPayload = {
+    ...payload,
+    iat: now,
+    exp: exp
+  };
+  
+  // Encode header and payload
+  const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
+  const encodedPayload = Buffer.from(JSON.stringify(tokenPayload)).toString('base64url');
+  
+  // Create signature
+  const signature = crypto
+    .createHmac('sha256', secret)
+    .update(`${encodedHeader}.${encodedPayload}`)
+    .digest('base64url');
+  
+  return `${encodedHeader}.${encodedPayload}.${signature}`;
+}
+
+// Generate all test tokens at once
+async function generateTokens(options: GenerateOptions = {}): Promise<void> {
+  console.log('🔐 Generating All Test Tokens');
+  
+  const envVars = await loadEnvVars();
+  const authSecret = envVars.VOILA_AUTH_SECRET;
+  
+  if (!authSecret) {
+    console.error('❌ VOILA_AUTH_SECRET not found in .env');
+    console.error('   Run first: npm run generate secrets');
+    throw new Error('Auth secret required');
+  }
+  
+  console.log('✅ Auth secret loaded from .env');
+  
+  // Initialize AppKit auth for proper token generation
+  process.env.VOILA_AUTH_SECRET = authSecret;
+  const { authClass } = await import('@voilajsx/appkit/auth');
+  const auth = authClass.get();
+  
+  console.log('✅ AppKit auth initialized');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  // Define all 9 test users as per AppKit role hierarchy
+  // admin.system > admin.org > admin.tenant > moderator.manage > moderator.approve > moderator.review > user.max > user.pro > user.basic
+  const testUsers = [
+    // Admin levels (highest permissions)
+    { username: 'admin_system', role: 'admin', level: 'system', type: 'login', expires: '7d' },
+    { username: 'admin_org', role: 'admin', level: 'org', type: 'login', expires: '7d' },
+    { username: 'admin_tenant', role: 'admin', level: 'tenant', type: 'login', expires: '7d' },
+    
+    // Moderator levels (medium permissions)
+    { username: 'moderator_manage', role: 'moderator', level: 'manage', type: 'login', expires: '7d' },
+    { username: 'moderator_approve', role: 'moderator', level: 'approve', type: 'login', expires: '7d' },
+    { username: 'moderator_review', role: 'moderator', level: 'review', type: 'login', expires: '7d' },
+    
+    // User levels (basic permissions)
+    { username: 'user_max', role: 'user', level: 'max', type: 'login', expires: '7d' },
+    { username: 'user_pro', role: 'user', level: 'pro', type: 'login', expires: '7d' },
+    { username: 'user_basic', role: 'user', level: 'basic', type: 'login', expires: '7d' }
+  ];
+  
+  const apiServices = [
+    { keyId: 'webhook_service', role: 'admin', level: 'system', type: 'api', expires: '1y' }
+  ];
+  
+  // Generate tokens and save to .env.auth for testing
+  const authEnvPath = join(__dirname, '..', '.env.auth');
+  let tokenList = `# Test Tokens - Generated: ${new Date().toISOString()}
+# Use these tokens for testing authentication in all apps and features
+# Format: USERNAME=TOKEN_VALUE
+
+# ========================================
+# LOGIN TOKENS (User Authentication)
+# ========================================
+`;
+
+  // API tokens section will be added after login tokens
+  
+  console.log('\n📋 TEST TOKENS GENERATED');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('| USERNAME          | ROLE      | LEVEL   | TYPE  |');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  // Generate login tokens using AppKit auth
+  for (const user of testUsers) {
+    const token = auth.generateLoginToken({
+      userId: user.username,
+      role: user.role,
+      level: user.level,
+    }, user.expires);
+    
+    console.log(`| ${user.username.padEnd(17)} | ${user.role.padEnd(9)} | ${user.level.padEnd(7)} | ${user.type.padEnd(5)} |`);
+    tokenList += `${user.username.toUpperCase()}=${token}\n`;
+  }
+  
+  // Add API tokens section separator
+  tokenList += `
+# ========================================
+# API TOKENS (Service Authentication)
+# ========================================
+`;
+  
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  // Generate API tokens using AppKit auth
+  for (const service of apiServices) {
+    const token = auth.generateApiToken({
+      keyId: service.keyId,
+      role: service.role,
+      level: service.level,
+    }, service.expires);
+    
+    console.log(`| ${service.keyId.padEnd(17)} | ${service.role.padEnd(9)} | ${service.level.padEnd(7)} | ${service.type.padEnd(5)} |`);
+    tokenList += `${service.keyId.toUpperCase()}_API_TOKEN=${token}\n`;
+  }
+  
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  // Save tokens to .env.auth for easy testing
+  await fs.writeFile(authEnvPath, tokenList, 'utf-8');
+  
+  console.log('\n📁 Tokens saved to .env.auth for testing');
+  console.log('   💡 Use these environment variables for testing');
+  console.log('   🔄 Tokens regenerate each time you run this command');
+  
+  console.log('\n📋 AVAILABLE TOKENS');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('LOGIN TOKENS (9 combinations):');
+  console.log('  • ADMIN_SYSTEM, ADMIN_ORG, ADMIN_TENANT');
+  console.log('  • MODERATOR_MANAGE, MODERATOR_APPROVE, MODERATOR_REVIEW');
+  console.log('  • USER_MAX, USER_PRO, USER_BASIC');
+  console.log('');
+  console.log('API TOKENS:');
+  console.log('  • WEBHOOK_SERVICE_API_TOKEN');
+  console.log('');
+  console.log('💡 Load tokens: source .env.auth');
+  console.log('💡 Use tokens for testing authentication in any app/feature');
+}
+
+
 function showHelp() {
   console.log(`
-🏗️  Voila Generator - API Structure & Test Case Generator
+🏗️  Voila Generator - API Structure, Test Cases & Auth Tokens
 
 USAGE:
-  npm run generate app:api <target> [-- options]
+  npm run generate <command> [target] [-- options]
 
 COMMANDS:
   app:api <app-name>              Generate new API application structure (default)
   app:api <app-name>/<feature>    Generate new feature within existing app
   workflow <app-name>             Generate workflow from approved tech specification
+
+
+AUTHENTICATION SETUP (Simple 2-step):
+  secrets                         Generate all secrets (JWT, CSRF, encryption) in .env
+  tokens                          Generate all test tokens with user roles in .env.auth
 
 GENERATION TYPES:
   --application                   Generate application structure (default if no flags)
@@ -1491,6 +1792,11 @@ EXAMPLES:
   npm run generate app:api user/profile                # Add profile feature to user app
   npm run generate app:api shop/cart -- --overwrite    # Overwrite existing cart feature
   npm run generate workflow converter                   # Generate workflow from tech spec
+  
+  
+  # Authentication Setup (simple 2-step):
+  npm run generate secrets                              # Step 1: Generate secrets in .env
+  npm run generate tokens                               # Step 2: Generate all test tokens
 
 OPTIONS:
   --overwrite                     Overwrite existing files/directories
