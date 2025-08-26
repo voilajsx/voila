@@ -96,10 +96,11 @@ async function showAllCommands(): Promise<void> {
     ],
     '🔧 Git Workflow': [
       { cmd: 'npm run git init [remote-url]', desc: 'Initialize Git repository with Voila workflow' },
-      { cmd: 'npm run git branch <app>/<feature>', desc: 'Create feature branch (default)' },
-      { cmd: 'npm run git branch <app>/<feature> --fix', desc: 'Create bug fix branch' },
-      { cmd: 'npm run git commit <app>/<feature>', desc: 'Validated commit with smart message' },
-      { cmd: 'npm run git push <app>/<feature>', desc: 'Validated push for PR creation' }
+      { cmd: 'npm run git branch <app>', desc: 'Create/switch to dev branch (bulletproof)' },
+      { cmd: 'npm run git commit <app> [--feat|--fix|--test|--docs|--chore]', desc: 'Validated commit with conventional messages' },
+      { cmd: 'npm run git merge <app>', desc: 'Smart merge dev branch to development' },
+      { cmd: 'npm run git delete <app>', desc: 'Safe delete merged dev branch' },
+      { cmd: 'npm run git push <app>', desc: 'Validated push current branch for PR' }
     ],
     '🚀 Build & Deploy': [
       { cmd: 'npm run build:api', desc: 'Build API for production' },
@@ -339,6 +340,45 @@ async function showCommandHelp(command: string): Promise<void> {
         'Recommended for active development',
         'Automatically restarts on file changes',
         'Discovers new apps and features automatically'
+      ]
+    },
+
+    git: {
+      name: 'git',
+      description: 'Complete Git workflow with validation and safety checks',
+      usage: [
+        'npm run git init [remote-url]',
+        'npm run git branch <app>',
+        'npm run git commit <app> [flags]',
+        'npm run git merge <app>',
+        'npm run git delete <app>',
+        'npm run git push <app>'
+      ],
+      examples: [
+        'npm run git init                          # Initialize local repo',
+        'npm run git init https://github.com/user/repo  # With remote',
+        'npm run git branch welcome               # Create/switch dev/username-welcome',
+        'npm run git commit welcome --feat        # feat(welcome): implement features',
+        'npm run git commit welcome --fix         # fix(welcome): resolve issues',
+        'npm run git merge welcome               # Merge dev → development',
+        'npm run git delete welcome              # Safe delete merged branch',
+        'npm run git push welcome                # Push current branch for PR'
+      ],
+      options: [
+        '--feat               Commit type: new features',
+        '--fix                Commit type: bug fixes',  
+        '--test               Commit type: test additions',
+        '--docs               Commit type: documentation',
+        '--chore              Commit type: maintenance',
+        '-- --message="msg"    Custom commit message'
+      ],
+      notes: [
+        'Branch structure: main → development → dev/username-appname',
+        'All commands run validation before Git operations',
+        'Smart branch handling: auto-stash, create/switch logic',
+        'Safe delete: only removes fully merged branches',
+        'Conventional commits for clear history',
+        'Push operates on current branch (flexible)'
       ]
     }
   };

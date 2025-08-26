@@ -72,6 +72,20 @@ async function main() {
         await pushBranch(target);
         break;
       
+      case 'merge':
+        if (!target || target.includes('/')) {
+          throw new Error('App name required (no slash): e.g., "welcome", "climate"');
+        }
+        await mergeBranch(target);
+        break;
+      
+      case 'delete':
+        if (!target || target.includes('/')) {
+          throw new Error('App name required (no slash): e.g., "welcome", "climate"');
+        }
+        await deleteBranch(target);
+        break;
+      
       default:
         console.log(`❌ Unknown command: ${command}`);
         showHelp();
@@ -341,6 +355,159 @@ async function pushBranch(target: string): Promise<void> {
   }
 }
 
+async function mergeBranch(appName: string): Promise<void> {
+  console.log(`🔀 Smart merge for ${appName} app`);
+  
+  // Get username for branch naming
+  let userName = 'dev';
+  try {
+    const { stdout } = await execAsync('git config user.name');
+    userName = stdout.trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+  } catch {
+    console.log('⚠️  Git user.name not set, using "dev"');
+  }
+  
+  const branchName = `dev/${userName}-${appName}`;
+  
+  // Check current branch
+  const { stdout: currentBranch } = await execAsync('git branch --show-current');
+  
+  if (currentBranch.trim() === 'development') {
+    console.log('✅ Already on development branch, no merge needed');
+    return;
+  }
+  
+  // Check if dev branch exists
+  try {
+    await execAsync(`git rev-parse --verify ${branchName}`);
+  } catch {
+    throw new Error(`Branch ${branchName} does not exist. Run 'npm run git branch ${appName}' first.`);
+  }
+  
+  // Check if dev branch has commits ahead of development
+  try {
+    const { stdout: commits } = await execAsync(`git rev-list development..${branchName} --count`);
+    
+    if (commits.trim() === '0') {
+      console.log(`✅ No new changes to merge from ${branchName}`);
+      return;
+    }
+    
+    console.log(`📋 Found ${commits.trim()} new commit(s) to merge`);
+  } catch (error: any) {
+    throw new Error(`Cannot compare branches: ${error.message}`);
+  }
+  
+  try {
+    // Run validation first
+    console.log('🔍 Running validation...');
+    await execAsync(`npm run validate app:api ${appName}`);
+    console.log('✅ Validation passed');
+    
+    // Switch to development and pull latest
+    await execAsync('git checkout development');
+    console.log('📋 Switched to development branch');
+    
+    try {
+      await execAsync('git pull origin development');
+      console.log('✅ Pulled latest development');
+    } catch {
+      console.log('📋 No remote to pull from');
+    }
+    
+    // Merge the feature branch
+    await execAsync(`git merge ${branchName}`);
+    console.log(`✅ Merged ${branchName} → development`);
+    
+    // Run post-merge validation
+    console.log('🔍 Running post-merge validation...');
+    await execAsync(`npm run validate app:api ${appName}`);
+    console.log('✅ Post-merge validation passed');
+    
+    console.log('\\n💡 Next steps:');
+    console.log(`   1. Test the merged code on development branch`);
+    console.log(`   2. npm run git push ${appName}  # Push development for integration`);
+
+    // Log state
+    VoilaWorkflow.logAction('git_merge', `Merged ${branchName} to development branch`, {
+      currentApp: appName,
+      nextSteps: [
+        `Test merged code on development branch`,
+        `Push development branch if ready for integration`
+      ]
+    });
+    
+  } catch (error: any) {
+    throw new Error(`Merge failed: ${error.message}`);
+  }
+}
+
+async function deleteBranch(appName: string): Promise<void> {
+  console.log(`🗑️  Safe delete for ${appName} app branch`);
+  
+  // Get username for branch naming
+  let userName = 'dev';
+  try {
+    const { stdout } = await execAsync('git config user.name');
+    userName = stdout.trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+  } catch {
+    console.log('⚠️  Git user.name not set, using "dev"');
+  }
+  
+  const branchName = `dev/${userName}-${appName}`;
+  
+  // Check if branch exists
+  try {
+    await execAsync(`git rev-parse --verify ${branchName}`);
+  } catch {
+    console.log(`⚠️  Branch ${branchName} does not exist`);
+    return;
+  }
+  
+  // Safety check: Don't delete current branch
+  const { stdout: currentBranch } = await execAsync('git branch --show-current');
+  if (currentBranch.trim() === branchName) {
+    throw new Error(`Cannot delete current branch ${branchName}. Switch to another branch first.`);
+  }
+  
+  // Safety check: Verify branch is fully merged to development
+  try {
+    const { stdout: unmergedCommits } = await execAsync(`git rev-list development..${branchName} --count`);
+    
+    if (unmergedCommits.trim() !== '0') {
+      throw new Error(`Branch ${branchName} has ${unmergedCommits.trim()} unmerged commit(s). Merge to development first with 'npm run git merge ${appName}'.`);
+    }
+    
+    console.log(`✅ Branch ${branchName} is fully merged to development`);
+  } catch (error: any) {
+    if (error.message.includes('unmerged commit')) {
+      throw error;
+    }
+    throw new Error(`Cannot verify merge status: ${error.message}`);
+  }
+  
+  try {
+    // Delete the branch
+    await execAsync(`git branch -d ${branchName}`);
+    console.log(`✅ Safely deleted branch: ${branchName}`);
+    
+    console.log('\\n💡 Branch cleanup complete');
+    console.log(`   Next: Continue development or create new feature branch`);
+
+    // Log state
+    VoilaWorkflow.logAction('git_delete', `Safely deleted merged branch ${branchName}`, {
+      currentApp: appName,
+      nextSteps: [
+        `Continue development on current branch`,
+        `Or create new feature branch with 'npm run git branch <app>'`
+      ]
+    });
+    
+  } catch (error: any) {
+    throw new Error(`Delete failed: ${error.message}`);
+  }
+}
+
 function showHelp() {
   console.log(`
 🌿 Voila Git Workflow - Simple app-level development
@@ -360,6 +527,8 @@ COMMANDS:
   commit <app> --docs              Commit with "docs(app): update documentation"
   commit <app> --chore             Commit with "chore(app): maintenance updates"
   commit <app> -- --message="msg"  Commit with custom message
+  merge <app>                      Smart merge dev branch to development  
+  delete <app>                     Safe delete merged dev branch
   push <app>                       Validated push for PR
 
 WORKFLOW:
@@ -369,7 +538,9 @@ WORKFLOW:
   4. npm run git commit welcome --feat                  # feat(welcome): implement features
   5. npm run git commit welcome --test                  # test(welcome): add test coverage  
   6. npm run git commit welcome --docs                  # docs(welcome): update documentation
-  7. npm run git push welcome                          # Push for PR
+  7. npm run git merge welcome                         # Merge to development (optional)
+  8. npm run git delete welcome                        # Clean up merged branch (optional)
+  9. npm run git push welcome                          # Push for PR
 
 EXAMPLES:
   npm run git init                                # Local repo

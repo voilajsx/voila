@@ -26,17 +26,21 @@ npm run git init [remote-url]                      # Initialize repository
 npm run git branch <app>                           # Create app branch
 
 # Conventional commit flags (simple & powerful!)
-npm run git -- commit <app> --feat                 # feat(app): implement features
-npm run git -- commit <app> --fix                  # fix(app): resolve issues
-npm run git -- commit <app> --test                 # test(app): add test coverage
-npm run git -- commit <app> --docs                 # docs(app): update documentation
-npm run git -- commit <app> --chore                # chore(app): maintenance updates
+npm run git commit <app> --feat                    # feat(app): implement features
+npm run git commit <app> --fix                     # fix(app): resolve issues
+npm run git commit <app> --test                    # test(app): add test coverage
+npm run git commit <app> --docs                    # docs(app): update documentation
+npm run git commit <app> --chore                   # chore(app): maintenance updates
+
+# Integration & cleanup
+npm run git merge <app>                            # Smart merge dev → development
+npm run git delete <app>                           # Safe delete merged branch
 
 # Traditional options
-npm run git -- commit <app>                        # Smart default commit
-npm run git -- commit <app> -- --message="text"   # Custom commit message
+npm run git commit <app>                           # Smart default commit
+npm run git commit <app> -- --message="text"      # Custom commit message
 
-npm run git -- push <app>                          # Push for PR
+npm run git push <app>                             # Push current branch for PR
 ```
 
 ## Complete Workflow
@@ -65,18 +69,24 @@ npm run git branch converter                  # → dev/alex-converter
 ### 3. Progressive Development
 ```bash
 # Work on features progressively with conventional commits
-npm run git -- commit welcome --feat               # After implementing status feature
-npm run git -- commit welcome --feat               # After implementing hello feature
-npm run git -- commit welcome --test               # After adding API tests
-npm run git -- commit welcome --docs               # After updating documentation
+npm run git commit welcome --feat                  # After implementing status feature
+npm run git commit welcome --feat                  # After implementing hello feature
+npm run git commit welcome --test                  # After adding API tests
+npm run git commit welcome --docs                  # After updating documentation
 ```
 
-### 4. Push for Review
+### 4. Integration & Cleanup (Optional)
 ```bash
-npm run git -- push welcome
+npm run git merge welcome                          # Merge dev → development for integration
+npm run git delete welcome                         # Clean up merged dev branch
+```
+
+### 5. Push for Review
+```bash
+npm run git push welcome
 # → Final validation
-# → Pushes dev/john-welcome
-# → Ready for PR: dev/john-welcome → development
+# → Pushes current branch (development if merged, or dev branch)
+# → Ready for PR creation
 ```
 
 ## What Each Command Does
@@ -95,7 +105,7 @@ npm run git -- push welcome
 - Create branch: `dev/username-appname`
 - Uses your Git `user.name` for unique branch naming
 
-### `npm run git -- commit <app> [flags]`
+### `npm run git commit <app> [flags]`
 - Run validation pipeline (`npm run validate app:api <app>`)
 - Stage all changes (`git add .`)
 - Generate conventional commit message based on flag or custom message
@@ -111,7 +121,21 @@ npm run git -- push welcome
 - No flag: `feat(app): update app implementation` (default)
 - `-- --message="text"`: Custom message
 
-### `npm run git -- push <app>`
+### `npm run git merge <app>`
+- Smart merge logic with safety checks
+- Only merges if dev branch has new commits ahead of development
+- Skips if already on development branch
+- Runs pre-merge and post-merge validation
+- Merges `dev/username-appname` → `development`
+
+### `npm run git delete <app>`
+- Safe branch deletion with merge verification
+- Only deletes branches fully merged to development
+- Prevents deletion of current branch
+- Provides clear guidance if branch has unmerged commits
+- Cleans up completed dev branches
+
+### `npm run git push <app>`
 - Final validation check (`npm run validate app:api <app>`)
 - Push current branch to remote with tracking
 - Show next steps for PR creation
@@ -143,13 +167,17 @@ dev/username-appname
 npm run git branch welcome                  # → dev/john-welcome
 
 # Develop features progressively with conventional commits
-npm run git -- commit welcome --feat       # After implementing status endpoint
-npm run git -- commit welcome --feat       # After implementing hello endpoint  
-npm run git -- commit welcome --test       # After adding comprehensive test suite
-npm run git -- commit welcome --docs       # After updating README and documentation
+npm run git commit welcome --feat          # After implementing status endpoint
+npm run git commit welcome --feat          # After implementing hello endpoint  
+npm run git commit welcome --test          # After adding comprehensive test suite
+npm run git commit welcome --docs          # After updating README and documentation
+
+# Integration & cleanup (optional)
+npm run git merge welcome                  # Merge dev → development for integration testing
+npm run git delete welcome                 # Clean up merged dev branch
 
 # Push when ready for review
-npm run git -- push welcome               # → PR: dev/john-welcome → development
+npm run git push welcome                   # Push current branch for PR
 ```
 
 ### Working on Multiple Apps
@@ -294,41 +322,65 @@ npm run git branch welcome
 # → dev/johnsmith-welcome created from development
 
 # Progressive development with conventional commits
-npm run git -- commit welcome --feat               # Implement status feature with health checks
-npm run git -- commit welcome --feat               # Implement hello feature with personalization
-npm run git -- commit welcome --test               # Add comprehensive API test suite
-npm run git -- commit welcome --docs               # Update documentation and README
+npm run git commit welcome --feat                  # Implement status feature with health checks
+npm run git commit welcome --feat                  # Implement hello feature with personalization
+npm run git commit welcome --test                  # Add comprehensive API test suite
+npm run git commit welcome --docs                  # Update documentation and README
+
+# Integration & cleanup (optional)
+npm run git merge welcome                          # Merge to development for testing
+npm run git delete welcome                         # Clean up merged dev branch
 
 # Push complete app
-npm run git -- push welcome
-# → Validation runs, pushes to remote
-# → Create PR: dev/johnsmith-welcome → development
+npm run git push welcome
+# → Validation runs, pushes current branch
+# → Create PR for final integration
 ```
 
 ### Multiple Apps
 ```bash
 # Work on climate app
 npm run git branch climate                          # → dev/johnsmith-climate
-npm run git -- commit climate --feat               # Add weather service integration
-npm run git -- push climate
+npm run git commit climate --feat                  # Add weather service integration
+npm run git merge climate                          # Merge to development
+npm run git delete climate                         # Clean up dev branch
+npm run git push climate                           # Push development
 
 # Work on converter app  
 npm run git branch converter                        # → dev/johnsmith-converter
-npm run git -- commit converter --feat             # Add currency conversion logic
-npm run git -- push converter
+npm run git commit converter --feat                # Add currency conversion logic
+npm run git merge converter                        # Merge to development
+npm run git delete converter                       # Clean up dev branch
+npm run git push converter                         # Push development
 
-# Each app gets its own PR to development
+# Each app integrated cleanly to development
 ```
 
 ## Error Handling
 
 ### Validation Failures
 ```bash
-npm run git -- commit welcome --feat
+npm run git commit welcome --feat
 # Error: Validation failed: Contract validation
 # → Fix contract issues in your app
 # → Run 'npm run validate app:api welcome' to debug
 # → Retry commit after fixing
+```
+
+### Merge Safety Checks
+```bash
+npm run git merge welcome
+# Already on development branch, no merge needed
+# OR: No new changes to merge from dev/username-welcome
+# OR: Found 3 new commit(s) to merge → proceeds with validation
+```
+
+### Delete Safety Checks  
+```bash
+npm run git delete welcome
+# Error: Branch has 2 unmerged commit(s). Merge to development first.
+# → Run 'npm run git merge welcome' first
+# → Then retry delete command
 ```
 
 ### Git User Not Set
