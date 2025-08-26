@@ -91,12 +91,17 @@ npm run validate app:api appname               # Final contract validation
 
 ```bash
 # For Minor Changes (cr-v1.x)
-npm run git -- commit appname --fix            # fix(appname): description from change request
+npm run git commit appname --fix               # fix(appname): description from change request
 
 # For Major Changes (cr-v2.x)  
-npm run git -- commit appname --feat           # feat(appname): description from change request
+npm run git commit appname --feat              # feat(appname): description from change request
 
-npm run git -- push appname                    # Push dev/username-appname for review
+# Integration & Cleanup (Optional - for team environments)
+npm run git merge appname                      # Smart merge dev → development for integration testing
+npm run git delete appname                     # Safe delete merged dev branch after confirmation
+
+# Push for Review
+npm run git push appname                       # Push current branch for review and PR creation
 ```
 
 ## Document Templates
@@ -379,8 +384,10 @@ npm run validate app:api welcome                # Validate contracts
 npm run test app:api welcome -- --unittest     # Unit tests pass
 
 # 5. Commit & Deploy
-npm run git -- commit welcome --fix            # fix(welcome): enhance greeting enthusiasm per user feedback
-npm run git -- push welcome                    # Push for review
+npm run git commit welcome --fix               # fix(welcome): enhance greeting enthusiasm per user feedback
+npm run git merge welcome                      # Smart merge dev → development (optional)
+npm run git delete welcome                     # Safe delete merged dev branch (optional)
+npm run git push welcome                       # Push current branch for review
 ```
 
 ## Integration with Existing Voila System
@@ -471,8 +478,10 @@ npm run test app:api appname -- --unittest     # See specific test failures
 - Run tests: `npm run test app:api appname`
 
 **Deployment**
-- Commit changes: `npm run git -- commit appname --fix` (or `--feat`)
-- Push for review: `npm run git -- push appname`
+- Commit changes: `npm run git commit appname --fix` (or `--feat`)
+- Integration & cleanup: `npm run git merge appname` (optional)
+- Branch cleanup: `npm run git delete appname` (optional)
+- Push for review: `npm run git push appname`
 
 ## Summary
 

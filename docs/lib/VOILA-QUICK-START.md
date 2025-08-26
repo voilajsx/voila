@@ -21,16 +21,18 @@ npm run context next                       # Get next step to execute
 npm run generate app:api myapp             # Generate app structure
 npm run git branch myapp                   # Create dev/username-myapp branch
 # Implement all features progressively on same branch with conventional commits
-npm run git -- commit myapp --feat        # feat(myapp): implement features
-npm run git -- commit myapp --test        # test(myapp): add test coverage
+npm run git commit myapp --feat           # feat(myapp): implement features
+npm run git commit myapp --test           # test(myapp): add test coverage
 npm run test app:api myapp                 # Full test suite
 
 # Integration & Deployment
 npm run generate app:api myapp -- --testcases     # Generate API tests
 npm run test app:api myapp -- --apitest           # Run API integration tests
 npm run test app:api myapp -- --compliance        # Run compliance testing
-npm run git -- commit myapp --docs               # docs(myapp): update documentation
-npm run git push myapp                             # Push for PR: dev/username-myapp → development
+npm run git commit myapp --docs           # docs(myapp): update documentation
+npm run git merge myapp                    # Smart merge dev → development (optional)
+npm run git delete myapp                   # Safe delete merged branch (optional)
+npm run git push myapp                     # Push current branch for PR
 npm run deploy staging                             # Deploy to staging
 npm run deploy production                          # Deploy to production
 ```
@@ -88,11 +90,13 @@ npm run deploy production                          # Deploy to production
 2. `npm run test app:api myapp -- --apitest` - Run API integration tests
 3. `npm run test app:api myapp -- --compliance` - Run compliance testing
 4. `npm run test app:api myapp` - Run full test suite (unit + API + compliance)
-5. `npm run git -- commit myapp --docs` - docs(myapp): update documentation
-6. `npm run git push myapp` - Push for team review (dev/username-myapp → development)
-7. Create PR, get approval, merge to development
-8. `npm run deploy staging` - Deploy and test staging
-9. `npm run deploy production` - Deploy to production
+5. `npm run git commit myapp --docs` - docs(myapp): update documentation
+6. `npm run git merge myapp` - Smart merge dev → development (optional)
+7. `npm run git delete myapp` - Safe delete merged branch (optional)
+8. `npm run git push myapp` - Push current branch for team review
+9. Create PR, get approval, merge to development
+10. `npm run deploy staging` - Deploy and test staging
+11. `npm run deploy production` - Deploy to production
 
 ## Essential Patterns
 
@@ -207,15 +211,21 @@ npm run git branch myapp                   # Creates dev/username-myapp
 ### Progressive Commits
 ```bash
 # Conventional commit flags (simple & powerful!)
-npm run git -- commit myapp --feat        # feat(myapp): implement features
-npm run git -- commit myapp --fix         # fix(myapp): resolve issues
-npm run git -- commit myapp --test        # test(myapp): add test coverage
-npm run git -- commit myapp --docs        # docs(myapp): update documentation
-npm run git -- commit myapp --chore       # chore(myapp): maintenance updates
+npm run git commit myapp --feat           # feat(myapp): implement features
+npm run git commit myapp --fix            # fix(myapp): resolve issues
+npm run git commit myapp --test           # test(myapp): add test coverage
+npm run git commit myapp --docs           # docs(myapp): update documentation
+npm run git commit myapp --chore          # chore(myapp): maintenance updates
 
 # Traditional options
-npm run git -- commit myapp               # Smart default: feat(myapp): update app implementation
-npm run git -- commit myapp -- --message="custom message"  # Custom message
+npm run git commit myapp                  # Smart default: feat(myapp): update app implementation
+npm run git commit myapp -- --message="custom message"  # Custom message
+```
+
+### Integration & Cleanup (Optional)
+```bash
+npm run git merge myapp                   # Smart merge dev → development
+npm run git delete myapp                  # Safe delete merged branch
 ```
 
 ### Push for Review
@@ -306,7 +316,9 @@ npm run context state:reset       # Fresh start - clean slate for new projects
 npm run plan start myapp           # ✅ Logged: Planning started
 npm run generate app:api myapp     # ✅ Logged: App structure created  
 npm run git branch myapp           # ✅ Logged: App branch created (dev/username-myapp)
-npm run git -- commit myapp --feat              # ✅ Logged: Changes committed with conventional commit
+npm run git commit myapp --feat   # ✅ Logged: Changes committed with conventional commit
+npm run git merge myapp            # ✅ Logged: Smart merge to development completed
+npm run git delete myapp           # ✅ Logged: Safe branch deletion completed
 ```
 
 ### The Developer Experience Magic
