@@ -16,6 +16,9 @@ const router = express.Router();
 // GET /api/greeting/hello
 router.get('/', HelloService.greetDefault);
 
+// GET /api/greeting/hello/goodday
+router.get('/goodday', HelloService.greetGoodDay);
+
 // GET /api/greeting/hello/:name
 router.get('/:name', HelloService.greetByName);
 

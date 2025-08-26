@@ -66,6 +66,7 @@ beforeEach(() => {
   app = express();
   app.use(express.json());
   app.get('/api/greeting/hello', HelloService.greetDefault);
+  app.get('/api/greeting/hello/goodday', HelloService.greetGoodDay);
   app.get('/api/greeting/hello/:name', HelloService.greetByName);
   
   app.use((error: any, req: Request, res: Response, next: any) => {
@@ -95,6 +96,22 @@ describe('Hello Feature Basic Tests', () => {
   });
 
   // REMOVED: should return personalized greeting (testing none validation - should be ignored)
+
+  it('should return good day greeting', async () => {
+    const response = await request(app)
+      .get('/api/greeting/hello/goodday')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      success: true,
+      data: {
+        greetings: ['Good Day!', 'Buen Día!', 'Bonne Journée!'],
+        name: 'World',
+        language_count: 3,
+        feature: 'hello'
+      }
+    });
+  });
 
   it('should handle empty name parameter', async () => {
     const response = await request(app)

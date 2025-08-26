@@ -39,6 +39,22 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
         summary: 'Get personalized greeting for specific name in 3 languages',
         requestSchema: null,
         responseSchema: 'HelloResponse'
+      },
+      {
+        method: 'GET',
+        path: '/goodday',
+        handler: 'HelloService.greetGoodDay',
+        summary: 'Get "good day" greeting in 3 languages (English, Spanish, French)',
+        requestSchema: null,
+        responseSchema: 'HelloResponse'
+      },
+      {
+        method: 'GET',
+        path: '/thankyou',
+        handler: 'HelloService.greetThankYou',
+        summary: 'Get "thank you" greeting in 3 languages (English, Spanish, French)',
+        requestSchema: null,
+        responseSchema: 'HelloResponse'
       }
     ]
   },
@@ -66,7 +82,7 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
   // === PROVIDES (What this feature offers to the system) ===
   provides: {
     services: ['HelloService'],
-    routes: ['/api/greeting/hello', '/api/greeting/hello/:name'],
+    routes: ['/api/greeting/hello', '/api/greeting/hello/:name', '/api/greeting/hello/goodday'],
     types: ['HelloResponse', 'HelloData', 'HelloRequest'],
     schemas: ['HelloSchema']
   },
@@ -81,7 +97,8 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
   // === TESTS ===
   tests: [
     'should return default greeting',
-    'should return personalized greeting'
+    'should return personalized greeting',
+    'should return good day greeting'
   ]
 });
 

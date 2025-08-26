@@ -96,4 +96,40 @@ export class HelloService {
       throw err.serverError('Failed to generate greeting');
     }
   }
+
+  /**
+   * Generate "Good Day" greeting in 3 languages
+   * @llm-rule WHEN: Client wants a "good day" greeting instead of hello
+   * @llm-rule AVOID: Hardcoding timestamps - use new Date().toISOString()
+   */
+  static async greetGoodDay(req: Request, res: Response): Promise<void> {
+    const requestId = utils.uuid();
+    
+    try {
+      const greetings = [
+        'Good Day!',          // English
+        'Buen Día!',          // Spanish
+        'Bonne Journée!'      // French
+      ];
+
+      const response: HelloResponse = {
+        success: true,
+        data: {
+          greetings,
+          name: 'World',
+          language_count: 3,
+          timestamp: new Date().toISOString(),
+          requestId,
+          feature: 'hello'
+        }
+      };
+      
+      log.info('Good day greeting completed', { requestId });
+      res.json(response);
+      
+    } catch (error: any) {
+      log.error('Good day greeting failed', { requestId, error: error.message });
+      throw err.serverError('Failed to generate good day greeting');
+    }
+  }
 }
