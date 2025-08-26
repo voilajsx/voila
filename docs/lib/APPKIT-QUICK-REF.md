@@ -9,6 +9,21 @@ import { util, logger, error, validator } from '@voilajsx/appkit';
 ```
 **Use 80% of the time** - covers most service implementations.
 
+## AppKit Module Pattern
+
+**ALWAYS use the `.get()` pattern for AppKit modules:**
+
+```typescript
+import { authClass } from '@voilajsx/appkit/auth';
+const auth = authClass.get();
+
+// ❌ NEVER do this:
+new authClass();
+
+// ✅ ALWAYS do this:
+const auth = authClass.get();
+```
+
 ## Complete Module Categories
 
 ### Infrastructure (Use First)
@@ -18,7 +33,8 @@ import { util, logger, error, validator } from '@voilajsx/appkit';
 
 ### Data & Communication (Use Second)  
 ```typescript
-import { http, data, config, auth, cache } from '@voilajsx/appkit';
+import { http, data, config, cache } from '@voilajsx/appkit';
+import { authClass } from '@voilajsx/appkit/auth';  // Auth uses class pattern
 ```
 
 ### Developer Experience (Use Third)
@@ -198,18 +214,58 @@ const dbConfig = config.require({
 });
 ```
 
-### auth - Authentication
+### auth - Authentication (Dual Token System)
 ```typescript
-import { auth } from '@voilajsx/appkit';
+import { authClass } from '@voilajsx/appkit/auth';
+const auth = authClass.get();
 
-// JWT operations
-const token = auth.generateToken(payload, secret);
-const decoded = auth.verifyToken(token, secret);
-const refreshed = auth.refreshToken(oldToken, secret);
+// LOGIN TOKENS - For user authentication (mobile/web)
+const loginToken = auth.generateLoginToken({
+  userId: 123,     // REQUIRED - unique user identifier  
+  role: 'admin',   // REQUIRED - role name (admin, user, moderator)
+  level: 'tenant', // REQUIRED - level within role (basic, tenant, org, system)
+}, '7d');
 
-// Password operations  
+// API TOKENS - For service authentication (webhooks/integrations)
+const apiToken = auth.generateApiToken({
+  keyId: 'webhook_service', // REQUIRED - service identifier
+  role: 'service',          // REQUIRED - role name
+  level: 'external',        // REQUIRED - level within role
+}, '1y');
+
+// Token verification (works with both types)
+const payload = auth.verifyToken(token);
+
+// Password operations
 const hashed = await auth.hashPassword(password);
 const isValid = await auth.comparePassword(password, hashed);
+
+// Route protection
+app.get('/profile', auth.requireLoginToken(), handler);      // Login tokens only
+app.post('/webhook', auth.requireApiToken(), handler);       // API tokens only
+app.get('/admin', auth.requireUserRoles(['admin.tenant']), handler);  // Role check
+
+// User extraction (works with both token types)
+const user = auth.user(req);
+if (!user) throw error.unauthorized('Authentication required');
+
+// Role hierarchy checking
+const userRoleLevel = `${user.role}.${user.level}`;
+if (!auth.hasRole(userRoleLevel, 'admin.tenant')) {
+  throw error.forbidden('Admin access required');
+}
+
+// Permission checking (action:scope format)
+if (!auth.can(user, 'manage:tenant')) {
+  throw error.forbidden('Insufficient permissions');
+}
+```
+
+#### Built-in Role Hierarchy
+```
+admin.system > admin.org > admin.tenant >
+moderator.manage > moderator.approve > moderator.review >
+user.max > user.pro > user.basic
 ```
 
 ### cache - Caching Operations
@@ -269,7 +325,8 @@ import { util, logger, error, data, validator } from '@voilajsx/appkit';
 
 ### Service with Authentication
 ```typescript
-import { util, logger, error, auth, validator } from '@voilajsx/appkit';
+import { util, logger, error, validator } from '@voilajsx/appkit';
+import { authClass } from '@voilajsx/appkit/auth';
 ```
 
 ### Service with Caching
@@ -281,8 +338,9 @@ import { util, logger, error, cache, validator } from '@voilajsx/appkit';
 ```typescript
 import { 
   util, logger, error, validator,    // Core
-  http, data, config, auth, cache     // Extended
+  http, data, config, cache           // Extended
 } from '@voilajsx/appkit';
+import { authClass } from '@voilajsx/appkit/auth';  // Auth uses class pattern
 ```
 
 ## Common Patterns
@@ -319,16 +377,24 @@ export class MyService {
 ### Route Handler Template
 ```typescript
 import { util, error, validator } from '@voilajsx/appkit';
+import { authClass } from '@voilajsx/appkit/auth';
 
-router.post('/endpoint', async (req, res, next) => {
-  try {
-    const validated = validator.validate(RequestSchema, req.body);
-    const result = await MyService.processRequest(validated);
-    res.json(result);
-  } catch (err) {
-    next(err);  // Let error middleware handle it
+const auth = authClass.get();
+
+router.post('/endpoint', 
+  auth.requireLoginToken(),                    // Require user authentication
+  auth.requireUserRoles(['admin.tenant']),    // Require specific role
+  async (req, res, next) => {
+    try {
+      const user = auth.user(req);             // Extract authenticated user
+      const validated = validator.validate(RequestSchema, req.body);
+      const result = await MyService.processRequest(validated, user);
+      res.json(result);
+    } catch (err) {
+      next(err);  // Let error middleware handle it
+    }
   }
-});
+);
 ```
 
 ---

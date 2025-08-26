@@ -19,6 +19,9 @@ router.get('/', HelloService.greetDefault);
 // GET /api/greeting/hello/goodday
 router.get('/goodday', HelloService.greetGoodDay);
 
+// GET /api/greeting/hello/thankyou
+router.get('/thankyou', HelloService.greetThankYou);
+
 // GET /api/greeting/hello/:name
 router.get('/:name', HelloService.greetByName);
 
