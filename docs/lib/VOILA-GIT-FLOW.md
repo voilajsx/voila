@@ -215,6 +215,7 @@ Title: Add [appname] app
 
 **Automatic validation runs before commit and push:**
 - ✅ App-level validation (`npm run validate app:api <app>`)
+- ✅ 4-level validation system (none/basic/essential/strict)
 - ✅ Ensures all Voila contracts are valid
 - ✅ Prevents broken code from entering Git history
 

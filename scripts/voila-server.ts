@@ -37,7 +37,7 @@ async function main() {
 
   try {
     // Handle both old format (start, stop) and new format (api:start, api:stop)
-    const [prefix, action] = command.includes(':') ? command.split(':') : ['api', command];
+    const [prefix, action] = command.includes(':') ? command.split(':') : ['dev', command];
     
     if (prefix === 'api') {
       switch (action) {
@@ -55,6 +55,28 @@ async function main() {
           break;
         default:
           console.log(`❌ Unknown API command: ${action}`);
+          showHelp();
+          process.exit(1);
+      }
+    } else if (prefix === 'dev') {
+      switch (action) {
+        case 'api':
+          await startDevAPI();
+          break;
+        case 'web':
+          await startDevWeb();
+          break;
+        case 'both':
+          await startDevBoth();
+          break;
+        case 'stop':
+          await stopAllDev();
+          break;
+        case 'restart':
+          await restartDev();
+          break;
+        default:
+          console.log(`❌ Unknown dev command: ${action}`);
           showHelp();
           process.exit(1);
       }
@@ -101,9 +123,9 @@ async function stopServer(): Promise<void> {
         await execAsync('taskkill /f /im node.exe /fi "WINDOWTITLE eq tsx*server.ts*" 2>nul');
       } catch {}
       
-      // Try to kill processes on port 3001
+      // Try to kill processes on port 8000
       try {
-        await execAsync('for /f "tokens=5" %a in (\'netstat -aon ^| find ":3001" ^| find "LISTENING"\') do taskkill /f /pid %a 2>nul');
+        await execAsync('for /f "tokens=5" %a in (\'netstat -aon ^| find ":8000" ^| find "LISTENING"\') do taskkill /f /pid %a 2>nul');
       } catch {}
       
       // Try to kill any tsx processes with server.ts
@@ -118,7 +140,7 @@ async function stopServer(): Promise<void> {
       } catch {}
       
       try {
-        await execAsync('lsof -ti:3001 | xargs kill -9');
+        await execAsync('lsof -ti:8000 | xargs kill -9');
       } catch {}
     }
     
@@ -129,6 +151,158 @@ async function stopServer(): Promise<void> {
     console.log('ℹ️  No server processes found or already stopped');
     cleanupPidFile();
   }
+}
+
+async function killPortProcesses(ports: number[]): Promise<void> {
+  console.log('🧹 Cleaning up existing processes...');
+  
+  for (const port of ports) {
+    try {
+      // Kill processes using the port (cross-platform)
+      if (process.platform === 'win32') {
+        await execAsync(`for /f "tokens=5" %a in ('netstat -aon ^| find ":${port}" ^| find "LISTENING"') do taskkill /F /PID %a 2>nul`);
+      } else {
+        await execAsync(`lsof -ti:${port} | xargs kill -9 || true`);
+      }
+      console.log(`✅ Port ${port} cleaned up`);
+    } catch (error) {
+      // Ignore errors if no process is using the port
+      console.log(`⚠️  Port ${port} was not in use`);
+    }
+  }
+  
+  // Wait a moment for ports to be freed
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
+
+async function startDevAPI(): Promise<void> {
+  console.log('🚀 Starting API development server with auto-restart...');
+  await killPortProcesses([8000]);
+  
+  console.log('📡 API Server starting on: http://localhost:8000');
+  console.log('🔄 Will auto-restart on file changes');
+  console.log('⏹️  Press Ctrl+C to stop\n');
+  
+  const proc = spawn('nodemon', [
+    '--watch', 'src',
+    '--ext', 'ts',
+    '--exec', 'tsx',
+    'src/server.ts'
+  ], {
+    stdio: 'inherit',
+    shell: true,
+    env: { ...process.env, PORT: '8000' }
+  });
+
+  setupGracefulShutdown([proc]);
+}
+
+async function startDevWeb(): Promise<void> {
+  console.log('🌐 Starting Web development server...');
+  await killPortProcesses([5174]);
+  
+  console.log('🌐 Web Server starting on: http://localhost:5174');
+  console.log('🔄 Will auto-reload on file changes');
+  console.log('⏹️  Press Ctrl+C to stop\n');
+  
+  const proc = spawn('vite', ['--port', '5174'], {
+    stdio: 'inherit',
+    shell: true
+  });
+
+  setupGracefulShutdown([proc]);
+}
+
+async function startDevBoth(): Promise<void> {
+  console.log('🌟 Starting Full Development Environment');
+  await killPortProcesses([8000, 5174]);
+  
+  console.log('📡 API Server will be on: http://localhost:8000');
+  console.log('🌐 Web Server will be on: http://localhost:5174');
+  console.log('🔄 Both will auto-restart/reload on changes');
+  console.log('⏹️  Press Ctrl+C to stop both\n');
+  
+  const apiProc = spawn('nodemon', [
+    '--watch', 'src',
+    '--ext', 'ts',
+    '--exec', 'tsx',
+    'src/server.ts'
+  ], {
+    stdio: 'inherit',
+    shell: true,
+    env: { ...process.env, PORT: '8000' }
+  });
+
+  // Give API server time to start
+  setTimeout(() => {
+    const webProc = spawn('vite', ['--port', '5174'], {
+      stdio: 'inherit', 
+      shell: true
+    });
+
+    setupGracefulShutdown([apiProc, webProc]);
+  }, 2000);
+
+  setupGracefulShutdown([apiProc]);
+}
+
+async function stopAllDev(): Promise<void> {
+  console.log('🛑 Stopping all development servers...');
+  await killPortProcesses([8000, 5174]);
+  
+  // Also kill nodemon and vite processes
+  try {
+    if (process.platform === 'win32') {
+      await execAsync('taskkill /f /im nodemon.exe 2>nul');
+      await execAsync('taskkill /f /im node.exe /fi "COMMANDLINE like %vite%" 2>nul');
+    } else {
+      await execAsync('pkill -f nodemon || true');
+      await execAsync('pkill -f vite || true');
+    }
+  } catch (error) {
+    // Ignore errors
+  }
+  
+  console.log('✅ All development servers stopped');
+}
+
+async function restartDev(): Promise<void> {
+  console.log('🔄 Restarting development environment...');
+  await stopAllDev();
+  
+  // Brief pause to ensure cleanup
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  console.log('🚀 Starting fresh development servers...');
+  await startDevBoth();
+}
+
+function setupGracefulShutdown(processes: any[]): void {
+  // Handle various exit signals
+  ['SIGINT', 'SIGTERM', 'SIGQUIT'].forEach(signal => {
+    process.on(signal, () => {
+      console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+      
+      processes.forEach(proc => {
+        if (proc && !proc.killed) {
+          proc.kill('SIGTERM');
+          
+          // Force kill after 5 seconds if still running
+          setTimeout(() => {
+            if (!proc.killed) {
+              proc.kill('SIGKILL');
+            }
+          }, 5000);
+        }
+      });
+      
+      // Clean up ports and exit
+      setTimeout(async () => {
+        await killPortProcesses([8000, 5174]);
+        process.exit(0);
+      }, 1000);
+    });
+  });
 }
 
 async function restartServer(): Promise<void> {
@@ -233,33 +407,41 @@ function showHelp() {
   console.log(`
 🏗️  Voila Server Manager
 
-USAGE:
-  npm run server api:start      Start API development server
-  npm run server api:stop       Stop API development server  
-  npm run server api:restart    Restart API development server
+DEVELOPMENT COMMANDS:
+  npm run server dev:api        Start API server only (port 8000)
+  npm run server dev:web        Start Web server only (port 5174)  
+  npm run server dev:both       Start both API + Web servers
+  npm run server dev:stop       Stop all development servers
+  npm run server dev:restart    Restart all development servers
+
+API MANAGEMENT:
+  npm run server api:start      Start API server (production-like)
+  npm run server api:stop       Stop API server  
+  npm run server api:restart    Restart API server
   npm run server api:status     Check API server status
 
-API COMMANDS:
-  api:start     Start the API server in development mode
-  api:stop      Stop the running API server
-  api:restart   Stop and start the API server (refreshes API discovery)
-  api:status    Check if API server is running and healthy
+DEVELOPMENT FEATURES:
+  - Automatic port cleanup before restart
+  - Proper process management and graceful shutdown
+  - Cross-platform support (Windows/Unix)
+  - Auto-restart on file changes for API
+  - Auto-reload on file changes for Web
+
+PORTS:
+  - API Server: http://localhost:8000
+  - Web Server: http://localhost:5174
 
 EXAMPLES:
-  npm run server api:restart    # Restart after generating new apps
-  npm run server api:status     # Check if server is responding
-  npm run server api:stop       # Stop server before maintenance
-
-OTHER DEVELOPMENT OPTIONS:
-  npm run dev:api               # Auto-restart on file changes (recommended)
-  npm run dev                   # Full development (API + frontend)
+  npm run server dev:both       # Start full dev environment
+  npm run server dev:restart    # Clean restart everything
+  npm run server dev:stop       # Stop all development servers
+  npm run server api:status     # Check if API is healthy
 
 NOTES:
-  - Restart is needed after generating new apps/features
-  - API server runs on http://localhost:3001 by default
-  - PID file: .voila-server.pid
-  - Health check: /health endpoint
-  - Future: Can add more services like 'db:', 'cache:', etc.
+  - Port cleanup prevents "EADDRINUSE" errors
+  - Graceful shutdown with Ctrl+C
+  - PID tracking for server management
+  - Health check endpoint: /health
 `);
 }
 

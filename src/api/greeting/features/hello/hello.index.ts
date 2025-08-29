@@ -11,14 +11,13 @@
 import type { VoilaFeatureContract } from '@/lib/contracts.js';
 import { createFeatureContract } from '@/lib/contracts.js';
 
-// ✅ EXPLICIT CONTRACT: Everything about this feature in one place
+// ✅ CONTRACT: Multi-language greeting service with AppKit auth and service integration
 const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
-  // === FEATURE IDENTITY ===
+  // === IDENTITY ===
   name: 'hello',
   app: 'greeting',
-  description: 'Multi-language greeting service with authentication, role-based access control, and AppKit integration',
-  contract_validation: 'none', // strict | basic | none
-  llm_comments: 'none', // strict | basic | none
+  description: 'Multi-language greeting service with AppKit auth and service integration',
+  validation: 'none', // none | basic | essential | strict
   
   // === API DEFINITION ===
   api: {
@@ -28,33 +27,40 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
         method: 'GET',
         path: '/',
         handler: 'HelloService.greetDefault',
-        summary: 'Get default greeting in 3 languages (PUBLIC - no auth required)',
+        summary: 'Get default greeting in 3 languages',
         requestSchema: null,
-        responseSchema: 'HelloResponse'
+        responseSchema: 'HelloResponse',
+        auth: { type: 'public' }
       },
       {
         method: 'GET', 
         path: '/:name',
         handler: 'HelloService.greetByName',
-        summary: 'Get personalized greeting for specific name (ADMIN ONLY - requires login + admin.tenant role)',
+        summary: 'Get personalized greeting for specific name',
         requestSchema: null,
-        responseSchema: 'HelloResponse'
+        responseSchema: 'HelloResponse',
+        auth: {
+          type: 'admin',
+          roles: ['admin.tenant']
+        }
       },
       {
         method: 'GET',
         path: '/goodday',
         handler: 'HelloService.greetGoodDay',
-        summary: 'Get "good day" greeting in 3 languages (API KEY - requires valid API token)',
+        summary: 'Get "good day" greeting in 3 languages',
         requestSchema: null,
-        responseSchema: 'HelloResponse'
+        responseSchema: 'HelloResponse',
+        auth: { type: 'api_key' }
       },
       {
         method: 'GET',
         path: '/thankyou',
         handler: 'HelloService.greetThankYou',
-        summary: 'Get "thank you" greeting in 3 languages (LOGIN - requires valid login token)',
+        summary: 'Get "thank you" greeting in 3 languages',
         requestSchema: null,
-        responseSchema: 'HelloResponse'
+        responseSchema: 'HelloResponse',
+        auth: { type: 'login' }
       }
     ]
   },
@@ -80,19 +86,20 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
     }
   },
 
-  // === PROVIDES (What this feature offers to the system) ===
-  provides: {
-    services: ['HelloService'],
-    routes: ['/api/greeting/hello', '/api/greeting/hello/:name', '/api/greeting/hello/goodday'],
-    types: ['HelloResponse', 'HelloData', 'HelloRequest'],
-    schemas: ['HelloSchema']
+  // === BIDIRECTIONAL COMMUNICATION ===
+  services: {
+    provides: ['HelloService'],
+    consumes: [{
+      app: 'greeting',
+      feature: 'logs',
+      service: 'GreetingLogModel',
+      methods: ['create']
+    }]
   },
 
-  // === CONSUMES (What this feature uses from other parts) ===
-  consumes: {
-    services: [],
-    state: [],
-    events: []
+  events: {
+    emits: [], // No events emitted
+    listens: [] // No event subscriptions
   },
 
   // === TESTS ===

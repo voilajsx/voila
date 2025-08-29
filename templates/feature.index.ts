@@ -11,14 +11,13 @@
 import type { VoilaFeatureContract } from '@/lib/contracts.js';
 import { createFeatureContract } from '@/lib/contracts.js';
 
-// ✅ EXPLICIT CONTRACT: Everything about this feature in one place
+// ✅ CONTRACT: {{FEATURE_NAME_PASCAL}} feature with validation levels and bidirectional communication
 const {{FEATURE_NAME_PASCAL}}FeatureContract: VoilaFeatureContract = createFeatureContract({
-  // === FEATURE IDENTITY ===
+  // === IDENTITY ===
   name: '{{FEATURE_NAME}}',
   app: '{{APP_NAME}}',
   description: '{{FEATURE_NAME_PASCAL}} feature for {{APP_NAME}} application with modern API patterns',
-  contract_validation: 'strict', // strict | basic | none
-  llm_comments: 'strict', // strict | basic | none
+  validation: '{{VALIDATION_LEVEL}}', // none | basic | essential | strict
   
   // === API DEFINITION ===
   api: {
@@ -28,17 +27,19 @@ const {{FEATURE_NAME_PASCAL}}FeatureContract: VoilaFeatureContract = createFeatu
         method: 'GET',
         path: '/',
         handler: '{{FEATURE_NAME_PASCAL}}Service.getDefault',
-        summary: 'Get default greeting from {{APP_NAME}}/{{FEATURE_NAME}}',
+        summary: 'Get default response from {{APP_NAME}}/{{FEATURE_NAME}}',
         requestSchema: null,
-        responseSchema: '{{FEATURE_NAME_PASCAL}}Response'
+        responseSchema: '{{FEATURE_NAME_PASCAL}}Response',
+        auth: { type: 'public' }
       },
       {
         method: 'GET',
         path: '/:name',
-        handler: '{{FEATURE_NAME_PASCAL}}Service.greetByName',
-        summary: 'Get personalized greeting from {{APP_NAME}}/{{FEATURE_NAME}}',
+        handler: '{{FEATURE_NAME_PASCAL}}Service.getByName',
+        summary: 'Get personalized response from {{APP_NAME}}/{{FEATURE_NAME}}',
         requestSchema: null,
-        responseSchema: '{{FEATURE_NAME_PASCAL}}Response'
+        responseSchema: '{{FEATURE_NAME_PASCAL}}Response',
+        auth: { type: 'login' }
       }
     ]
   },
@@ -47,42 +48,44 @@ const {{FEATURE_NAME_PASCAL}}FeatureContract: VoilaFeatureContract = createFeatu
   dependencies: {
     files: {
       "{{FEATURE_NAME}}.services.ts": {
-        appkit: ["util", "logger", "error"],
+        appkit: ["util", "logger", "error", "auth"],
         external: ["express"]
       },
       "{{FEATURE_NAME}}.routes.ts": {
-        external: ["express"]
+        appkit: ["auth"],
+        external: ["express"],
+        relative: ["./{{FEATURE_NAME}}.services"]
       },
       "{{FEATURE_NAME}}.types.ts": {
         external: ["zod"]
       },
+      "{{FEATURE_NAME}}.models.ts": {
+        external: []
+      },
       "{{FEATURE_NAME}}.test.ts": {
-        external: ["vitest", "supertest"]
+        external: ["vitest", "supertest"],
+        relative: ["./{{FEATURE_NAME}}.routes"]
       }
     }
   },
 
-  // === PROVIDES (What this feature offers to the system) ===
-  provides: {
-    services: ['{{FEATURE_NAME_PASCAL}}Service'],
-    routes: ['/api/{{APP_NAME}}/{{FEATURE_NAME}}', '/api/{{APP_NAME}}/{{FEATURE_NAME}}/:name'],
-    types: ['{{FEATURE_NAME_PASCAL}}Response', '{{FEATURE_NAME_PASCAL}}Data', '{{FEATURE_NAME_PASCAL}}Request'],
-    schemas: ['{{FEATURE_NAME_PASCAL}}Schema']
+  // === BIDIRECTIONAL COMMUNICATION ===
+  services: {
+    provides: ['{{FEATURE_NAME_PASCAL}}Service'],
+    consumes: [] // Add service dependencies from other features if needed
   },
 
-  // === CONSUMES (What this feature uses from other parts) ===
-  consumes: {
-    services: [], // Internal services from other features
-    state: [],
-    events: []
-    // External APIs are handled via configuration, not contract dependencies
+  events: {
+    emits: [], // Add events this feature emits
+    listens: [] // Add events this feature listens to
   },
 
   // === TESTS ===
   tests: [
-    'should return default greeting from {{APP_NAME}}/{{FEATURE_NAME}}',
-    'should return personalized greeting from {{APP_NAME}}/{{FEATURE_NAME}}',
-    'should handle names with special characters'
+    'should return default response from {{APP_NAME}}/{{FEATURE_NAME}}',
+    'should return personalized response from {{APP_NAME}}/{{FEATURE_NAME}}',
+    'should handle authentication and authorization',
+    'should validate request/response schemas'
   ]
 });
 

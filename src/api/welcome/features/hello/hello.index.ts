@@ -11,14 +11,13 @@
 import type { VoilaFeatureContract } from '@/lib/contracts.js';
 import { createFeatureContract } from '@/lib/contracts.js';
 
-// ✅ EXPLICIT CONTRACT: Everything about this feature in one place
+// ✅ CONTRACT: Hello feature with validation levels and bidirectional communication
 const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
-  // === FEATURE IDENTITY ===
+  // === IDENTITY ===
   name: 'hello',
   app: 'welcome',
   description: 'Hello feature for welcome application with modern API patterns',
-  contract_validation: 'none', // strict | basic | none
-  llm_comments: 'none', // strict | basic | none
+  validation: 'none', // none | basic | essential | strict
   
   // === API DEFINITION ===
   api: {
@@ -30,7 +29,8 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
         handler: 'HelloService.getHelloWorld',
         summary: 'Get hello world greeting message',
         requestSchema: null,
-        responseSchema: 'HelloResponse'
+        responseSchema: 'HelloResponse',
+        auth: { type: 'public' }
       }
     ]
   },
@@ -43,7 +43,8 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
         external: ["express"]
       },
       "hello.routes.ts": {
-        external: ["express"]
+        external: ["express"],
+        relative: ["./hello.services"]
       },
       "hello.types.ts": {
         external: ["zod"]
@@ -53,25 +54,21 @@ const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({
         external: []
       },
       "hello.test.ts": {
-        external: ["vitest", "supertest"]
+        external: ["vitest", "supertest"],
+        relative: ["./hello.routes"]
       }
     }
   },
 
-  // === PROVIDES (What this feature offers to the system) ===
-  provides: {
-    services: ['HelloService'],
-    routes: ['/api/welcome/hello'],
-    types: ['HelloResponse'],
-    schemas: ['HelloResponseSchema']
+  // === BIDIRECTIONAL COMMUNICATION ===
+  services: {
+    provides: ['HelloService'],
+    consumes: [] // No service dependencies
   },
 
-  // === CONSUMES (What this feature uses from other parts) ===
-  consumes: {
-    services: [], // Internal services from other features
-    state: [],
-    events: []
-    // External APIs are handled via configuration, not contract dependencies
+  events: {
+    emits: [], // No events emitted
+    listens: [] // No event subscriptions
   },
 
   // === TESTS ===

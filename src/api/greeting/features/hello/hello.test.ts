@@ -12,6 +12,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import express, { Request, Response } from 'express';
 
+// Mock Prisma client first to prevent database operations during tests
+vi.mock('../../logs/logs.models.js', () => ({
+  GreetingLogModel: {
+    create: vi.fn().mockResolvedValue({ id: 'mock-log-id', createdAt: new Date() })
+  }
+}));
+
 // Mock AppKit modules with factory functions
 vi.mock('@voilajsx/appkit/util', () => ({
   utilClass: {

@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { authClass } from '@voilajsx/appkit';
+import { authClass, eventClass } from '@voilajsx/appkit';
 import { GreetingLogModel } from './logs.models.js';
 
 const auth = authClass.get();
+const event = eventClass.get('greeting_logs');
 
 export async function getGreetingLogs(req: Request, res: Response) {
   try {
@@ -71,10 +72,42 @@ export async function getGreetingLogById(req: Request, res: Response) {
   }
 }
 
+export async function updateGreetingLog(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { message, endpoint, userName } = req.body;
+
+    const existingLog = await GreetingLogModel.findById(id);
+    
+    if (!existingLog) {
+      return res.status(404).json({
+        success: false,
+        error: 'Greeting log not found',
+      });
+    }
+
+    const updatedLog = await GreetingLogModel.updateById(id, {
+      message: message || existingLog.message,
+      endpoint: endpoint || existingLog.endpoint,
+      userName: userName || existingLog.userName,
+    });
+
+    res.json({
+      success: true,
+      data: updatedLog,
+    });
+  } catch (error) {
+    console.error('Error updating greeting log:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update greeting log',
+    });
+  }
+}
+
 export async function deleteGreetingLog(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const user = auth.user(req);
 
     const log = await GreetingLogModel.findById(id);
 
@@ -102,8 +135,6 @@ export async function deleteGreetingLog(req: Request, res: Response) {
 
 export async function clearAllGreetingLogs(req: Request, res: Response) {
   try {
-    const user = auth.user(req);
-
     const deletedCount = await GreetingLogModel.deleteMany();
 
     res.json({
@@ -118,4 +149,26 @@ export async function clearAllGreetingLogs(req: Request, res: Response) {
       error: 'Failed to clear greeting logs',
     });
   }
+}
+
+export function initializeEventListeners() {
+  const climateEvent = eventClass.get('climate_weather');
+  
+  climateEvent.on('weather.data.fetched', async (eventData: any) => {
+    try {
+      console.log('Received weather.data.fetched event:', eventData);
+      
+      await GreetingLogModel.create({
+        endpoint: eventData.endpoint,
+        message: `Weather data fetched for ${eventData.weatherData.city}: ${eventData.weatherData.temperature}°${eventData.weatherData.units[0].toUpperCase()} - ${eventData.weatherData.condition}`,
+        userName: `Weather-${eventData.weatherData.city}`,
+        ipAddress: 'climate-app',
+        userAgent: 'Climate-Weather-Service'
+      });
+      
+      console.log('Weather trigger log created successfully');
+    } catch (error) {
+      console.error('Failed to create weather trigger log:', error);
+    }
+  });
 }

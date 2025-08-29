@@ -34,11 +34,16 @@ src/api/
 
 1. **Contract Definition** (`greeting.index.ts`)
    ```typescript
-   export const GreetingContract: VoilaFeatureContract = {
+   export const GreetingContract: VoilaFeatureContract = createFeatureContract({
      name: 'greeting',
+     app: 'myapp',
+     description: 'Multi-language greeting service with validation',
+     validation: 'essential', // none | basic | essential | strict
      api: { basePath: '/api/myapp', endpoints: [...] },
-     provides: { services: ['GreetingService'], routes: [...] }
-   };
+     services: { provides: ['GreetingService'], consumes: [] },
+     events: { emits: [], listens: [] },
+     tests: [...]
+   });
    ```
 
 2. **Auto-Discovery Process**
@@ -80,35 +85,56 @@ npm run deploy production               # Production deployment
 ```typescript
 interface VoilaFeatureContract {
   // Identity
-  name: string;           // Feature name
-  app: string;           // Parent application
-  description: string;   // What this feature does
+  name: string;                    // Feature name
+  app: string;                    // Parent application
+  description: string;            // Business purpose and functionality
+  validation: 'none' | 'basic' | 'essential' | 'strict';  // 4-level validation
   
   // API Definition
   api: {
-    basePath: string;           // Base path for routes
-    endpoints: Array<{          // All HTTP endpoints
-      method: string;           // GET, POST, PUT, DELETE
-      path: string;            // Endpoint path
-      handler: string;         // Service method
-      summary: string;         // Description
+    basePath: string;                    // Base path for routes
+    endpoints: Array<{                   // All HTTP endpoints
+      method: string;                    // GET, POST, PUT, DELETE, PATCH
+      path: string;                     // Endpoint path
+      handler: string;                  // Service method
+      summary: string;                  // Description
+      requestSchema?: string;           // Request validation schema
+      responseSchema?: string;          // Response type schema
+      auth?: { type: 'public' | 'private' }; // Authentication requirement
     }>;
   };
   
-  // Dependencies
+  // Dependencies (File-specific imports)
   dependencies: {
-    files: Record<string, {     // Per-file dependencies
-      appkit: string[];         // AppKit modules needed
-      external: string[];       // External packages
+    files: Record<string, {              // Per-file dependencies
+      appkit: string[];                  // AppKit modules needed
+      external: string[];                // External packages
+      relative: string[];                // Relative imports
     }>;
   };
   
-  // What This Feature Provides
-  provides: {
-    services: string[];         // Service class names
-    routes: string[];          // Full route paths
-    types: string[];           // Exported type names
+  // Bidirectional Communication
+  services: {
+    provides: string[];                  // Service class names this feature provides
+    consumes: string[];                  // Service dependencies this feature needs
   };
+  
+  events: {
+    emits: Array<{                      // Events this feature emits
+      namespace: string;
+      event: string;
+      payload: string;
+      description: string;
+    }>;
+    listens: Array<{                    // Events this feature listens to
+      namespace: string;
+      event: string;
+      handler: string;
+    }>;
+  };
+  
+  // Test Requirements
+  tests: string[];                       // Required test scenarios
 }
 ```
 
@@ -118,15 +144,56 @@ interface VoilaFeatureContract {
 
 ### Core Stack (80% usage)
 ```typescript
-import { util, logger, error, validator } from '@voilajsx/appkit';
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+import { securityClass } from '@voilajsx/appkit/security';
+
+const utils = utilClass.get();
+const log = loggerClass.get('feature.service');
+const err = errorClass.get();
+const secure = securityClass.get();
 ```
 
 ### Extended Stack (20% usage)  
 ```typescript
-import { http, data, config, auth, cache, test, debug, types } from '@voilajsx/appkit';
+import { configClass } from '@voilajsx/appkit/config';
+import { authClass } from '@voilajsx/appkit/auth';
+// Other modules follow similar pattern
 ```
 
 **One Function Rule**: Each module has one primary purpose and consistent API.
+
+## 4-Level Validation System
+
+Voila's validation system provides progressive quality gates based on development phase:
+
+### Validation Levels
+
+| Level | Coverage | Development Phase | What Gets Validated |
+|-------|----------|-------------------|-------------------|
+| `none` | 0% | Quick testing | No validation - bypassed completely |
+| `basic` | ~20% | Rapid prototyping | Required fields + API endpoints only |
+| `essential` | ~80% | Most projects (default) | Basic + services/events/tests |
+| `strict` | 100% | Enterprise production | Essential + file imports + LLM comments |
+
+### Usage Examples
+```bash
+# Generate with specific validation level
+npm run generate app:api myapp/feature -- --basic     # Minimal validation
+npm run generate app:api myapp/feature                # Essential (default)  
+npm run generate app:api myapp/feature -- --strict    # Full validation
+
+# Validation runs automatically during:
+npm run validate app:api myapp                         # Contract validation
+npm run git commit myapp --feat                       # Pre-commit validation
+npm run deploy staging                                 # Pre-deployment validation
+```
+
+### Validation Progression
+- **Prototyping**: Start with `--none` for quick iteration
+- **Development**: Use `--essential` for balanced development
+- **Production**: Enforce `--strict` for enterprise quality
 
 ## Auto-Discovery Mechanism
 

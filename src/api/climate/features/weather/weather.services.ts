@@ -15,6 +15,7 @@ import { errorClass } from '@voilajsx/appkit/error';
 import { securityClass } from '@voilajsx/appkit/security';
 import { cacheClass } from '@voilajsx/appkit/cache';
 import { configClass } from '@voilajsx/appkit/config';
+import { eventClass } from '@voilajsx/appkit';
 // @ts-ignore - node-fetch types not available
 import fetch from 'node-fetch';
 
@@ -34,6 +35,7 @@ const err = errorClass.get();
 const secure = securityClass.get();
 const cache = cacheClass.get();
 const config = configClass.get();
+const event = eventClass.get('climate_weather');
 
 export class WeatherService {
   
@@ -186,6 +188,15 @@ export class WeatherService {
         source: 'openweathermap', 
         city: weatherData.city, 
         temperature: weatherData.temperature 
+      });
+
+      // Emit event for cross-app communication
+      await event.emit('weather.data.fetched', {
+        requestId,
+        weatherData,
+        endpoint: '/api/climate/weather/current',
+        source: 'openweathermap',
+        timestamp: new Date().toISOString()
       });
       
       res.json(response);

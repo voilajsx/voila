@@ -68,6 +68,13 @@ export class GreetingLogModel {
     });
   }
 
+  static async updateById(id: string, data: Partial<CreateGreetingLogData>) {
+    return await prisma.greetingLog.update({
+      where: { id },
+      data,
+    });
+  }
+
   static async deleteById(id: string) {
     return await prisma.greetingLog.delete({
       where: { id },

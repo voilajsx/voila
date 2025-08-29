@@ -16,8 +16,8 @@ import { join } from 'path';
 // ===== CONTRACT TYPE DEFINITIONS =====
 
 /**
- * API Endpoint Definition - Contract for single API endpoint
- * @llm-rule WHEN: Defining REST API endpoints with type-safe contracts
+ * API Endpoint Definition - Contract for single API endpoint with AppKit auth integration
+ * @llm-rule WHEN: Defining REST API endpoints with type-safe contracts and auth requirements
  * @llm-rule AVOID: Undefined responseSchema - breaks OpenAPI generation and validation
  */
 export interface VoilaFeatureEndpoint {
@@ -27,8 +27,13 @@ export interface VoilaFeatureEndpoint {
   summary: string;
   requestSchema?: any;
   responseSchema: any;
-  // Enterprise features
-  auth?: boolean;
+  // AppKit Authentication
+  auth: {
+    type: 'public' | 'api_key' | 'login' | 'admin';
+    roles?: string[];        // AppKit roles: ['admin.tenant', 'admin.system']
+    permissions?: string[];  // Optional AppKit permissions
+  };
+  // Enterprise features (optional)
   rateLimit?: { requests: number; window: string };
   validation?: {
     params?: Record<string, string>;
@@ -58,17 +63,56 @@ export interface VoilaFeatureDependencies {
   files: Record<string, VoilaFeatureFileDependencies>;
 }
 
+/**
+ * Bidirectional Service Communication - Tracks service imports/exports between features
+ * @llm-rule WHEN: Need to track service dependencies for microservice boundaries
+ * @llm-rule AVOID: Circular service dependencies - breaks modular architecture
+ */
+export interface ServiceConsumption {
+  app: string;           // 'greeting'
+  feature: string;       // 'logs'  
+  service: string;       // 'GreetingLogModel'
+  methods: string[];     // ['create', 'findMany']
+}
+
+export interface ServiceCommunication {
+  provides: string[];              // Services this feature exports
+  consumes: ServiceConsumption[];  // Services this feature imports from other features
+}
+
+/**
+ * Bidirectional Event Communication - Tracks event emissions/subscriptions between features
+ * @llm-rule WHEN: Need to track cross-app event flows for microservice communication
+ * @llm-rule AVOID: Event subscriptions without emitters - creates broken event flows
+ */
+export interface EventEmission {
+  namespace: string;     // 'climate_weather'
+  event: string;         // 'weather.data.fetched'
+  payload: string;       // 'WeatherEventData'
+  description: string;   // 'Weather data successfully fetched from API'
+}
+
+export interface EventSubscription {
+  namespace: string;     // 'climate_weather'
+  event: string;         // 'weather.data.fetched'
+  handler: string;       // 'createWeatherLog'
+  description: string;   // 'Creates log entry when weather data is fetched'
+}
+
+export interface EventCommunication {
+  emits: EventEmission[];         // Events this feature emits
+  listens: EventSubscription[];   // Events this feature listens to
+}
+
+// Legacy interfaces - kept for backward compatibility but simplified
 export interface VoilaFeatureProvides {
-  services: string[];
-  routes: string[];
-  types: string[];
-  schemas: string[];
+  services: string[];  // Only services, removed routes/types/schemas
 }
 
 export interface VoilaFeatureConsumes {
-  services: string[];
-  state: string[];
-  events: string[];
+  services: string[];  // Legacy - will be replaced by ServiceCommunication
+  state: string[];     // Legacy - not used in stateless microservices
+  events: string[];    // Legacy - will be replaced by EventCommunication
 }
 
 export interface VoilaFeatureQuality {
@@ -142,30 +186,32 @@ export interface VoilaFeatureDeployment {
 }
 
 /**
- * Main Feature Contract - Complete definition of a feature's capabilities and requirements
- * @llm-rule WHEN: Creating new features that need contract validation and auto-discovery
+ * Feature Contract - Focused contract with bidirectional communication tracking
+ * @llm-rule WHEN: Creating new features with clear service boundaries and communication patterns
  * @llm-rule AVOID: Missing api.endpoints - breaks route mounting and OpenAPI generation
- * @llm-rule NOTE: Use validation='none' for rapid prototyping, 'strict' for production
+ * @llm-rule NOTE: validation='none' (prototyping), 'basic' (startups), 'strict' (enterprise)
  */
 export interface VoilaFeatureContract {
+  // === IDENTITY ===
   name: string;
   app: string;
   description: string;
-  version?: string;
-  contract_validation?: 'strict' | 'basic' | 'none';
-  llm_comments?: 'strict' | 'basic' | 'none';
+  validation: 'none' | 'basic' | 'essential' | 'strict';  // 4-level validation system
+  
+  // === API DEFINITION === (Enhanced with auth)
   api: VoilaFeatureAPI;
+  
+  // === DEPENDENCIES === (Keep for AI constraints)
   dependencies: VoilaFeatureDependencies;
-  provides: VoilaFeatureProvides;
-  consumes: VoilaFeatureConsumes;
+  
+  // === BIDIRECTIONAL COMMUNICATION ===
+  services: ServiceCommunication;
+  events: EventCommunication;
+  
+  // === TESTS === (Keep as requested)
   tests: string[];
-  quality?: VoilaFeatureQuality;
-  config?: VoilaFeatureConfig;
-  observability?: VoilaFeatureObservability;
-  security?: VoilaFeatureSecurity;
-  documentation?: VoilaFeatureDocumentation;
-  deployment?: VoilaFeatureDeployment;
 }
+
 
 export interface ContractValidationError {
   type: 'missing_handler' | 'missing_import' | 'missing_test' | 'schema_mismatch' | 'dependency_unresolved' | 'missing_file' | 'invalid_endpoint';
@@ -200,15 +246,15 @@ export class VoilaContractRegistry {
    * @llm-rule AVOID: Registering invalid contracts - throws errors to prevent server startup
    */
   async register(featureName: string, contract: VoilaFeatureContract): Promise<void> {
-    // Skip validation entirely if contract_validation is 'none'
-    if (contract.contract_validation === 'none') {
+    // Skip validation if level is 'none'
+    if (contract.validation === 'none') {
       this.contracts.set(featureName, contract);
-      const versionInfo = contract.version ? ` v${contract.version}` : '';
-      console.log(`📋 Contract registered: ${featureName}${versionInfo} (validation: none)`);
+      this.updateDependencyGraph();
+      console.log(`📋 Contract registered: ${featureName} (validation: none)`);
       return;
     }
 
-    const validation = await this.validateContract(contract, featureName);
+    const validation = validateContract(contract);
     if (!validation.valid) {
       const errorMessages = validation.errors.map(err => `[${err.type}] ${err.details}`);
       throw new Error(`Contract validation failed for ${featureName}: ${errorMessages.join(', ')}`);
@@ -220,9 +266,9 @@ export class VoilaContractRegistry {
 
     this.contracts.set(featureName, contract);
     this.updateDependencyGraph();
-    const versionInfo = contract.version ? ` v${contract.version}` : '';
-    console.log(`📋 Contract registered: ${featureName}${versionInfo}`);
+    console.log(`📋 Contract registered: ${featureName} (validation: ${contract.validation})`);
   }
+
 
   /**
    * Get contract by feature name
@@ -248,8 +294,18 @@ export class VoilaContractRegistry {
     const errors: ContractValidationError[] = [];
     const warnings: ContractValidationError[] = [];
     const feature = featureName || contract.name;
-    const validationLevel = contract.contract_validation || 'basic';
+    const validationLevel = contract.validation || 'essential';
 
+    // Skip validation completely for 'none' level
+    if (validationLevel === 'none') {
+      return {
+        valid: true,
+        errors: [],
+        warnings: []
+      };
+    }
+
+    // BASIC LEVEL: Required fields + API endpoints only
     // Basic required fields
     if (!contract.name) {
       errors.push({
@@ -325,13 +381,32 @@ export class VoilaContractRegistry {
           });
         }
       }
-
-      // Bidirectional validation if basePath provided and validation level allows
-      if (basePath && validationLevel === 'strict') {
-        await this.validateImplementationFiles(contract, basePath, errors, warnings);
-      }
     }
 
+    // Early return for basic level - only required fields and API endpoints
+    if (validationLevel === 'basic') {
+      return {
+        valid: errors.length === 0,
+        errors,
+        warnings
+      };
+    }
+
+    // ESSENTIAL LEVEL: Basic + services/events/tests validation
+    validateServiceCommunication(contract, [], errors, warnings);  
+    validateEventCommunication(contract, [], errors, warnings);
+    validateTests(contract, errors, warnings);
+
+    // Early return for essential level
+    if (validationLevel === 'essential') {
+      return {
+        valid: errors.length === 0,
+        errors,
+        warnings
+      };
+    }
+
+    // STRICT LEVEL: Essential + file imports + LLM comments validation
     // File existence validation (strict only)
     if (basePath && contract.dependencies?.files && validationLevel === 'strict') {
       await this.validateFileExistence(contract, basePath, errors, warnings);
@@ -342,30 +417,31 @@ export class VoilaContractRegistry {
       await this.validateFileImports(contract, basePath, errors, warnings);
     }
 
-    // LLM comments validation (skip if 'none')
-    if (basePath && contract.llm_comments && contract.llm_comments !== 'none') {
+    // LLM comments validation (strict mode only)
+    if (basePath && validationLevel === 'strict') {
       await this.validateLLMComments(contract, basePath, errors, warnings);
     }
 
-    // Quality requirements validation (optional)
-    if (contract.quality?.testCoverage && contract.quality.testCoverage < 80) {
-      warnings.push({
-        type: 'missing_test',
-        severity: 'warning',
-        feature,
-        details: `Test coverage ${contract.quality.testCoverage}% below recommended 80%`,
-        suggestions: ['Increase test coverage to meet quality standards']
-      });
-    }
-    if (contract.quality?.typeStrictness && contract.quality.typeStrictness < 100) {
-      warnings.push({
-        type: 'schema_mismatch',
-        severity: 'warning',
-        feature,
-        details: `Type strictness ${contract.quality.typeStrictness}% below recommended 100%`,
-        suggestions: ['Enable strict TypeScript configuration']
-      });
-    }
+    // Quality requirements validation (commented out - quality property not in current contract interface)
+    // TODO: Re-enable if quality property is added back to VoilaFeatureContract
+    // if (contract.quality?.testCoverage && contract.quality.testCoverage < 80) {
+    //   warnings.push({
+    //     type: 'missing_test',
+    //     severity: 'warning',
+    //     feature,
+    //     details: `Test coverage ${contract.quality.testCoverage}% below recommended 80%`,
+    //     suggestions: ['Increase test coverage to meet quality standards']
+    //   });
+    // }
+    // if (contract.quality?.typeStrictness && contract.quality.typeStrictness < 100) {
+    //   warnings.push({
+    //     type: 'schema_mismatch',
+    //     severity: 'warning',
+    //     feature,
+    //     details: `Type strictness ${contract.quality.typeStrictness}% below recommended 100%`,
+    //     suggestions: ['Enable strict TypeScript configuration']
+    //   });
+    // }
 
 
     return {
@@ -549,7 +625,7 @@ export class VoilaContractRegistry {
     warnings: ContractValidationError[]
   ): Promise<void> {
     const feature = contract.name;
-    const commentLevel = contract.llm_comments || 'basic';
+    const commentLevel = 'strict'; // Always strict since this method only runs in strict mode
     const featurePath = path.join(basePath, contract.app, 'features', contract.name);
     
     try {
@@ -945,28 +1021,9 @@ export class VoilaContractRegistry {
   async validateAllContracts(basePath?: string): Promise<Record<string, ContractValidationResult>> {
     const results: Record<string, ContractValidationResult> = {};
 
-    // First pass: validate individual contracts
+    // Validate individual contracts using validation system
     for (const [featureName, contract] of this.contracts) {
-      results[featureName] = await this.validateContract(contract, featureName, basePath);
-    }
-
-    // Second pass: validate cross-feature dependencies
-    for (const [featureName, contract] of this.contracts) {
-      if (contract.consumes.services.length > 0) {
-        contract.consumes.services.forEach(service => {
-          const provider = this.findServiceProvider(service);
-          if (!provider) {
-            results[featureName].errors.push({
-              type: 'dependency_unresolved',
-              severity: 'error',
-              feature: featureName,
-              details: `Required service '${service}' not provided by any feature`,
-              suggestions: [`Implement service '${service}' in a feature or remove dependency`]
-            });
-            results[featureName].valid = false;
-          }
-        });
-      }
+      results[featureName] = validateContract(contract, Array.from(this.contracts.values()));
     }
 
     // Check for circular dependencies
@@ -1110,11 +1167,33 @@ export class VoilaContractRegistry {
 
   private findServiceProvider(serviceName: string): string | null {
     for (const [featureName, contract] of this.contracts) {
-      if (contract.provides.services.includes(serviceName)) {
+      const services = this.getContractServices(contract);
+      if (services.includes(serviceName)) {
         return featureName;
       }
     }
     return null;
+  }
+
+  // Helper to handle both legacy and refined contract formats
+  private getContractServices(contract: any): string[] {
+    // Refined contract format
+    if (contract.services?.provides) {
+      return contract.services.provides;
+    }
+    // Legacy contract format
+    if (contract.provides?.services) {
+      return contract.provides.services;
+    }
+    return [];
+  }
+
+  // Helper to get service consumptions from contract
+  private getContractServiceConsumptions(contract: VoilaFeatureContract): string[] {
+    if (contract.services?.consumes && Array.isArray(contract.services.consumes)) {
+      return contract.services.consumes.map((c: any) => typeof c === 'string' ? c : c.service);
+    }
+    return [];
   }
 
   private updateDependencyGraph(): void {
@@ -1137,7 +1216,8 @@ export class VoilaContractRegistry {
       }
 
       // Add service dependencies
-      contract.consumes.services.forEach(service => {
+      const serviceConsumptions = this.getContractServiceConsumptions(contract);
+      serviceConsumptions.forEach(service => {
         const provider = this.findServiceProvider(service);
         if (provider && provider !== featureName) {
           dependencies.push(provider);
@@ -1160,14 +1240,6 @@ export const contractRegistry = new VoilaContractRegistry();
 
 // ===== HELPER FUNCTIONS =====
 
-/**
- * Contract Factory - Creates type-safe feature contracts with validation
- * @llm-rule WHEN: Creating feature contracts with TypeScript type safety
- * @llm-rule AVOID: Plain objects without this factory - loses type checking benefits
- */
-export function createFeatureContract(config: VoilaFeatureContract): VoilaFeatureContract {
-  return config;
-}
 
 /**
  * Contract Validation with Fail-Fast - Validates all contracts and throws on errors
@@ -1208,6 +1280,9 @@ interface ValidationStats {
   apps: number;
   features: number;
   endpoints: number;
+  totalContracts: number;
+  validContracts: number;
+  invalidContracts: number;
 }
 
 interface ValidationResult {
@@ -1215,6 +1290,7 @@ interface ValidationResult {
   errors: any[];
   warnings: any[];
   stats: ValidationStats;
+  results: any;
 }
 
 interface DiscoveredContract {
@@ -1242,8 +1318,12 @@ export async function validateContracts(apiPath: string, targetApp: string | nul
     stats: {
       apps: 0,
       features: 0,
-      endpoints: 0
-    }
+      endpoints: 0,
+      totalContracts: 0,
+      validContracts: 0,
+      invalidContracts: 0
+    },
+    results: {}
   };
 
   try {
@@ -1292,7 +1372,7 @@ export async function validateContracts(apiPath: string, targetApp: string | nul
  * @llm-rule AVOID: Manual contract registration - breaks auto-discovery benefits
  */
 async function discoverAndRegisterContracts(apiPath: string, targetApp: string | null, targetFeature: string | null = null): Promise<DiscoveryResult> {
-  const stats = { apps: 0, features: 0, endpoints: 0 };
+  const stats = { apps: 0, features: 0, endpoints: 0, totalContracts: 0, validContracts: 0, invalidContracts: 0 };
   const contracts: DiscoveredContract[] = [];
 
   // Get all app directories
@@ -1426,5 +1506,349 @@ export function isFeatureEnabled(apiPath: string, appName: string, featureName: 
     console.log(`⚠️  No config found for ${appName}, defaulting features to enabled`);
     return true; // Default to enabled if no config file
   }
+}
+
+// ===== REFINED CONTRACT VALIDATION SYSTEM =====
+
+/**
+ * Validate Refined Feature Contract - Enhanced validation with validation levels and bidirectional checks
+ * @llm-rule WHEN: Validating refined contracts with service/event communication and auth requirements
+ * @llm-rule AVOID: Skipping validation levels - breaks consistency across development phases
+ * @llm-rule NOTE: none=no validation, basic=endpoints only, strict=full validation
+ */
+export function validateContract(contract: VoilaFeatureContract, allContracts?: VoilaFeatureContract[]): ContractValidationResult {
+  const errors: ContractValidationError[] = [];
+  const warnings: ContractValidationError[] = [];
+  const feature = `${contract.app}.${contract.name}`;
+
+  // Skip validation if level is 'none'
+  if (contract.validation === 'none') {
+    return { valid: true, errors: [], warnings: [], featureName: feature };
+  }
+
+  // === BASIC VALIDATION (Critical for startups) ===
+  // Always validate API endpoints (critical for API consumers)
+  validateRefinedEndpoints(contract, errors, warnings);
+
+  // === STRICT VALIDATION (Enterprise requirements) ===
+  if (contract.validation === 'strict') {
+    validateDependencies(contract, errors, warnings);
+    validateServiceCommunication(contract, allContracts || [], errors, warnings);  
+    validateEventCommunication(contract, allContracts || [], errors, warnings);
+    validateTests(contract, errors, warnings);
+  }
+
+  const valid = errors.length === 0;
+  return { valid, errors, warnings, featureName: feature };
+}
+
+/**
+ * Validate Refined API Endpoints - Validates endpoints with AppKit auth requirements
+ */
+function validateRefinedEndpoints(contract: VoilaFeatureContract, errors: ContractValidationError[], warnings: ContractValidationError[]) {
+  const feature = `${contract.app}.${contract.name}`;
+
+  if (!contract.api?.endpoints?.length) {
+    errors.push({
+      type: 'invalid_endpoint',
+      severity: 'error',
+      feature,
+      details: 'Feature must define at least one API endpoint'
+    });
+    return;
+  }
+
+  contract.api.endpoints.forEach((endpoint, index) => {
+    // Basic endpoint validation
+    if (!endpoint.method) {
+      errors.push({
+        type: 'invalid_endpoint',
+        severity: 'error', 
+        feature,
+        details: `Endpoint ${index}: method is required`
+      });
+    }
+
+    if (!endpoint.path) {
+      errors.push({
+        type: 'invalid_endpoint',
+        severity: 'error',
+        feature,
+        details: `Endpoint ${index}: path is required`
+      });
+    }
+
+    if (!endpoint.responseSchema) {
+      errors.push({
+        type: 'invalid_endpoint',
+        severity: 'error',
+        feature,
+        details: `Endpoint ${index}: responseSchema is required`
+      });
+    }
+
+    // Auth validation
+    if (!endpoint.auth) {
+      errors.push({
+        type: 'invalid_endpoint',
+        severity: 'error',
+        feature,
+        details: `Endpoint ${index}: auth configuration is required`
+      });
+    } else {
+      validateEndpointAuth(endpoint, index, feature, errors, warnings);
+    }
+  });
+}
+
+/**
+ * Validate Endpoint Auth - Validates AppKit auth configuration
+ */
+function validateEndpointAuth(endpoint: VoilaFeatureEndpoint, index: number, feature: string, errors: ContractValidationError[], warnings: ContractValidationError[]) {
+  const validAuthTypes = ['public', 'api_key', 'login', 'admin'];
+  const validRoles = ['admin.tenant', 'admin.system'];
+
+  if (!validAuthTypes.includes(endpoint.auth.type)) {
+    errors.push({
+      type: 'invalid_endpoint',
+      severity: 'error',
+      feature,
+      details: `Endpoint ${index}: invalid auth type '${endpoint.auth.type}'. Must be one of: ${validAuthTypes.join(', ')}`
+    });
+  }
+
+  // Admin type must have roles
+  if (endpoint.auth.type === 'admin') {
+    if (!endpoint.auth.roles || endpoint.auth.roles.length === 0) {
+      errors.push({
+        type: 'invalid_endpoint',
+        severity: 'error',
+        feature,
+        details: `Endpoint ${index}: admin auth type requires roles array`
+      });
+    } else {
+      // Check for unknown roles
+      const unknownRoles = endpoint.auth.roles.filter(role => !validRoles.includes(role));
+      if (unknownRoles.length > 0) {
+        warnings.push({
+          type: 'invalid_endpoint',
+          severity: 'warning',
+          feature,
+          details: `Endpoint ${index}: unknown AppKit roles: ${unknownRoles.join(', ')}. Known roles: ${validRoles.join(', ')}`
+        });
+      }
+    }
+  }
+
+  // Warn about unnecessary roles for non-admin types
+  if (endpoint.auth.type !== 'admin' && endpoint.auth.roles && endpoint.auth.roles.length > 0) {
+    warnings.push({
+      type: 'invalid_endpoint',
+      severity: 'warning',
+      feature,
+      details: `Endpoint ${index}: roles specified for non-admin auth type '${endpoint.auth.type}'`
+    });
+  }
+}
+
+/**
+ * Validate Service Communication - Bidirectional service dependency validation
+ */
+function validateServiceCommunication(contract: VoilaFeatureContract, allContracts: VoilaFeatureContract[], errors: ContractValidationError[], warnings: ContractValidationError[]) {
+  const feature = `${contract.app}.${contract.name}`;
+
+  // Defensive check for services structure
+  if (!contract.services) {
+    errors.push({
+      type: 'schema_mismatch',
+      severity: 'error',
+      feature,
+      details: 'Refined contract must have services section'
+    });
+    return;
+  }
+
+  // Validate service consumptions exist
+  if (contract.services.consumes) {
+    contract.services.consumes.forEach(consumption => {
+      const providerContract = allContracts.find(c => c.app === consumption.app && c.name === consumption.feature);
+      
+      if (!providerContract) {
+        errors.push({
+          type: 'dependency_unresolved',
+          severity: 'error',
+          feature,
+          details: `Service dependency broken: consumes ${consumption.app}/${consumption.feature}.${consumption.service} but provider feature not found`
+        });
+        return;
+      }
+
+      if (!providerContract.services?.provides?.includes(consumption.service)) {
+        errors.push({
+          type: 'dependency_unresolved',
+          severity: 'error',
+          feature,
+          details: `Service not provided: ${consumption.app}/${consumption.feature} does not provide service '${consumption.service}'`
+        });
+      }
+    });
+  }
+}
+
+/**
+ * Validate Event Communication - Bidirectional event flow validation  
+ */
+function validateEventCommunication(contract: VoilaFeatureContract, allContracts: VoilaFeatureContract[], errors: ContractValidationError[], warnings: ContractValidationError[]) {
+  const feature = `${contract.app}.${contract.name}`;
+
+  // Defensive check for events structure
+  if (!contract.events) {
+    errors.push({
+      type: 'schema_mismatch',
+      severity: 'error',
+      feature,
+      details: 'Refined contract must have events section'
+    });
+    return;
+  }
+
+  // Validate event subscriptions have emitters
+  if (contract.events.listens) {
+    contract.events.listens.forEach(subscription => {
+      const hasEmitter = allContracts.some(c => 
+        c.events?.emits?.some(emission => 
+          emission.namespace === subscription.namespace && 
+          emission.event === subscription.event
+        )
+      );
+      
+      if (!hasEmitter) {
+        warnings.push({
+          type: 'dependency_unresolved',
+          severity: 'warning',
+          feature,
+          details: `Event subscription orphaned: listens to ${subscription.namespace}:${subscription.event} but no emitter found`
+        });
+      }
+    });
+  }
+
+  // Warn about unused event emissions (nice to have)  
+  if (contract.events.emits) {
+    contract.events.emits.forEach(emission => {
+      const hasListener = allContracts.some(c =>
+        c.events?.listens?.some(subscription =>
+          subscription.namespace === emission.namespace &&
+          subscription.event === emission.event
+        )
+      );
+
+      if (!hasListener) {
+        warnings.push({
+          type: 'dependency_unresolved', 
+          severity: 'warning',
+          feature,
+          details: `Event emission unused: emits ${emission.namespace}:${emission.event} but no listener found`
+        });
+      }
+    });
+  }
+}
+
+/**
+ * Validate Dependencies - File-level dependency validation (for AI constraints)
+ */
+function validateDependencies(contract: VoilaFeatureContract, errors: ContractValidationError[], warnings: ContractValidationError[]) {
+  const feature = `${contract.app}.${contract.name}`;
+
+  if (!contract.dependencies?.files || Object.keys(contract.dependencies.files).length === 0) {
+    warnings.push({
+      type: 'dependency_unresolved',
+      severity: 'warning',
+      feature,
+      details: 'No file dependencies declared - AI code generation may be inconsistent'
+    });
+  }
+}
+
+/**
+ * Validate Tests - Test coverage validation
+ */
+function validateTests(contract: VoilaFeatureContract, errors: ContractValidationError[], warnings: ContractValidationError[]) {
+  const feature = `${contract.app}.${contract.name}`;
+
+  if (!contract.tests || contract.tests.length === 0) {
+    warnings.push({
+      type: 'missing_test',
+      severity: 'warning',
+      feature,
+      details: 'No tests defined - feature may be untested'
+    });
+  }
+
+  // Suggest minimum test coverage based on endpoints
+  const endpointCount = contract.api.endpoints.length;
+  if (contract.tests.length < endpointCount) {
+    warnings.push({
+      type: 'missing_test',
+      severity: 'warning',
+      feature,
+      details: `Low test coverage: ${contract.tests.length} tests for ${endpointCount} endpoints. Consider adding more tests.`
+    });
+  }
+}
+
+/**
+ * Validate All Refined Contracts - Batch validation with cross-contract checks
+ */
+export function validateAllRefinedContracts(contracts: VoilaFeatureContract[]): ValidationResult {
+  let success = true;
+  const errors: ContractValidationError[] = [];
+  const warnings: ContractValidationError[] = [];
+  const results: Record<string, ContractValidationResult> = {};
+
+  contracts.forEach(contract => {
+    const result = validateContract(contract, contracts);
+    const featureName = `${contract.app}.${contract.name}`;
+    
+    results[featureName] = result;
+    errors.push(...result.errors);
+    warnings.push(...result.warnings);
+    
+    if (!result.valid) {
+      success = false;
+    }
+  });
+
+  return {
+    success,
+    errors,
+    warnings,
+    stats: {
+      apps: 0,
+      features: 0,
+      endpoints: 0,
+      totalContracts: contracts.length,
+      validContracts: Object.values(results).filter(r => r.valid).length,
+      invalidContracts: Object.values(results).filter(r => !r.valid).length
+    },
+    results
+  };
+}
+
+/**
+ * Create Refined Feature Contract - Helper function with validation
+ */
+export function createFeatureContract(contract: VoilaFeatureContract): VoilaFeatureContract {
+  const validation = validateContract(contract);
+  
+  if (!validation.valid && contract.validation !== 'none') {
+    console.warn(`Contract validation warnings for ${validation.featureName}:`, validation.warnings);
+    if (validation.errors.length > 0) {
+      console.error(`Contract validation errors for ${validation.featureName}:`, validation.errors);
+    }
+  }
+
+  return contract;
 }
 

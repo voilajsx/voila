@@ -2,12 +2,15 @@
 
 /**
  * Voila Generate Script - API structure and testcase generator
- * Usage: npx tsx scripts/voila-generate.ts [command] [target] [-- options]
+ * Usage: npm run generate [command] [target] [-- options]
  * Examples:
- *   npx tsx scripts/voila-generate.ts app:api myapp                    # Generate app (default)
- *   npx tsx scripts/voila-generate.ts app:api myapp -- --application  # Generate app explicitly
- *   npx tsx scripts/voila-generate.ts app:api myapp -- --testcases    # Generate API testcases
- *   npx tsx scripts/voila-generate.ts app:api myapp/feature           # Generate feature
+ *   npm run generate app:api myapp                    # Generate app (default)
+ *   npm run generate app:api myapp -- --application  # Generate app explicitly
+ *   npm run generate app:api myapp -- --testcases    # Generate API testcases
+ *   npm run generate app:api myapp/feature               # Generate feature (essential validation)
+ *   npm run generate app:api myapp/feature -- --none   # Generate feature (no validation) 
+ *   npm run generate app:api myapp/feature -- --basic  # Generate feature (basic validation)
+ *   npm run generate app:api myapp/feature -- --strict # Generate feature (full validation)
  */
 
 import { promises as fs } from 'fs';
@@ -26,6 +29,10 @@ interface GenerateOptions {
   skipExisting?: boolean;
   application?: boolean;
   testcases?: boolean;
+  // Validation level flags
+  none?: boolean;
+  basic?: boolean;
+  strict?: boolean;
 }
 
 interface TemplateVars {
@@ -34,6 +41,7 @@ interface TemplateVars {
   FEATURE_NAME?: string;
   FEATURE_NAME_PASCAL?: string;
   CREATED_DATE: string;
+  VALIDATION_LEVEL?: string;
 }
 
 interface TestCase {
@@ -1242,12 +1250,26 @@ async function generateFeature(appName: string, featureName: string, options: Ge
   // Create feature directory
   await fs.mkdir(featureDir, { recursive: true });
 
+  // Determine validation level from flags (essential is default)
+  let validationLevel = 'essential';
+  if (options.none) {
+    validationLevel = 'none';
+  } else if (options.basic) {
+    validationLevel = 'basic';
+  } else if (options.essential) {
+    validationLevel = 'essential';
+  } else if (options.strict) {
+    validationLevel = 'strict';
+  }
+  // If multiple flags are provided, precedence is: none > basic > essential > strict
+
   const templateVars: TemplateVars = {
     APP_NAME: appName,
     APP_NAME_UPPER: appName.toUpperCase(),
     FEATURE_NAME: featureName,
     FEATURE_NAME_PASCAL: toPascalCase(featureName),
     CREATED_DATE: new Date().toISOString().split('T')[0],
+    VALIDATION_LEVEL: validationLevel,
   };
 
   // Generate feature files in proper order
@@ -1263,6 +1285,7 @@ async function generateFeature(appName: string, featureName: string, options: Ge
 
   console.log(`✅ Feature '${featureName}' generated successfully!`);
   console.log(`📂 Location: src/api/${appName}/features/${featureName}/`);
+  console.log(`🎯 Validation Level: ${validationLevel} ${getValidationLevelDescription(validationLevel)}`);
   console.log(`📝 Next steps (contract-driven development):`);
   console.log(`   1. Define contract in ${featureName}.index.ts (VoilaFeatureContract)`);
   console.log(`   2. Implement types & schemas in ${featureName}.types.ts`);
@@ -1466,6 +1489,18 @@ function parseOptions(args: string[]): GenerateOptions {
       case '--testcases':
         options.testcases = true;
         break;
+      case '--none':
+        options.none = true;
+        break;
+      case '--basic':
+        options.basic = true;
+        break;
+      case '--essential':
+        options.essential = true;
+        break;
+      case '--strict':
+        options.strict = true;
+        break;
     }
   }
   
@@ -1481,6 +1516,19 @@ function toPascalCase(str: string): string {
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join('');
+}
+
+function getValidationLevelDescription(level: string): string {
+  switch (level) {
+    case 'none':
+      return '(prototyping - no validation)';
+    case 'basic':
+      return '(startups - endpoints only)';
+    case 'strict':
+      return '(enterprise - full validation)';
+    default:
+      return '';
+  }
 }
 
 async function exists(path: string): Promise<boolean> {
@@ -1785,11 +1833,20 @@ GENERATION TYPES:
   --application                   Generate application structure (default if no flags)
   --testcases                     Generate API test cases from specifications
 
+VALIDATION LEVELS (for features only):
+  --strict                        Full validation - enterprise
+  --essential                     Core validation - recommended (default)  
+  --basic                         Endpoints only - rapid prototyping
+  --none                          No validation - quick testing
+
 EXAMPLES:
   npm run generate app:api user                         # Generate user API app (default)
   npm run generate app:api user -- --application       # Generate user API app explicitly
   npm run generate app:api user -- --testcases         # Generate API test cases for user
-  npm run generate app:api user/profile                # Add profile feature to user app
+  npm run generate app:api user/profile                # Add profile feature (essential validation)
+  npm run generate app:api user/profile -- --basic     # Add profile feature (basic validation)
+  npm run generate app:api user/profile -- --strict    # Add profile feature (strict validation)
+  npm run generate app:api user/profile -- --none      # Add profile feature (no validation)
   npm run generate app:api shop/cart -- --overwrite    # Overwrite existing cart feature
   npm run generate workflow converter                   # Generate workflow from tech spec
   

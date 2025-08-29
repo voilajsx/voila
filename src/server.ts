@@ -20,6 +20,9 @@ import ApiDiscovery from './lib/discovery.js';
 // Contract validation system
 import { contractRegistry, validateAllApps, isFeatureEnabled } from './lib/contracts.js';
 
+// Web integration system
+import { getWebDiscovery, validateAllWebApps } from './lib/web-discovery.js';
+
 /**
  * Extended Express Request interface for VoilaJSX AppKit integration
  * @llm-rule WHEN: Need request-scoped logging and tracing in middleware
@@ -61,6 +64,7 @@ const logger = loggerClass.get('server');
 const error = errorClass.get();
 const security = securityClass.get();
 
+
 /**
  * Express Application and HTTP Server Setup
  * @llm-rule WHEN: Need production-ready HTTP server with graceful shutdown support
@@ -97,7 +101,7 @@ logger.info('Server configuration loaded', {
  * Express Middleware Pipeline - CRITICAL ORDER for AppKit compatibility
  * @llm-rule WHEN: Setting up Express middleware for production applications
  * @llm-rule AVOID: Changing middleware order - breaks AppKit security and logging chain
- * @llm-rule NOTE: Order is: parsing → security → logging → routes → error handling
+ * @llm-rule NOTE: Order is: parsing → security → logging → static files → routes → error handling
  */
 
 // 1. Body parsing middleware - handles JSON and form data
@@ -128,6 +132,28 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// 4. Static file serving for web frontend (production only)
+if (NODE_ENV === 'production') {
+  const webDistPath = join(__dirname, '..', 'dist', 'web');
+  
+  // Serve static assets with cache headers
+  app.use('/assets', express.static(join(webDistPath, 'assets'), {
+    maxAge: '1y', // Cache assets for 1 year
+    etag: true,
+    lastModified: true
+  }));
+  
+  // Serve favicon
+  app.use('/favicon.ico', express.static(join(webDistPath, 'favicon.ico'), {
+    maxAge: '1d'
+  }));
+  
+  logger.info('Production mode: Static file serving enabled', {
+    webDistPath,
+    assetsPath: join(webDistPath, 'assets')
+  });
+}
 
 /**
  * Health Check Endpoint - Kubernetes/Docker readiness probe compatible
@@ -168,26 +194,32 @@ const initializeContracts = async (): Promise<void> => {
   try {
     logger.info('Starting contract validation', { operationId });
     
+    // Validate API contracts
     const apiPath = join(__dirname, 'api');
-    const result = await validateAllApps(apiPath);
+    const apiResult = await validateAllApps(apiPath);
     
-    // Fail fast on contract violations - prevents invalid API deployment
-    if (!result.success) {
-      const errorMessages = result.errors.map(err => `[${err.feature}] ${err.details}`);
-      throw new Error(`Contract validation failed:\n\n${errorMessages.join('\n')}`);
+    // Validate Web contracts
+    const webPath = join(__dirname, 'web');
+    const webResult = await validateAllWebApps(webPath);
+    
+    // Fail fast on contract violations - prevents invalid deployment
+    const allErrors = [...apiResult.errors, ...webResult.errors];
+    if (allErrors.length > 0) {
+      throw new Error(`Contract validation failed:\n\nAPI Errors:\n${apiResult.errors.join('\n')}\n\nWeb Errors:\n${webResult.errors.join('\n')}`);
     }
     
     // Log warnings but continue - non-breaking contract issues
-    if (result.warnings.length > 0) {
-      logger.warn('Contract warnings found', {
+    if (apiResult.warnings && apiResult.warnings.length > 0) {
+      logger.warn('API contract warnings found', {
         operationId,
-        warnings: result.warnings.map(w => `[${w.feature}] ${w.details}`)
+        warnings: apiResult.warnings.map((w: any) => `[${w.feature}] ${w.details}`)
       });
     }
     
     logger.info('Contract validation completed', {
       operationId,
-      ...result.stats
+      api: apiResult.stats || { validated: apiResult.success },
+      web: { validated: webResult.success, errors: webResult.errors.length }
     });
     
   } catch (err: any) {
@@ -285,9 +317,24 @@ app.get('/api', (req, res) => {
   // Include contract validation summary
   const contractSummary = contractRegistry.getContractSummary();
   
+  // Web integration information
+  const webInfo = NODE_ENV === 'production' ? 
+    { 
+      integrated: true, 
+      served: 'static',
+      note: 'Frontend served from /assets and root routes'
+    } : 
+    { 
+      integrated: false, 
+      devServer: 'http://localhost:5173',
+      note: 'In development, frontend runs on separate Vite dev server'
+    };
+  
   res.json({
-    message: 'Voila Framework API',
+    message: 'Voila Framework - Full Stack API',
+    architecture: 'monolithic',
     environment: NODE_ENV,
+    web: webInfo,
     contracts: {
       validated: true,
       ...contractSummary
@@ -295,6 +342,26 @@ app.get('/api', (req, res) => {
     ...docs
   });
 });
+
+/**
+ * Development Mode Information Endpoint
+ * @llm-rule WHEN: Need development-specific API information and debugging
+ * @llm-rule AVOID: Exposing in production - development debugging only
+ */
+if (NODE_ENV === 'development') {
+  app.get('/dev-info', (req, res) => {
+    res.json({
+      mode: 'development',
+      backend: `http://localhost:${PORT}`,
+      frontend: 'http://localhost:5173',
+      proxy: {
+        api: `http://localhost:5173/api -> http://localhost:${PORT}/api`,
+        health: `http://localhost:5173/health -> http://localhost:${PORT}/health`
+      },
+      note: 'In development, frontend runs on separate Vite dev server with API proxy'
+    });
+  });
+}
 
 /**
  * OpenAPI Specification Endpoint - Standards-compliant API schema
@@ -326,6 +393,47 @@ const startServer = async (): Promise<void> => {
   
   // Step 2: Discover and mount all API routes
   await initializeRoutes();
+  
+  // Step 2.5: Initialize cross-app event listeners via discovery system
+  if (apiDiscovery && discoveryResult) {
+    await apiDiscovery.initializeEventListeners(discoveryResult);
+    logger.info('Event listeners initialized via discovery system', { operationId: util.uuid() });
+  }
+  
+  // Step 2.6: Serve React app for non-API routes (production only)
+  if (NODE_ENV === 'production') {
+    const webDistPath = join(__dirname, '..', 'dist', 'web');
+    const indexPath = join(webDistPath, 'index.html');
+    
+    // Serve React app for all non-API routes
+    app.get('*', (req, res, next) => {
+      // Skip API routes and health check
+      if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
+        return next();
+      }
+      
+      // Skip static assets (already handled by express.static)
+      if (req.path.startsWith('/assets') || req.path === '/favicon.ico') {
+        return next();
+      }
+      
+      // Serve React SPA
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          logger.error('Failed to serve React app', { 
+            path: req.path, 
+            error: err.message 
+          });
+          res.status(500).json({ error: 'Failed to load application' });
+        }
+      });
+    });
+    
+    logger.info('Production mode: React SPA serving enabled', {
+      indexPath,
+      catchAllRoutes: 'enabled'
+    });
+  }
   
   // Step 3: 404 handler for API routes - MUST be after routes are mounted
   app.use('/api/*', (req, res, next) => {

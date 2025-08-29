@@ -11,14 +11,13 @@
 import type { VoilaFeatureContract } from '@/lib/contracts.js';
 import { createFeatureContract } from '@/lib/contracts.js';
 
-// ✅ EXPLICIT CONTRACT: Everything about this feature in one place
+// ✅ CONTRACT: Status feature with validation levels and bidirectional communication
 const StatusFeatureContract: VoilaFeatureContract = createFeatureContract({
-  // === FEATURE IDENTITY ===
+  // === IDENTITY ===
   name: 'status',
   app: 'welcome',
   description: 'Status feature for welcome application with modern API patterns',
-  contract_validation: 'strict', // strict | basic | none
-  llm_comments: 'strict', // strict | basic | none
+  validation: 'basic', // none | basic | essential | strict
   
   // === API DEFINITION ===
   api: {
@@ -28,17 +27,19 @@ const StatusFeatureContract: VoilaFeatureContract = createFeatureContract({
         method: 'GET',
         path: '/',
         handler: 'StatusService.getDefault',
-        summary: 'Get default greeting from welcome/status',
+        summary: 'Get system status information',
         requestSchema: null,
-        responseSchema: 'StatusResponse'
+        responseSchema: 'StatusResponse',
+        auth: { type: 'public' }
       },
       {
         method: 'GET',
-        path: '/:name',
-        handler: 'StatusService.greetByName',
-        summary: 'Get personalized greeting from welcome/status',
+        path: '/health',
+        handler: 'StatusService.getHealth',
+        summary: 'Get detailed health check information',
         requestSchema: null,
-        responseSchema: 'StatusResponse'
+        responseSchema: 'HealthResponse',
+        auth: { type: 'login' }
       }
     ]
   },
@@ -51,41 +52,40 @@ const StatusFeatureContract: VoilaFeatureContract = createFeatureContract({
         external: ["express"]
       },
       "status.routes.ts": {
-        external: ["express"]
+        external: ["express"],
+        relative: ["./status.services"]
       },
       "status.types.ts": {
         external: ["zod"]
       },
       "status.models.ts": {
-        appkit: ["database"]
+        appkit: ["database"],
+        external: []
       },
       "status.test.ts": {
-        external: ["vitest", "supertest"]
+        external: ["vitest", "supertest"],
+        relative: ["./status.routes"]
       }
     }
   },
 
-  // === PROVIDES (What this feature offers to the system) ===
-  provides: {
-    services: ['StatusService'],
-    routes: ['/api/welcome/status', '/api/welcome/status/:name'],
-    types: ['StatusResponse', 'StatusData', 'StatusRequest'],
-    schemas: ['StatusSchema']
+  // === BIDIRECTIONAL COMMUNICATION ===
+  services: {
+    provides: ['StatusService'],
+    consumes: [] // No service dependencies
   },
 
-  // === CONSUMES (What this feature uses from other parts) ===
-  consumes: {
-    services: [], // Internal services from other features
-    state: [],
-    events: []
-    // External APIs are handled via configuration, not contract dependencies
+  events: {
+    emits: [], // No events emitted
+    listens: [] // No event subscriptions
   },
 
   // === TESTS ===
   tests: [
-    'should return default greeting from welcome/status',
-    'should return personalized greeting from welcome/status',
-    'should handle names with special characters'
+    'should return system status information',
+    'should return health check with authentication',
+    'should handle system monitoring data',
+    'should validate response schemas'
   ]
 });
 

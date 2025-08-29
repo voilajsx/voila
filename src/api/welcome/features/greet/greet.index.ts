@@ -11,14 +11,13 @@
 import type { VoilaFeatureContract } from '@/lib/contracts.js';
 import { createFeatureContract } from '@/lib/contracts.js';
 
-// ✅ EXPLICIT CONTRACT: Everything about this feature in one place
+// ✅ CONTRACT: Greet feature with validation levels and bidirectional communication
 const GreetFeatureContract: VoilaFeatureContract = createFeatureContract({
-  // === FEATURE IDENTITY ===
+  // === IDENTITY ===
   name: 'greet',
   app: 'welcome',
   description: 'Greet feature for welcome application with modern API patterns',
-  contract_validation: 'none', // strict | basic | none
-  llm_comments: 'none', // strict | basic | none
+  validation: 'none', // none | basic | essential | strict
   
   // === API DEFINITION ===
   api: {
@@ -30,7 +29,8 @@ const GreetFeatureContract: VoilaFeatureContract = createFeatureContract({
         handler: 'GreetService.getDefault',
         summary: 'Get default greeting from welcome/greet',
         requestSchema: null,
-        responseSchema: 'GreetResponse'
+        responseSchema: 'GreetResponse',
+        auth: { type: 'public' }
       },
       {
         method: 'GET',
@@ -38,7 +38,8 @@ const GreetFeatureContract: VoilaFeatureContract = createFeatureContract({
         handler: 'GreetService.greetByName',
         summary: 'Get personalized greeting from welcome/greet',
         requestSchema: null,
-        responseSchema: 'GreetResponse'
+        responseSchema: 'GreetResponse',
+        auth: { type: 'public' }
       }
     ]
   },
@@ -51,7 +52,8 @@ const GreetFeatureContract: VoilaFeatureContract = createFeatureContract({
         external: ["express"]
       },
       "greet.routes.ts": {
-        external: ["express"]
+        external: ["express"],
+        relative: ["./greet.services"]
       },
       "greet.types.ts": {
         external: ["zod"]
@@ -61,25 +63,21 @@ const GreetFeatureContract: VoilaFeatureContract = createFeatureContract({
         external: []
       },
       "greet.test.ts": {
-        external: ["vitest", "supertest"]
+        external: ["vitest", "supertest"],
+        relative: ["./greet.routes"]
       }
     }
   },
 
-  // === PROVIDES (What this feature offers to the system) ===
-  provides: {
-    services: ['GreetService'],
-    routes: ['/api/welcome/greet', '/api/welcome/greet/:name'],
-    types: ['GreetResponse', 'GreetData', 'GreetRequest'],
-    schemas: ['GreetSchema']
+  // === BIDIRECTIONAL COMMUNICATION ===
+  services: {
+    provides: ['GreetService'],
+    consumes: [] // No service dependencies
   },
 
-  // === CONSUMES (What this feature uses from other parts) ===
-  consumes: {
-    services: [], // Internal services from other features
-    state: [],
-    events: []
-    // External APIs are handled via configuration, not contract dependencies
+  events: {
+    emits: [], // No events emitted
+    listens: [] // No event subscriptions
   },
 
   // === TESTS ===

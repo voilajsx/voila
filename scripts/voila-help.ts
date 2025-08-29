@@ -67,8 +67,14 @@ async function showAllCommands(): Promise<void> {
     ],
     '🏗️ Code Generation': [
       { cmd: 'npm run generate app:api <app>', desc: 'Generate new API application' },
-      { cmd: 'npm run generate app:api <app>/<feature>', desc: 'Generate new feature in app' },
-      { cmd: 'npm run generate app:api <app> -- --testcases', desc: 'Generate API test cases from specs' }
+      { cmd: 'npm run generate app:api <app>/<feature>', desc: 'Generate new feature (essential validation)' },
+      { cmd: 'npm run generate app:api <app>/<feature> -- --basic', desc: 'Generate feature with basic validation' },
+      { cmd: 'npm run generate app:api <app>/<feature> -- --essential', desc: 'Generate feature with essential validation' },
+      { cmd: 'npm run generate app:api <app>/<feature> -- --strict', desc: 'Generate feature with strict validation' },
+      { cmd: 'npm run generate app:api <app>/<feature> -- --none', desc: 'Generate feature with no validation' },
+      { cmd: 'npm run generate app:api <app> -- --testcases', desc: 'Generate API test cases from specs' },
+      { cmd: 'npm run generate secrets', desc: 'Generate all secrets (JWT, CSRF, etc.) in .env' },
+      { cmd: 'npm run generate tokens', desc: 'Generate test tokens with user roles in .env.auth' }
     ],
     '⚙️ Development & Server': [
       { cmd: 'npm run dev:api', desc: 'Start development server with hot reload' },
@@ -132,7 +138,8 @@ async function showAllCommands(): Promise<void> {
   console.log('');
   console.log('🌟 Most commonly used commands:');
   console.log('   npm run dev:api                        # Development server');
-  console.log('   npm run generate app:api <app>/<feat>  # Add features');
+  console.log('   npm run generate app:api <app>/<feat>  # Add features (essential)');
+  console.log('   npm run generate app:api <app>/<feat> -- --basic # Add features (basic)');
   console.log('   npm run validate app:api <app>         # Check quality');
   console.log('   npm run routes                         # See all endpoints');
 }
@@ -194,22 +201,41 @@ async function showCommandHelp(command: string): Promise<void> {
       usage: [
         'npm run generate app:api <app>',
         'npm run generate app:api <app>/<feature>',
-        'npm run generate app:api <app> -- --testcases'
+        'npm run generate app:api <app>/<feature> -- [validation flags]',
+        'npm run generate app:api <app> -- --testcases',
+        'npm run generate secrets',
+        'npm run generate tokens'
       ],
       examples: [
-        'npm run generate app:api shop                # Generate shop app',
-        'npm run generate app:api shop/cart          # Add cart feature',
-        'npm run generate app:api shop -- --testcases # Generate API tests'
+        'npm run generate app:api shop                     # Generate shop app',
+        'npm run generate app:api shop/cart               # Add cart feature (essential validation)',
+        'npm run generate app:api shop/cart -- --basic    # Add cart feature (basic validation)',
+        'npm run generate app:api shop/cart -- --essential # Add cart feature (essential validation)',
+        'npm run generate app:api shop/cart -- --strict   # Add cart feature (strict validation)',
+        'npm run generate app:api shop/cart -- --none     # Add cart feature (no validation)',
+        'npm run generate app:api shop -- --testcases     # Generate API tests',
+        'npm run generate secrets                          # Generate secrets in .env',
+        'npm run generate tokens                           # Generate test tokens in .env.auth'
       ],
       options: [
         '--overwrite          Overwrite existing files',
         '--skip-existing      Skip files that already exist',
-        '--testcases          Generate API test cases from specifications'
+        '--application        Generate application structure (default if no flags)',
+        '--testcases          Generate API test cases from specifications',
+        '',
+        'Validation Levels (for features only):',
+        '--strict             Full validation - enterprise',
+        '--essential          Core validation - recommended (default)',
+        '--basic              Endpoints only - rapid prototyping',
+        '--none               No validation - quick testing'
       ],
       notes: [
         'Planning must be approved before app generation',
         'Features follow contract-driven development pattern',
-        'Test cases are generated from API specifications'
+        'Validation levels: none (prototyping) → basic (startups) → strict (enterprise)',
+        'Default validation level is strict for production readiness',
+        'Test cases are generated from API specifications',
+        'Authentication setup: run secrets first, then tokens for complete auth system'
       ]
     },
 

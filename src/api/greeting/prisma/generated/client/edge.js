@@ -132,7 +132,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\srikrishnag\\Documents\\codebase\\vc\\voila\\src\\api\\greeting\\prisma\\generated\\client",
+      "value": "/Users/krishnateja/vc/dev/voila/src/api/greeting/prisma/generated/client",
       "fromEnvVar": null
     },
     "config": {
@@ -141,12 +141,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "windows",
+        "value": "darwin-arm64",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\srikrishnag\\Documents\\codebase\\vc\\voila\\src\\api\\greeting\\prisma\\schema.prisma",
+    "sourceFilePath": "/Users/krishnateja/vc/dev/voila/src/api/greeting/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -159,7 +159,6 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {

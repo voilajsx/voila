@@ -5,7 +5,15 @@
 ## Core Import Pattern
 
 ```typescript
-import { util, logger, error, validator } from '@voilajsx/appkit';
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+import { securityClass } from '@voilajsx/appkit/security';
+
+const utils = utilClass.get();
+const log = loggerClass.get('feature.service');
+const err = errorClass.get();
+const secure = securityClass.get();
 ```
 **Use 80% of the time** - covers most service implementations.
 
@@ -28,33 +36,52 @@ const auth = authClass.get();
 
 ### Infrastructure (Use First)
 ```typescript
-import { util, logger, error, validator } from '@voilajsx/appkit';
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+import { securityClass } from '@voilajsx/appkit/security';
 ```
 
 ### Data & Communication (Use Second)  
 ```typescript
-import { http, data, config, cache } from '@voilajsx/appkit';
-import { authClass } from '@voilajsx/appkit/auth';  // Auth uses class pattern
+import { configClass } from '@voilajsx/appkit/config';
+import { authClass } from '@voilajsx/appkit/auth';
+// Note: All AppKit modules use class pattern with .get()
 ```
 
 ### Developer Experience (Use Third)
 ```typescript
-import { test, debug, types } from '@voilajsx/appkit';
+// Additional modules follow same class pattern
+// import { testClass } from '@voilajsx/appkit/test';
+// import { debugClass } from '@voilajsx/appkit/debug';
 ```
 
 ## Essential Patterns
 
 ### 1. Service Response Pattern
 ```typescript
-import { util, error } from '@voilajsx/appkit';
+import { Request, Response } from 'express';
+import { utilClass } from '@voilajsx/appkit/util';
+import { errorClass } from '@voilajsx/appkit/error';
+
+const utils = utilClass.get();
+const err = errorClass.get();
 
 export class MyService {
-  static async getData(id: string) {
+  static async getData(req: Request, res: Response): Promise<void> {
+    const requestId = utils.uuid();
+    
     try {
-      const result = await processData(id);
-      return util.success(result);              // ✅ Success response
-    } catch (err) {
-      throw error.business('Failed to get data', err);  // ❌ Business error
+      const result = await processData(req.params.id);
+      
+      res.json({
+        success: true,
+        data: result,
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      throw err.business('Failed to get data', error);
     }
   }
 }
@@ -62,18 +89,28 @@ export class MyService {
 
 ### 2. Logging Pattern
 ```typescript
-import { logger } from '@voilajsx/appkit';
+import { loggerClass } from '@voilajsx/appkit/logger';
+
+const log = loggerClass.get('myservice');
 
 export class MyService {
-  static async processOrder(order: Order) {
-    logger.info('Processing order', { orderId: order.id });
+  static async processOrder(req: Request, res: Response): Promise<void> {
+    const requestId = utils.uuid();
+    const order = req.body;
+    
+    log.info('Processing order', { requestId, orderId: order.id });
     
     try {
       const result = await process(order);
-      logger.success('Order processed', { orderId: order.id, result });
-      return result;
-    } catch (error) {
-      logger.error('Order processing failed', { orderId: order.id, error });
+      log.info('Order processed', { requestId, orderId: order.id, result });
+      
+      res.json({
+        success: true,
+        data: result,
+        requestId
+      });
+    } catch (error: any) {
+      log.error('Order processing failed', { requestId, orderId: order.id, error });
       throw error;
     }
   }
@@ -82,32 +119,71 @@ export class MyService {
 
 ### 3. Validation Pattern
 ```typescript
-import { validator } from '@voilajsx/appkit';
+import { securityClass } from '@voilajsx/appkit/security';
+import { UserSchema } from './types.js';
+
+const secure = securityClass.get();
 
 export class MyService {
-  static async createUser(userData: unknown) {
-    const validatedData = validator.validate(UserSchema, userData);
-    // validatedData is now typed and validated
-    return await createUser(validatedData);
+  static async createUser(req: Request, res: Response): Promise<void> {
+    const requestId = utils.uuid();
+    
+    try {
+      // Validate with Zod schema (built into templates)
+      const validatedData = UserSchema.parse(req.body);
+      // Sanitize input for security
+      const sanitizedData = secure.input(validatedData);
+      
+      const result = await createUser(sanitizedData);
+      
+      res.json({
+        success: true,
+        data: result,
+        requestId
+      });
+    } catch (error: any) {
+      throw err.business('User creation failed', error);
+    }
   }
 }
 ```
 
 ### 4. HTTP Client Pattern
 ```typescript
-import { http, logger, error } from '@voilajsx/appkit';
+// Note: HTTP client usage depends on specific AppKit version
+// Generally external APIs are called using fetch or external libraries
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+
+const log = loggerClass.get('external.service');
+const err = errorClass.get();
 
 export class ExternalService {
-  static async fetchWeather(city: string) {
+  static async fetchWeather(req: Request, res: Response): Promise<void> {
+    const city = req.params.city;
+    const requestId = utils.uuid();
+    
     try {
-      const response = await http.get(`/weather/${city}`, {
+      const response = await fetch(`https://api.weather.com/weather/${city}`, {
         headers: { 'Authorization': 'Bearer token' }
       });
       
-      logger.info('Weather data fetched', { city, status: response.status });
-      return response.data;
-    } catch (err) {
-      throw error.external('Weather API failed', err);
+      if (!response.ok) {
+        throw new Error(`Weather API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      log.info('Weather data fetched', { requestId, city, status: response.status });
+      
+      res.json({
+        success: true,
+        data,
+        requestId
+      });
+    } catch (error: any) {
+      log.error('Weather API failed', { requestId, city, error: error.message });
+      throw err.external('Weather API failed', error);
     }
   }
 }
@@ -310,65 +386,115 @@ await data.transaction(async (trx) => {
 
 ### Simple Service (80% of cases)
 ```typescript
-import { util, logger, error, validator } from '@voilajsx/appkit';
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+import { securityClass } from '@voilajsx/appkit/security';
+
+const utils = utilClass.get();
+const log = loggerClass.get('feature.service');
+const err = errorClass.get();
+const secure = securityClass.get();
 ```
 
 ### Service with External API calls
 ```typescript
-import { util, logger, error, http } from '@voilajsx/appkit';
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+// Use native fetch or external HTTP libraries
 ```
 
 ### Service with Database Operations
 ```typescript
-import { util, logger, error, data, validator } from '@voilajsx/appkit';
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+// Use Prisma client generated per app
 ```
 
 ### Service with Authentication
 ```typescript
-import { util, logger, error, validator } from '@voilajsx/appkit';
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
 import { authClass } from '@voilajsx/appkit/auth';
+
+const auth = authClass.get();
 ```
 
-### Service with Caching
+### Service with Configuration
 ```typescript
-import { util, logger, error, cache, validator } from '@voilajsx/appkit';
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+import { configClass } from '@voilajsx/appkit/config';
+
+const config = configClass.get();
 ```
 
 ### Complex Service (Multiple needs)
 ```typescript
-import { 
-  util, logger, error, validator,    // Core
-  http, data, config, cache           // Extended
-} from '@voilajsx/appkit';
-import { authClass } from '@voilajsx/appkit/auth';  // Auth uses class pattern
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+import { securityClass } from '@voilajsx/appkit/security';
+import { authClass } from '@voilajsx/appkit/auth';
+import { configClass } from '@voilajsx/appkit/config';
+
+const utils = utilClass.get();
+const log = loggerClass.get('feature.service');
+const err = errorClass.get();
+const secure = securityClass.get();
+const auth = authClass.get();
+const config = configClass.get();
 ```
 
 ## Common Patterns
 
 ### Service Template
 ```typescript
-import { util, logger, error, validator } from '@voilajsx/appkit';
+import { Request, Response } from 'express';
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+import { securityClass } from '@voilajsx/appkit/security';
+import { MyRequestSchema } from './types.js';
+
+const utils = utilClass.get();
+const log = loggerClass.get('myservice');
+const err = errorClass.get();
+const secure = securityClass.get();
 
 export class MyService {
-  static async processRequest(input: unknown): Promise<ServiceResponse> {
+  static async processRequest(req: Request, res: Response): Promise<void> {
+    const requestId = utils.uuid();
+    
     // 1. Log request
-    logger.info('Processing request', { input });
+    log.info('Processing request', { requestId, input: req.body });
     
     try {
-      // 2. Validate input
-      const validated = validator.validate(MySchema, input);
+      // 2. Validate and sanitize input
+      const validated = MyRequestSchema.parse(req.body);
+      const sanitized = secure.input(validated);
       
       // 3. Business logic
-      const result = await doBusinessLogic(validated);
+      const result = await doBusinessLogic(sanitized);
       
       // 4. Log success & return
-      logger.success('Request processed', { result });
-      return util.success(result);
+      log.info('Request processed', { requestId, result });
       
-    } catch (err) {
+      res.json({
+        success: true,
+        data: result,
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error: any) {
       // 5. Log error & throw
-      logger.error('Request failed', { input, error: err });
-      throw error.business('Processing failed', err);
+      log.error('Request failed', { requestId, input: req.body, error: error.message });
+      throw err.business('Processing failed', error);
     }
   }
 }
@@ -376,25 +502,27 @@ export class MyService {
 
 ### Route Handler Template
 ```typescript
-import { util, error, validator } from '@voilajsx/appkit';
+import express from 'express';
 import { authClass } from '@voilajsx/appkit/auth';
+import { MyService } from './myfeature.services.js';
 
+const router = express.Router();
 const auth = authClass.get();
 
-router.post('/endpoint', 
+// Simple route delegation to service
+router.post('/endpoint', MyService.processRequest);
+
+// Route with authentication
+router.post('/protected', 
   auth.requireLoginToken(),                    // Require user authentication
   auth.requireUserRoles(['admin.tenant']),    // Require specific role
-  async (req, res, next) => {
-    try {
-      const user = auth.user(req);             // Extract authenticated user
-      const validated = validator.validate(RequestSchema, req.body);
-      const result = await MyService.processRequest(validated, user);
-      res.json(result);
-    } catch (err) {
-      next(err);  // Let error middleware handle it
-    }
-  }
+  MyService.processProtectedRequest
 );
+
+// Route with validation middleware (validation done in service)
+router.get('/data/:id', MyService.getData);
+
+export default router;
 ```
 
 ---

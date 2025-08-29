@@ -2,10 +2,10 @@
 
 /**
  * Voila Contract Validation CLI
- * Usage: npx tsx scripts/voila-validate.ts [command] [app-name]
+ * Usage: npm run validate [command] [app-name]
  * Examples:
- *   npx tsx scripts/voila-validate.ts app:api greeting    # Validate specific app
- *   npx tsx scripts/voila-validate.ts app:api             # Validate all apps
+ *   npm run validate app:api greeting    # Validate specific app
+ *   npm run validate app:api             # Validate all apps
  */
 
 import { fileURLToPath } from 'url';

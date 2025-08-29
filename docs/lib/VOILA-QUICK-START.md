@@ -72,9 +72,13 @@ npm run deploy production                          # Deploy to production
    ```typescript
    export const FeatureContract: VoilaFeatureContract = {
      name: 'feature', app: 'myapp',
+     description: 'Feature description',
+     validation: 'essential', // none | basic | essential | strict
      api: { basePath: '/api/myapp', endpoints: [...] },
      dependencies: { files: {...} },
-     provides: { services: [...], routes: [...] }
+     services: { provides: [...], consumes: [] },
+     events: { emits: [], listens: [] },
+     tests: [...]
    };
    ```
 4. **Implement Stack**:
@@ -102,12 +106,16 @@ npm run deploy production                          # Deploy to production
 
 ### VoilaFeatureContract Template
 ```typescript
-import { VoilaFeatureContract } from '../../../lib/contracts.js';
+import type { VoilaFeatureContract } from '@/lib/contracts.js';
+import { createFeatureContract } from '@/lib/contracts.js';
 
-export const MyFeatureContract: VoilaFeatureContract = {
+export const MyFeatureContract: VoilaFeatureContract = createFeatureContract({
   name: 'myfeature',
   app: 'myapp',
-  description: 'Feature description',
+  description: 'Feature description with business purpose',
+  validation: 'essential', // none | basic | essential | strict
+  
+  // API Definition
   api: {
     basePath: '/api/myapp',
     endpoints: [
@@ -115,39 +123,91 @@ export const MyFeatureContract: VoilaFeatureContract = {
         method: 'GET',
         path: '/endpoint',
         handler: 'MyService.method',
-        summary: 'Endpoint description'
+        summary: 'Endpoint description',
+        requestSchema: 'MyRequestSchema',
+        responseSchema: 'MyResponseSchema',
+        auth: { type: 'public' }
       }
     ]
   },
+  
+  // Dependencies (File-specific imports)
   dependencies: {
     files: {
       "myfeature.services.ts": {
-        appkit: ["util", "logger", "error"],
-        external: []
+        appkit: ["util", "logger", "error", "security"],
+        external: ["express"],
+        relative: ["./myfeature.types"]
+      },
+      "myfeature.routes.ts": {
+        external: ["express"],
+        relative: ["./myfeature.services"]
       }
     }
   },
-  provides: {
-    services: ['MyService'],
-    routes: ['/api/myapp/endpoint'],
-    types: ['MyType']
-  }
-};
+  
+  // Bidirectional Communication
+  services: {
+    provides: ['MyService'],
+    consumes: [] // Service dependencies
+  },
+  
+  events: {
+    emits: [], // Events this feature emits
+    listens: [] // Events this feature listens to
+  },
+  
+  // Test Requirements
+  tests: [
+    'should handle valid requests successfully',
+    'should validate input parameters',
+    'should handle errors gracefully'
+  ]
+});
 ```
 
 ### Service Implementation Pattern
 ```typescript
 // myfeature.services.ts
-import { util, logger, error } from '@voilajsx/appkit';
+import { Request, Response } from 'express';
+import { utilClass } from '@voilajsx/appkit/util';
+import { loggerClass } from '@voilajsx/appkit/logger';
+import { errorClass } from '@voilajsx/appkit/error';
+import { securityClass } from '@voilajsx/appkit/security';
+import { MyRequestSchema, MyResponseSchema, MyResponse } from './myfeature.types.js';
+
+const utils = utilClass.get();
+const log = loggerClass.get('myfeature.service');
+const err = errorClass.get();
+const secure = securityClass.get();
 
 export class MyService {
-  static async method(data: MyRequest): Promise<MyResponse> {
+  static async method(req: Request, res: Response): Promise<void> {
+    const requestId = utils.uuid();
+    
     try {
-      logger.info('Processing request', { data });
+      // Validate and sanitize input
+      const validated = MyRequestSchema.parse(req.body);
+      const sanitized = secure.input(validated);
+      
+      log.info('Processing request', { requestId, data: sanitized });
+      
       // Business logic here
-      return util.success({ result: 'data' });
-    } catch (err) {
-      throw error.business('Operation failed', err);
+      const result = await processBusinessLogic(sanitized);
+      
+      const response: MyResponse = {
+        success: true,
+        data: result,
+        requestId,
+        timestamp: new Date().toISOString()
+      };
+      
+      log.info('Request completed', { requestId, result });
+      res.json(response);
+      
+    } catch (error: any) {
+      log.error('Request failed', { requestId, error: error.message });
+      throw err.business('Operation failed', error);
     }
   }
 }
@@ -156,23 +216,18 @@ export class MyService {
 ### Routes Pattern
 ```typescript
 // myfeature.routes.ts
-import { Router } from 'express';
+import express from 'express';
 import { MyService } from './myfeature.services.js';
-import { MyRequestSchema } from './myfeature.types.js';
 
-const router = Router();
+const router = express.Router();
 
-router.get('/endpoint', async (req, res, next) => {
-  try {
-    const validated = MyRequestSchema.parse(req.query);
-    const result = await MyService.method(validated);
-    res.json(result);
-  } catch (error) {
-    next(error);
-  }
-});
+// GET /api/myapp/myfeature/endpoint - Handle request
+router.get('/endpoint', MyService.method);
 
-export { router as myfeatureRoutes };
+// POST /api/myapp/myfeature/endpoint - Create resource
+router.post('/endpoint', MyService.createMethod);
+
+export default router;
 ```
 
 ### Types Pattern
@@ -264,9 +319,30 @@ npm run validate app:api myapp             # Validate specific app
 ### Testing Levels
 ```bash
 npm run test app:api myapp -- --unittest        # Unit tests only
-npm run test app:api myapp -- --apitest            # API integration tests
-npm run test app:api myapp                          # All tests (unit + API + compliance)
+npm run test app:api myapp -- --apitest         # API integration tests
+npm run test app:api myapp                      # All tests (unit + API + compliance)
 ```
+
+## Validation Levels (4-Level System)
+
+### Validation Level Guide
+```bash
+# 4-level validation system for different development phases
+npm run generate app:api myapp/feature                    # Essential (default)
+npm run generate app:api myapp/feature -- --none          # No validation
+npm run generate app:api myapp/feature -- --basic         # Basic validation
+npm run generate app:api myapp/feature -- --essential     # Essential validation
+npm run generate app:api myapp/feature -- --strict        # Full validation
+```
+
+### Validation Level Details
+
+| Level | Coverage | Use Case | What Gets Validated |
+|-------|----------|----------|-------------------|
+| `--none` | 0% | Quick testing, rapid experimentation | No validation at all |
+| `--basic` | ~20% | Rapid prototyping | Required fields + API endpoints only |
+| `--essential` | ~80% | Most projects (default) | Basic + services/events/tests |
+| `--strict` | 100% | Enterprise, production systems | Essential + file imports + LLM comments |
 
 ### Quality Gates
 - **95% test coverage** required for all features

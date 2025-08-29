@@ -9,7 +9,7 @@
  */
 
 import { Router } from 'express';
-import { readdirSync, statSync } from 'fs';
+import { readdirSync, statSync, readFileSync } from 'fs';
 import { join, resolve } from 'path';
 import type { VoilaContractRegistry } from './contracts.js';
 
@@ -27,12 +27,26 @@ interface DiscoveredRoute {
 }
 
 /**
+ * Discovered Event Listener - Information about discovered event listeners
+ * @llm-rule WHEN: Tracking discovered event listeners for initialization
+ * @llm-rule AVOID: Manual event listener tracking - use discovery system for consistency
+ */
+interface DiscoveredEventListener {
+  app: string;
+  feature: string;
+  path: string;
+  serviceFile: string;
+  initFunction: string;
+}
+
+/**
  * Discovery Result Summary - Complete discovery results with statistics
  * @llm-rule WHEN: Reporting discovery results for monitoring and debugging
  * @llm-rule AVOID: Incomplete statistics - breaks monitoring and validation
  */
 interface DiscoveryResult {
   routes: DiscoveredRoute[];
+  eventListeners: DiscoveredEventListener[];
   apps: string[];
   totalFeatures: number;
 }
@@ -60,13 +74,14 @@ export class ApiDiscovery {
    */
   discover(): DiscoveryResult {
     const routes: DiscoveredRoute[] = [];
+    const eventListeners: DiscoveredEventListener[] = [];
     const apps: string[] = [];
 
     try {
       // Step 1: Validate API directory exists
       if (!statSync(this.apiBasePath).isDirectory()) {
         console.warn(`API base path does not exist: ${this.apiBasePath}`);
-        return { routes, apps, totalFeatures: 0 };
+        return { routes, eventListeners, apps, totalFeatures: 0 };
       }
 
       // Step 2: Scan for app directories
@@ -83,21 +98,27 @@ export class ApiDiscovery {
         // Discover features within current app
         const appRoutes = this.discoverAppFeatures(appName, appPath);
         routes.push(...appRoutes);
+
+        // Discover event listeners within current app
+        const appEventListeners = this.discoverAppEventListeners(appName, appPath);
+        eventListeners.push(...appEventListeners);
       }
 
       console.log(`🔍 API Discovery completed:`);
       console.log(`   Apps found: ${apps.length}`);
       console.log(`   Features found: ${routes.length}`);
+      console.log(`   Event listeners found: ${eventListeners.length}`);
       
       return {
         routes,
+        eventListeners,
         apps,
         totalFeatures: routes.length
       };
 
     } catch (error) {
       console.error('❌ Error during API discovery:', error);
-      return { routes, apps, totalFeatures: 0 };
+      return { routes, eventListeners, apps, totalFeatures: 0 };
     }
   }
 
@@ -166,6 +187,74 @@ export class ApiDiscovery {
   }
 
   /**
+   * App Event Listener Discovery - Discovers event listeners within a specific app directory
+   * @llm-rule WHEN: Scanning app directories for event listener implementations
+   * @llm-rule AVOID: Manual event listener registration - use discovery for consistency
+   */
+  private discoverAppEventListeners(appName: string, appPath: string): DiscoveredEventListener[] {
+    const eventListeners: DiscoveredEventListener[] = [];
+
+    try {
+      // Step 1: Look for features folder within app
+      const featuresPath = join(appPath, 'features');
+      
+      // Step 2: Validate features directory exists
+      try {
+        if (!statSync(featuresPath).isDirectory()) {
+          return eventListeners;
+        }
+      } catch (error) {
+        return eventListeners;
+      }
+
+      // Step 3: Scan feature directories
+      const featureDirs = readdirSync(featuresPath).filter(dir => {
+        const featurePath = join(featuresPath, dir);
+        return statSync(featurePath).isDirectory();
+      });
+
+      // Step 4: Process each feature for event listeners
+      for (const featureName of featureDirs) {
+        const featurePath = join(featuresPath, featureName);
+        
+        // Look for convention: {feature}.services.ts file with event listeners
+        const serviceFileName = `${featureName}.services.ts`;
+        const serviceFilePath = join(featurePath, serviceFileName);
+
+        try {
+          // Validate service file exists and contains event listener initialization
+          if (statSync(serviceFilePath).isFile()) {
+            const fileContent = readFileSync(serviceFilePath, 'utf-8');
+            
+            // Check if file contains initializeEventListeners function
+            if (fileContent.includes('initializeEventListeners') && 
+                fileContent.includes('export function initializeEventListeners')) {
+              
+              const eventListener: DiscoveredEventListener = {
+                app: appName,
+                feature: featureName,
+                path: serviceFilePath,
+                serviceFile: serviceFileName,
+                initFunction: 'initializeEventListeners'
+              };
+
+              eventListeners.push(eventListener);
+              console.log(`   📥 Found event listeners: ${appName}/${featureName} -> ${serviceFileName}`);
+            }
+          }
+        } catch (error) {
+          // Service file doesn't exist or can't be read
+        }
+      }
+
+    } catch (error) {
+      console.error(`❌ Error discovering event listeners in app '${appName}':`, error);
+    }
+
+    return eventListeners;
+  }
+
+  /**
    * Route Mounting Engine - Dynamically imports and mounts discovered routes
    * @llm-rule WHEN: Mounting discovered routes with contract validation
    * @llm-rule AVOID: Mounting routes without contract validation - breaks API consistency
@@ -215,6 +304,45 @@ export class ApiDiscovery {
     }
 
     return discovery;
+  }
+
+  /**
+   * Event Listener Initialization Engine - Dynamically imports and initializes discovered event listeners
+   * @llm-rule WHEN: Initializing discovered event listeners for cross-app communication
+   * @llm-rule AVOID: Manual event listener initialization - breaks discovery pattern
+   * @llm-rule NOTE: Uses dynamic imports for ESM compatibility and automatic initialization
+   */
+  async initializeEventListeners(discovery?: DiscoveryResult): Promise<void> {
+    // Step 1: Use provided discovery or perform fresh discovery
+    const eventDiscovery = discovery || this.discover();
+
+    // Step 2: Initialize each discovered event listener
+    for (const eventListener of eventDiscovery.eventListeners) {
+      try {
+        console.log(`🔍 Attempting to initialize event listeners: ${eventListener.path}`);
+        
+        // Step 2a: Dynamic import for ESM modules
+        const serviceModule = await import(`file://${eventListener.path}`);
+        
+        // Step 2b: Extract initialization function from module
+        const initFunction = serviceModule[eventListener.initFunction];
+        
+        // Step 2c: Validate and call initialization function
+        if (initFunction && typeof initFunction === 'function') {
+          await initFunction();
+          console.log(`📥 Initialized event listeners: ${eventListener.app}/${eventListener.feature}`);
+        } else {
+          console.warn(`⚠ Invalid event listener initialization function in ${eventListener.path}`);
+          console.log(`   Expected function: ${eventListener.initFunction}`);
+        }
+
+      } catch (error) {
+        console.error(`❌ Failed to initialize event listeners ${eventListener.path}:`);
+        console.error(`   Error:`, error);
+      }
+    }
+
+    console.log(`📥 Event listener initialization completed: ${eventDiscovery.eventListeners.length} listeners initialized`);
   }
 
   /**

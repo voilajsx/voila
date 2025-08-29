@@ -6,7 +6,9 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "rootDir": "./src",
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "declaration": false,
+    "declarationMap": false
   },
   "include": [
     "src/api/**/*",
@@ -18,7 +20,9 @@
   ],
   "exclude": [
     "src/app/**/*",
+    "src/web/**/*",
     "node_modules",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "**/prisma/generated/**/*"
   ]
 }

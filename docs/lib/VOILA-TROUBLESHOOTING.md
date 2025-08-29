@@ -25,17 +25,46 @@ npm run generate app:api myapp/feature -- --overwrite
 ```
 
 ### Validation Issues
-```bash
-# Error: Contract validation failed
-npm run help validate           # Learn about validation
-# Fix contracts and implementations based on error messages
 
+#### 4-Level Validation System Errors
+```bash
+# Error: Unknown validation level
+Error: Unknown validation level 'medium'
+Fix: Use one of: none, basic, essential, strict
+Fix: npm run generate app:api myapp/feature -- --essential
+
+# Error: Validation level mismatch
+Error: Contract validation level 'strict' but generated with 'basic'
+Fix: Regenerate with correct level or update contract validation property
+
+# Error: Essential validation failed
+Error: Service communication validation failed
+Fix: Ensure services.provides and services.consumes are properly defined
+Fix: Check that provided services exist in other features
+
+# Error: Strict validation - LLM comments missing
+Error: Method 'getUserData' missing @llm-rule comment
+Fix: Add @llm-rule WHEN/AVOID comments to all service methods in strict mode
+```
+
+#### Contract Format Errors
+```bash
 # Error: Contract export not found
-# Ensure your feature.index.ts exports the contract:
-# export const FeatureContract: VoilaFeatureContract = {...};
+Fix: Ensure your feature.index.ts exports the contract:
+export const FeatureContract: VoilaFeatureContract = createFeatureContract({...});
+export default FeatureContract;
+
+# Error: Missing required contract fields
+Error: Contract missing required field 'validation'
+Fix: Add validation: 'essential' to your contract
+
+# Error: Invalid contract structure
+Error: Property 'provides' does not exist on contract
+Fix: Update contract to new format - use 'services.provides' instead of 'provides'
 
 # Error: API endpoints mismatch
-# Ensure contract endpoints match your routes implementation
+Error: Handler 'UserService.getUser' not found
+Fix: Ensure service method exists and matches contract handler exactly
 ```
 
 ### Testing Issues
@@ -56,17 +85,63 @@ npm run dev:api                 # Start server if needed
 ```
 
 ### Server Issues
+
+#### Auto-Discovery Problems
+```bash
+# Error: Routes not discovered
+Error: Feature 'myfeature' routes not mounted
+Fix: Check file naming - must be 'myfeature.routes.ts'
+Fix: Ensure contract exists - 'myfeature.index.ts'  
+Fix: Verify contract export - 'export default FeatureContract'
+Fix: Restart server after adding new features
+
+# Error: Contract not found during mounting
+Error: Feature myapp/myfeature has no registered contract
+Fix: Ensure contract is exported correctly
+Fix: Check contract registry - npm run routes app:api myapp
+Fix: Verify contract format matches VoilaFeatureContract interface
+
+# Error: Event listeners not initializing
+Error: Event listeners not found for myapp/myfeature
+Fix: Check for 'export function initializeEventListeners()' in services file
+Fix: Ensure function is exported (not default export)
+Fix: Verify event listener discovery - check console logs
+```
+
+#### Server Startup Issues
 ```bash
 # Error: Port in use
-npm run server api:stop         # Stop existing servers
-npm run server api:restart      # Clean restart
+Error: EADDRINUSE - Port 3001 already in use
+Fix: npm run server api:stop         # Stop existing servers
+Fix: npm run server api:restart      # Clean restart
+Fix: Check for orphaned processes: lsof -ti:3001 | xargs kill -9
 
-# Error: Routes not discovered
-npm run validate app:api myapp  # Check contract exports
-npm run routes app:api myapp    # Verify route discovery
+# Error: Contract validation failed during startup
+Error: Contract validation failed - stopping server
+Fix: npm run validate app:api        # See specific validation errors
+Fix: Fix all contract issues before starting server
+Fix: Use 'none' validation for quick debugging
 
+# Error: AppKit module initialization failed
+Error: Failed to initialize AppKit logger
+Fix: Check AppKit installation - npm list @voilajsx/appkit
+Fix: Verify import paths - use class pattern imports
+Fix: Check AppKit module dependency order
+```
+
+#### Module and Import Issues
+```bash
 # Error: Module not found
-# Check dependencies in contract match actual imports in service files
+Error: Cannot find module './myfeature.services.js'
+Fix: Check file exists and has correct extension (.ts)
+Fix: Verify relative import paths in dependencies.files
+Fix: Ensure TypeScript compilation is successful
+
+# Error: Import resolution failed
+Error: Failed to import route module
+Fix: Check ES module syntax - use 'export default router'
+Fix: Verify file paths are absolute during discovery
+Fix: Check TypeScript compilation output
 ```
 
 ### Git Issues
@@ -121,13 +196,17 @@ flyctl launch                   # Create new app
 ```bash
 # Problem: Contract is complex and confusing
 # Solution: Start simple, add complexity gradually
-export const SimpleContract: VoilaFeatureContract = {
+export const SimpleContract: VoilaFeatureContract = createFeatureContract({
   name: 'simple',
   app: 'myapp',
+  description: 'Simple feature for learning',
+  validation: 'basic',                           # Start with basic validation
   api: { basePath: '/api/myapp', endpoints: [] }, # Start empty
   dependencies: { files: {} },                    # Add as needed
-  provides: { services: [], routes: [], types: [] }
-};
+  services: { provides: [], consumes: [] },       # Add services as needed
+  events: { emits: [], listens: [] },            # Add events as needed
+  tests: []                                       # Add test cases as needed
+});
 ```
 
 ### Implementation Mismatches
@@ -150,12 +229,36 @@ export const SimpleContract: VoilaFeatureContract = {
 # - Mock AppKit dependencies
 # - Aim for 95% coverage
 
-# Problem: AppKit mocking
+# Problem: AppKit mocking with class pattern
 import { jest } from '@jest/globals';
-jest.mock('@voilajsx/appkit', () => ({
-  util: { success: jest.fn() },
-  logger: { info: jest.fn(), error: jest.fn() },
-  error: { business: jest.fn() }
+
+// Mock AppKit modules using class pattern
+jest.mock('@voilajsx/appkit/util', () => ({
+  utilClass: {
+    get: () => ({
+      uuid: jest.fn(() => 'test-uuid'),
+      success: jest.fn()
+    })
+  }
+}));
+
+jest.mock('@voilajsx/appkit/logger', () => ({
+  loggerClass: {
+    get: () => ({
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn()
+    })
+  }
+}));
+
+jest.mock('@voilajsx/appkit/error', () => ({
+  errorClass: {
+    get: () => ({
+      business: jest.fn(),
+      validation: jest.fn()
+    })
+  }
 }));
 ```
 

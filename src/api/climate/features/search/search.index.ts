@@ -11,26 +11,26 @@
 import type { VoilaFeatureContract } from '@/lib/contracts.js';
 import { createFeatureContract } from '@/lib/contracts.js';
 
-// ✅ EXPLICIT CONTRACT: Location search and validation feature
+// ✅ CONTRACT: Location search with validation levels and bidirectional communication
 const SearchFeatureContract: VoilaFeatureContract = createFeatureContract({
-  // === FEATURE IDENTITY ===
+  // === IDENTITY ===
   name: 'search',
   app: 'climate',
   description: 'Location search and validation with OpenWeatherMap geocoding integration',
-  contract_validation: 'basic', // strict | basic | none
-  llm_comments: 'basic', // strict | basic | none
+  validation: 'basic', // none | basic | essential | strict
   
   // === API DEFINITION ===
   api: {
-    basePath: '/api/climate/weather',
+    basePath: '/api/climate/search',
     endpoints: [
       {
         method: 'GET',
-        path: '/search',
+        path: '/',
         handler: 'SearchService.searchLocations',
         summary: 'Search for locations by name with coordinates and country information',
         requestSchema: 'LocationSearchRequestSchema',
-        responseSchema: 'LocationSearchResponse'
+        responseSchema: 'LocationSearchResponse',
+        auth: { type: 'public' }
       }
     ]
   },
@@ -60,20 +60,15 @@ const SearchFeatureContract: VoilaFeatureContract = createFeatureContract({
     }
   },
 
-  // === PROVIDES (What this feature offers to the system) ===
-  provides: {
-    services: ['SearchService'],
-    routes: ['/api/climate/weather/search'],
-    types: ['LocationSearchResponse', 'LocationResult', 'LocationSearchRequest'],
-    schemas: ['LocationSearchRequestSchema']
+  // === BIDIRECTIONAL COMMUNICATION ===
+  services: {
+    provides: ['SearchService'],
+    consumes: [] // No service dependencies
   },
 
-  // === CONSUMES (What this feature uses from other parts) ===
-  consumes: {
-    services: [], // No internal services consumed
-    state: [],
-    events: []
-    // External APIs (OpenWeatherMap Geocoding) are handled via configuration
+  events: {
+    emits: [], // No events emitted
+    listens: [] // No event subscriptions
   },
 
   // === TESTS ===

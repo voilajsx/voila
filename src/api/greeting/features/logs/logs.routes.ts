@@ -1,13 +1,12 @@
 import { Router } from 'express';
-import { authClass } from '@voilajsx/appkit';
 import * as logsService from './logs.services.js';
 
 const router = Router();
-const auth = authClass.get();
 
-router.get('/', auth.requireLoginToken(), logsService.getGreetingLogs);
-router.get('/:id', auth.requireLoginToken(), logsService.getGreetingLogById);
-router.delete('/:id', auth.requireUserRoles(['admin.tenant']), logsService.deleteGreetingLog);
-router.delete('/', auth.requireUserRoles(['admin.system']), logsService.clearAllGreetingLogs);
+router.get('/',  logsService.getGreetingLogs);
+router.get('/:id', logsService.getGreetingLogById);
+router.put('/:id', logsService.updateGreetingLog);
+router.delete('/:id', logsService.deleteGreetingLog);
+router.delete('/', logsService.clearAllGreetingLogs);
 
 export default router;

@@ -1168,7 +1168,10 @@ THE MAGIC: Perfect LLM session continuity - never lose context again!
 `);
 }
 
-main();
+// Only run main if this script is executed directly (not imported)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}
 
 // Export for use by other scripts
 export { VoilaWorkflow };

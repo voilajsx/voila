@@ -11,14 +11,13 @@
 import type { VoilaFeatureContract } from '@/lib/contracts.js';
 import { createFeatureContract } from '@/lib/contracts.js';
 
-// ✅ EXPLICIT CONTRACT: Weather API with external service integration
+// ✅ CONTRACT: Weather API with cross-app event emission and AppKit auth
 const WeatherFeatureContract: VoilaFeatureContract = createFeatureContract({
-  // === FEATURE IDENTITY ===
+  // === IDENTITY ===
   name: 'weather',
-  app: 'climate',
-  description: 'Weather feature providing current conditions via OpenWeatherMap API with caching and proper error handling',
-  contract_validation: 'basic', // strict | basic | none
-  llm_comments: 'basic', // strict | basic | none
+  app: 'climate', 
+  description: 'Weather API with cross-app event emission and OpenWeatherMap integration',
+  validation: 'basic', // none | basic | essential | strict
   
   // === API DEFINITION ===
   api: {
@@ -30,7 +29,8 @@ const WeatherFeatureContract: VoilaFeatureContract = createFeatureContract({
         handler: 'WeatherService.getCurrentWeather',
         summary: 'Get current weather by city name or coordinates',
         requestSchema: 'WeatherRequestSchema',
-        responseSchema: 'WeatherResponse'
+        responseSchema: 'WeatherResponse',
+        auth: { type: 'public' }
       }
     ]
   },
@@ -60,20 +60,20 @@ const WeatherFeatureContract: VoilaFeatureContract = createFeatureContract({
     }
   },
 
-  // === PROVIDES (What this feature offers to the system) ===
-  provides: {
-    services: ['WeatherService'],
-    routes: ['/api/climate/weather/current'],
-    types: ['WeatherResponse', 'WeatherData', 'WeatherRequest', 'WeatherErrorResponse'],
-    schemas: ['WeatherRequestSchema']
+  // === BIDIRECTIONAL COMMUNICATION ===
+  services: {
+    provides: ['WeatherService'],
+    consumes: [] // No service dependencies
   },
 
-  // === CONSUMES (What this feature uses from other parts) ===
-  consumes: {
-    services: [], // No internal services consumed
-    state: [],
-    events: []
-    // External APIs (OpenWeatherMapAPI, WeatherAPI.com) are handled via configuration
+  events: {
+    emits: [{
+      namespace: 'climate_weather',
+      event: 'weather.data.fetched',
+      payload: 'WeatherEventData', 
+      description: 'Emitted when weather data is successfully fetched from OpenWeatherMap'
+    }],
+    listens: [] // No event subscriptions
   },
 
   // === TESTS ===
