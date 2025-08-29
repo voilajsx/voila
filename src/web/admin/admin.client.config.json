@@ -1,0 +1,28 @@
+{
+  "app": "admin",
+  "description": "Administrative dashboard and user management",
+  "api": {
+    "baseUrl": "/api/admin",
+    "timeout": 15000,
+    "retries": 3,
+    "cache": {
+      "enabled": true,
+      "duration": 300000
+    }
+  },
+  "features": {
+    "home": {
+      "enabled": true,
+      "description": "Main admin dashboard and user management pages"
+    }
+  },
+  "routing": {
+    "defaultPath": "/admin",
+    "fallback": "/admin"
+  },
+  "auth": {
+    "required": true,
+    "roles": ["admin", "super_admin"],
+    "redirectOnAuth": "/admin"
+  }
+}
