@@ -155,27 +155,38 @@ export class ApiDiscovery {
       for (const featureName of featureDirs) {
         const featurePath = join(featuresPath, featureName);
         
-        // Look for convention: {feature}.routes.ts file
-        const routeFileName = `${featureName}.routes.ts`;
-        const routeFilePath = join(featurePath, routeFileName);
+        // Look for convention: {feature}.routes.ts or {feature}.routes.js file
+        const routeExtensions = ['ts', 'js'];
+        let routeFound = false;
+        
+        for (const ext of routeExtensions) {
+          const routeFileName = `${featureName}.routes.${ext}`;
+          const routeFilePath = join(featurePath, routeFileName);
 
-        try {
-          // Validate route file exists
-          if (statSync(routeFilePath).isFile()) {
-            const route: DiscoveredRoute = {
-              app: appName,
-              feature: featureName,
-              path: routeFilePath,
-              routeFile: routeFileName,
-              mountPath: `/api/${appName}/${featureName}`  // RESTful convention
-            };
+          try {
+            // Validate route file exists
+            if (statSync(routeFilePath).isFile()) {
+              const route: DiscoveredRoute = {
+                app: appName,
+                feature: featureName,
+                path: routeFilePath,
+                routeFile: routeFileName,
+                mountPath: `/api/${appName}/${featureName}`  // RESTful convention
+              };
 
-            routes.push(route);
-            console.log(`   ✓ Found feature: ${appName}/${featureName} -> ${route.mountPath}`);
+              routes.push(route);
+              console.log(`   ✓ Found feature: ${appName}/${featureName} -> ${route.mountPath}`);
+              routeFound = true;
+              break; // Stop looking once we find a route file
+            }
+          } catch (error) {
+            // Continue to next extension
           }
-        } catch (error) {
+        }
+        
+        if (!routeFound) {
           // Route file doesn't exist - feature may be incomplete
-          console.log(`   ⚠ No route file found for ${appName}/${featureName} (expected: ${routeFileName})`);
+          console.log(`   ⚠ No route file found for ${appName}/${featureName} (expected: ${featureName}.routes.ts or ${featureName}.routes.js)`);
         }
       }
 
@@ -217,33 +228,38 @@ export class ApiDiscovery {
       for (const featureName of featureDirs) {
         const featurePath = join(featuresPath, featureName);
         
-        // Look for convention: {feature}.services.ts file with event listeners
-        const serviceFileName = `${featureName}.services.ts`;
-        const serviceFilePath = join(featurePath, serviceFileName);
+        // Look for convention: {feature}.services.ts or {feature}.services.js file with event listeners
+        const serviceExtensions = ['ts', 'js'];
+        
+        for (const ext of serviceExtensions) {
+          const serviceFileName = `${featureName}.services.${ext}`;
+          const serviceFilePath = join(featurePath, serviceFileName);
 
-        try {
-          // Validate service file exists and contains event listener initialization
-          if (statSync(serviceFilePath).isFile()) {
-            const fileContent = readFileSync(serviceFilePath, 'utf-8');
-            
-            // Check if file contains initializeEventListeners function
-            if (fileContent.includes('initializeEventListeners') && 
-                fileContent.includes('export function initializeEventListeners')) {
+          try {
+            // Validate service file exists and contains event listener initialization
+            if (statSync(serviceFilePath).isFile()) {
+              const fileContent = readFileSync(serviceFilePath, 'utf-8');
               
-              const eventListener: DiscoveredEventListener = {
-                app: appName,
-                feature: featureName,
-                path: serviceFilePath,
-                serviceFile: serviceFileName,
-                initFunction: 'initializeEventListeners'
-              };
+              // Check if file contains initializeEventListeners function
+              if (fileContent.includes('initializeEventListeners') && 
+                  fileContent.includes('export function initializeEventListeners')) {
+                
+                const eventListener: DiscoveredEventListener = {
+                  app: appName,
+                  feature: featureName,
+                  path: serviceFilePath,
+                  serviceFile: serviceFileName,
+                  initFunction: 'initializeEventListeners'
+                };
 
-              eventListeners.push(eventListener);
-              console.log(`   📥 Found event listeners: ${appName}/${featureName} -> ${serviceFileName}`);
+                eventListeners.push(eventListener);
+                console.log(`   📥 Found event listeners: ${appName}/${featureName} -> ${serviceFileName}`);
+                break; // Stop looking once we find a service file
+              }
             }
+          } catch (error) {
+            // Service file doesn't exist or can't be read
           }
-        } catch (error) {
-          // Service file doesn't exist or can't be read
         }
       }
 
@@ -267,9 +283,11 @@ export class ApiDiscovery {
     // Step 2: Mount each discovered route with validation
     for (const route of discovery.routes) {
       try {
-        // Step 2a: Contract validation (if registry provided)
+        // Step 2a: Contract validation (if registry provided and not production)
         const contractKey = `${route.app}.${route.feature}`;
-        if (this.contractRegistry) {
+        const isProduction = process.env.NODE_ENV === 'production';
+        
+        if (this.contractRegistry && !isProduction) {
           const contract = this.contractRegistry.getContract(contractKey);
           if (!contract) {
             console.error(`❌ Feature ${route.app}/${route.feature} has no registered contract - skipping mount`);
@@ -278,6 +296,8 @@ export class ApiDiscovery {
             continue;
           }
           console.log(`✅ Contract validated for ${contractKey}`);
+        } else if (isProduction) {
+          console.log(`🚀 Production mode: Skipping contract validation for ${contractKey}`);
         }
 
         console.log(`🔍 Attempting to import: ${route.path}`);

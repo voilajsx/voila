@@ -10,13 +10,13 @@
     "dev:web": "npx tsx scripts/voila-server.ts dev:web",
     "server": "npx tsx scripts/voila-server.ts",
     "build": "npm run build:web && npm run build:api",
-    "build:api": "tsc -p tsconfig.api.json",
+    "build:api": "tsc -p tsconfig.api.json && tsc-alias -p tsconfig.api.json && npm run build:prisma",
     "build:web": "vite build",
     "start": "node dist/server.js",
     "preview": "npm run build && npm run start",
     "test": "npx tsx scripts/voila-test.ts",
     "lint": "eslint src --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p src/web/tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.api.json",
     "clean": "rimraf dist",
     "validate": "npx tsx scripts/voila-validate.ts",
     "validate:web": "npx tsx -e \"import('./src/lib/web-discovery.js').then(c => c.validateAllWebApps('./src/web'))\"",
@@ -27,7 +27,8 @@
     "help": "npx tsx scripts/voila-help.ts",
     "git": "npx tsx scripts/voila-git.ts",
     "deploy": "npx tsx scripts/voila-deploy.ts",
-    "prisma": "npx tsx scripts/voila-prisma.ts"
+    "prisma": "npx tsx scripts/voila-prisma.ts",
+    "build:prisma": "find src/api -name 'schema.prisma' -exec dirname {} \\; | while read schema_dir; do npx prisma generate --schema=\"$schema_dir/schema.prisma\"; done && find src/api -path '*/prisma/generated' -exec sh -c 'dist_dir=\"dist/api/$(echo \"$1\" | sed \"s|src/api/||\" | cut -d/ -f1)/prisma\"; mkdir -p \"$dist_dir\"; cp -r \"$1\" \"$dist_dir/\"' _ {} \\;"
   },
   "keywords": [
     "voila",
@@ -84,6 +85,7 @@
     "rimraf": "^5.0.5",
     "supertest": "^7.1.4",
     "ts-node": "^10.9.1",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.20.4",
     "typescript": "^5.3.3",
     "vite": "^7.1.3",

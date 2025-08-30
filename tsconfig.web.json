@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": [
+    "src/web/**/*",
+    "src/lib/web-*.tsx",
+    "src/lib/web-*.ts"
+  ],
+  "exclude": [
+    "src/api/**/*",
+    "src/server.ts",
+    "node_modules"
+  ]
+}

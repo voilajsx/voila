@@ -1,0 +1,48 @@
+/**
+ * Global Styles - Shared across all apps
+ * @file src/web/assets/styles/globals.css
+ */
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Voila Framework brand colors */
+:root {
+  --voila-primary: #3b82f6;
+  --voila-secondary: #8b5cf6;
+  --voila-accent: #f59e0b;
+  --voila-success: #10b981;
+  --voila-warning: #f59e0b;
+  --voila-error: #ef4444;
+  --voila-gray-50: #f9fafb;
+  --voila-gray-900: #111827;
+}
+
+/* Common utility classes */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: var(--voila-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+}

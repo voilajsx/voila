@@ -285,6 +285,6 @@ export async function validateAllWebApps(webPath: string): Promise<{ success: bo
  * Get web discovery instance for server integration
  */
 export function getWebDiscovery(): WebDiscovery {
-  const webPath = path.join(__dirname, '..', 'web');
+  const webPath = path.join(__dirname, '..', 'web', 'apps');
   return new WebDiscovery(webPath);
 }

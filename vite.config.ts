@@ -32,10 +32,8 @@ export default defineConfig({
   build: {
     outDir: '../../dist/web', // Output to project root dist/web
     emptyOutDir: true,
-    sourcemap: process.env.NODE_ENV === 'development',
-    rollupOptions: {
-      input: './src/web/index.html' // HTML entry point
-    }
+    sourcemap: process.env.NODE_ENV === 'development'
+    // Remove rollupOptions.input - let Vite auto-discover index.html
   },
   
   // Path resolution for cleaner imports
