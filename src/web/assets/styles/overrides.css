@@ -1,0 +1,112 @@
+/**
+ * Chocolate Theme System Overrides
+ * Override UIKit system properties directly for enhanced styling
+ */
+
+.theme-chocolate {
+  /* Override system fonts */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, monospace;
+  
+  /* Override border radius */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  
+  /* Add custom shadows (UIKit uses --tw-shadow) */
+  --tw-shadow: 0 4px 12px rgba(101, 67, 33, 0.15);
+  --tw-shadow-color: rgba(101, 67, 33, 0.15);
+  
+  /* Custom gradients using more compatible color formats */
+  --gradient-primary: linear-gradient(135deg, #654321 0%, #8B4513 50%, #A0522D 100%);
+  --gradient-accent: linear-gradient(135deg, #D2691E 0%, #FF8C00 50%, #FFA500 100%);
+  --gradient-background: linear-gradient(135deg, #F5F5DC 0%, #FAEBD7 50%, #FFF8DC 100%);
+}
+
+.theme-chocolate.dark {
+  /* Dark mode fonts - same for consistency */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, monospace;
+  
+  /* Dark mode radius - same for consistency */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  
+  /* Dark mode shadows */
+  --tw-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --tw-shadow-color: rgba(0, 0, 0, 0.4);
+  
+  /* Dark gradients */
+  --gradient-primary: linear-gradient(135deg, oklch(55% .06 50) 0%, oklch(45% .08 52) 100%);
+  --gradient-accent: linear-gradient(135deg, oklch(75% .12 45) 0%, oklch(70% .10 48) 100%);
+  --gradient-background: linear-gradient(135deg, oklch(12% .02 50) 0%, oklch(10% .025 48) 100%);
+}
+
+/* Enhanced bg-primary styling - headers, buttons, etc. */
+.theme-chocolate .bg-primary,
+.theme-chocolate [class*="bg-primary"] {
+  background: var(--gradient-primary) !important;
+  box-shadow: 0 4px 16px rgba(101, 67, 33, 0.3) !important;
+  border: 1px solid rgba(101, 67, 33, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.theme-chocolate .bg-primary:hover,
+.theme-chocolate [class*="bg-primary"]:hover {
+  background: linear-gradient(135deg, oklch(40% .12 50) 0%, oklch(30% .08 45) 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(101, 67, 33, 0.4) !important;
+}
+
+/* Enhanced bg-background - main page background */
+.theme-chocolate .bg-background,
+.theme-chocolate [class*="bg-background"] {
+  background: var(--gradient-background) !important;
+  background-attachment: fixed !important;
+}
+
+/* Additional specific targeting for common header/navigation classes */
+.theme-chocolate header,
+.theme-chocolate nav,
+.theme-chocolate [role="banner"] {
+  background: var(--gradient-primary) !important;
+  box-shadow: 0 4px 16px rgba(101, 67, 33, 0.3) !important;
+}
+
+/* Enhanced card styling */
+.theme-chocolate [class*="bg-card"],
+.theme-chocolate .bg-card {
+  background: var(--gradient-background) !important;
+  box-shadow: var(--tw-shadow);
+  border: 1px solid rgba(101, 67, 33, 0.1) !important;
+}
+
+/* Enhanced accent elements */
+.theme-chocolate [class*="bg-accent"],
+.theme-chocolate .bg-accent {
+  background: var(--gradient-accent) !important;
+  box-shadow: var(--tw-shadow);
+  border: 1px solid rgba(210, 135, 70, 0.2) !important;
+}
+
+/* Target specific button elements */
+.theme-chocolate button {
+  border-radius: var(--radius-lg) !important;
+  transition: all 0.3s ease !important;
+}
+
+.theme-chocolate button.bg-primary,
+.theme-chocolate button[class*="bg-primary"] {
+  background: var(--gradient-primary) !important;
+  box-shadow: 0 4px 12px rgba(101, 67, 33, 0.3) !important;
+  font-weight: 600 !important;
+}

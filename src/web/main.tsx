@@ -11,6 +11,12 @@ import ReactDOM from 'react-dom/client';
 // Import UIKit styles - REQUIRED for all components
 import '@voilajsx/uikit/styles';
 
+// Import generated theme styles
+import '@styles/globals.css';
+
+// Import chocolate theme system overrides
+import '@styles/overrides.css';
+
 // Import root app component (App.tsx already includes BrowserRouter)
 import App from './App';
 

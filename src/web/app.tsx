@@ -8,7 +8,6 @@
 import React, { Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@voilajsx/uikit/theme-provider';
-import { getCurrentTheme } from '../lib/theme-config';
 import { loadComponentFromPath } from '../lib/web-routes';
 
 // Loading component
@@ -82,11 +81,23 @@ const DynamicRoute: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  // Get theme configuration from environment variables
-  const themeConfig = getCurrentTheme();
+  // Direct environment variable reading
+  const theme = import.meta.env.VITE_THEME || 'default';
+  const mode = import.meta.env.VITE_MODE || 'light';
+  
+  // Clear localStorage on mount to force environment config
+  React.useEffect(() => {
+    localStorage.removeItem('vite-ui-theme');
+    console.log('🎨 Theme from environment:', theme, mode);
+  }, [theme, mode]);
 
   return (
-    <ThemeProvider theme={themeConfig.theme} mode={themeConfig.mode}>
+    <ThemeProvider 
+      theme={theme} 
+      mode={mode}
+      forceConfig={true}
+      storageKey="vite-ui-theme"
+    >
       <BrowserRouter>
         <Suspense fallback={<LoadingPage />}>
           <Routes>

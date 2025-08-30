@@ -8,6 +8,9 @@ export default defineConfig({
   // Root and entry point
   root: './src/web',
   
+  // Environment file configuration - use absolute path
+  envDir: path.resolve(__dirname), // Look for .env files in project root
+  
   // Development server configuration
   server: {
     port: 5173,
@@ -42,7 +45,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@web': path.resolve(__dirname, './src/web'),
       '@lib': path.resolve(__dirname, './src/lib'),
-      '@api': path.resolve(__dirname, './src/api')
+      '@api': path.resolve(__dirname, './src/api'),
+      '@styles': path.resolve(__dirname, './src/web/assets/styles')
     }
   },
   

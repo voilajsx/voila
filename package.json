@@ -12,6 +12,7 @@
     "build": "npm run build:web && npm run build:api",
     "build:api": "tsc -p tsconfig.api.json && tsc-alias -p tsconfig.api.json && npm run build:prisma",
     "build:web": "vite build",
+    "build:themes": "npx voila-bundle",
     "start": "node dist/server.js",
     "preview": "npm run build && npm run start",
     "test": "npx tsx scripts/voila-test.ts",
