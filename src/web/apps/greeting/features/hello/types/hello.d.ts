@@ -1,6 +1,6 @@
 /**
  * Hello Frontend Feature Types
- * @file src/web/greeting/features/hello/hello.types.ts
+ * @file src/web/apps/greeting/features/hello/types/hello.d.ts
  * 
  * Type definitions matching backend API responses
  */

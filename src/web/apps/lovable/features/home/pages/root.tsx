@@ -1,6 +1,7 @@
 import { Button } from "@voilajsx/uikit/button";
 import { Card, CardContent } from "@voilajsx/uikit/card";
 import { ArrowRight, CheckCircle, Users, Target, TrendingUp } from "lucide-react";
+import Navigation from "../../../../../shared/components/Navigation";
 
 const Home = () => {
   const features = [
@@ -32,6 +33,18 @@ const Home = () => {
 
   return (
     <div className="min-h-screen">
+      <Navigation 
+        brand="FirstConsults"
+        basePath="/lovable"
+        navigation={[
+          { name: "Home", href: "" },
+          { name: "About", href: "/about" },
+          { name: "Services", href: "/services" },
+          { name: "Gallery", href: "/gallery" },
+        ]}
+        ctaButton={{ label: "Get Started", href: "/lovable/services" }}
+      />
+      
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-primary"></div>

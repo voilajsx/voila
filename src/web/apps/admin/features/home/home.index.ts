@@ -1,81 +1,32 @@
 /**
- * Admin Home Frontend Feature Contract
- * @file src/web/admin/features/home/home.index.ts
- * 
- * Frontend contract for admin dashboard home feature
+ * Admin Home Feature - Dashboard with user management capabilities
  */
 
 import { createWebFeatureContract } from '../../../../../lib/web-contracts.js';
-import type { VoilaWebFeatureContract } from '../../../../../lib/web-contracts.js';
 
-const AdminHomeWebContract: VoilaWebFeatureContract = createWebFeatureContract({
-  name: 'home',
-  app: 'admin',
-  description: 'Admin dashboard home page with user management capabilities',
-  validation: 'basic',
+const AdminHomeContract = createWebFeatureContract()
+  .app('admin')
+  .feature('home')
+  .description('Admin dashboard home page with user management capabilities')
   
-  // Component system
-  components: {
-    provides: ['AdminHomePage', 'UsersEditPage', 'AdminDashboard'],
-    consumes: ['Button', 'Card', 'Table', 'Modal', 'Input']
-  },
+  .providesComponent('AdminHomePage')
+  .providesComponent('UsersEditPage')
+  .providesComponent('AdminDashboard')
   
-  // Routes auto-discovered by file structure - no manual definition needed
-  routes: {
-    handles: [],
-    redirects: [
-      { from: '/admin/dashboard', to: '/admin' },
-      { from: '/dashboard', to: '/admin' }
-    ]
-  },
+  .consumesComponent('Button')
+  .consumesComponent('Card')
+  .consumesComponent('Table')
+  .consumesComponent('Modal')
+  .consumesComponent('Input')
+  .consumesAPI('admin/users')
+  .consumesAPI('admin/dashboard/stats')
   
-  // API integration (if admin features need backend)
-  api: {
-    service: 'admin',
-    endpoints: [
-      '/users',
-      '/users/:id',
-      '/dashboard/stats'
-    ],
-    cache: {
-      enabled: true,
-      duration: 300000, // 5 minutes
-      strategy: 'memory'
-    },
-    retries: 2,
-    timeout: 10000
-  },
+  .sharedState(true)
   
-  // SSG Configuration
-  ssg: {
-    enabled: false, // Admin pages shouldn't be pre-rendered
-    revalidate: 0,
-    prerender: [],
-    fallback: false
-  },
+  .route('/admin', 'root.tsx', { auth: 'admin' })
+  .route('/admin/users', 'users.tsx', { auth: 'admin' })
+  .route('/admin/users/:id', 'user-edit.tsx', { auth: 'admin' })
   
-  // State management
-  state: {
-    manages: ['adminState', 'usersData', 'dashboardStats'],
-    subscribes: ['appTheme', 'userAuth']
-  },
-  
-  // Dependencies
-  dependencies: {
-    files: {
-      'AdminHomePage.tsx': './AdminHomePage.tsx',
-      'UsersEditPage.tsx': './UsersEditPage.tsx'
-    },
-    services: ['ApiService', 'AuthService'],
-    external: ['react-router-dom']
-  },
-  
-  // Testing requirements
-  tests: [
-    { type: 'component', description: 'AdminHomePage renders correctly', coverage: 90 },
-    { type: 'component', description: 'UsersEditPage shows user management interface', coverage: 85 },
-    { type: 'integration', description: 'Admin routes work correctly', coverage: 80 }
-  ]
-});
+  .build();
 
-export default AdminHomeWebContract;
+export default AdminHomeContract;

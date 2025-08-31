@@ -1,5 +1,9 @@
-// Web Discovery System for Voila Framework
-// Auto-discovers frontend features and generates routing
+/**
+ * Voila Web Discovery - Simple contract-based discovery system
+ * @file src/lib/web-discovery.ts
+ * 
+ * Bloom-inspired simple discovery with contract validation
+ */
 
 import fs from 'fs';
 import path from 'path';
@@ -21,7 +25,6 @@ export interface WebFeatureInfo {
   app: string;
   feature: string;
   contractPath: string;
-  componentPath?: string;
   contract: VoilaWebFeatureContract;
 }
 
@@ -31,35 +34,34 @@ export interface WebRouteInfo {
   path: string;
   component: string;
   componentPath: string;
-  protected: boolean;
-  exact: boolean;
   layout?: string;
+  auth: 'public' | 'login' | 'admin';
 }
 
 export class WebDiscovery {
   constructor(private webPath: string) {}
 
   /**
-   * Discover all web features and their routes
+   * Simple discovery - find all feature contracts
    */
   async discover(): Promise<WebDiscoveryResult> {
     const webApps = this.findWebApps();
     const features: WebFeatureInfo[] = [];
     const routes: WebRouteInfo[] = [];
 
-    console.log('🔍 Web Discovery: Scanning apps:', webApps);
+    console.log('🌸 Simple Web Discovery: Scanning apps:', webApps);
 
     for (const app of webApps) {
       const appFeatures = await this.discoverAppFeatures(app);
       features.push(...appFeatures);
       
       for (const feature of appFeatures) {
-        const featureRoutes = await this.extractRoutes(feature);
+        const featureRoutes = this.extractRoutes(feature);
         routes.push(...featureRoutes);
       }
     }
 
-    console.log(`✅ Web Discovery completed: ${webApps.length} apps, ${features.length} features, ${routes.length} routes`);
+    console.log(`✅ Discovery completed: ${webApps.length} apps, ${features.length} features, ${routes.length} routes`);
 
     return {
       apps: webApps,
@@ -71,7 +73,7 @@ export class WebDiscovery {
   }
 
   /**
-   * Find all web apps (directories with features/)
+   * Find web apps (same as before)
    */
   private findWebApps(): string[] {
     const webPath = this.webPath;
@@ -94,7 +96,7 @@ export class WebDiscovery {
   }
 
   /**
-   * Discover all features for a specific app
+   * Simple feature discovery - look for {feature}.index.ts contracts
    */
   private async discoverAppFeatures(app: string): Promise<WebFeatureInfo[]> {
     const featuresPath = path.join(this.webPath, app, 'features');
@@ -107,22 +109,20 @@ export class WebDiscovery {
     console.log(`  📂 App '${app}' features:`, featureDirs);
 
     for (const featureDir of featureDirs) {
+      // Look for simple contract file: {feature}.index.ts
       const contractPath = path.join(featuresPath, featureDir, `${featureDir}.index.ts`);
-      const componentPath = path.join(featuresPath, featureDir, `${featureDir}.components.tsx`);
       
       if (fs.existsSync(contractPath)) {
         try {
-          // Dynamic import of the contract - use pathToFileURL for proper URL conversion
+          // Dynamic import of the contract
           const { pathToFileURL } = await import('url');
           const contractUrl = pathToFileURL(contractPath).href;
           const contractModule = await import(/* @vite-ignore */ contractUrl);
-          const contract = contractModule.default || 
-                          contractModule[`${this.capitalizeFirst(featureDir)}WebContract`] ||
-                          contractModule[`${featureDir}WebContract`];
+          const contract = contractModule.default;
           
           if (contract) {
-            // Validate contract
-            const validation = validateWebContract(contract);
+            // Simple validation
+            const validation = validateWebContract(contract, contractPath);
             if (!validation.valid) {
               console.error(`❌ Invalid contract ${app}/${featureDir}:`, validation.errors);
               continue;
@@ -135,11 +135,10 @@ export class WebDiscovery {
               app,
               feature: featureDir,
               contractPath,
-              componentPath: fs.existsSync(componentPath) ? componentPath : undefined,
               contract
             });
 
-            console.log(`    ✅ Contract: ${app}/${featureDir}`);
+            console.log(`    ✅ Contract: ${app}/${featureDir} (${contract.routes.length} routes)`);
           } else {
             console.warn(`    ⚠️  Contract not found in: ${contractPath}`);
           }
@@ -155,52 +154,27 @@ export class WebDiscovery {
   }
 
   /**
-   * Extract route information from a feature with auto-discovery
+   * Extract routes directly from contract (simple!)
    */
-  private async extractRoutes(feature: WebFeatureInfo): Promise<WebRouteInfo[]> {
+  private extractRoutes(feature: WebFeatureInfo): WebRouteInfo[] {
     const routes: WebRouteInfo[] = [];
 
-    for (const route of feature.contract.routes.handles) {
-      // Build component path
-      const componentFileName = route.component.endsWith('.tsx') ? 
-        route.component : 
-        `${route.component}.tsx`;
-      
+    for (const route of feature.contract.routes) {
+      // Build component path from route component name
       const componentPath = path.join(
         path.dirname(feature.contractPath),
-        componentFileName
+        'pages',
+        route.component
       );
 
-      // Auto-generate route path based on app/feature structure
-      let autoPath: string;
-      
-      if (feature.app === 'main' && feature.feature === 'home') {
-        // Special case: main/home always maps to root
-        autoPath = '/';
-      } else {
-        // Standard pattern: /app/feature
-        // Handle dynamic segments from original path
-        const basePath = `/${feature.app}/${feature.feature}`;
-        if (route.path.includes('/:')) {
-          // Extract dynamic segment from original path
-          const dynamicPart = route.path.substring(route.path.indexOf('/:'));
-          autoPath = basePath + dynamicPart;
-        } else {
-          autoPath = basePath;
-        }
-      }
-
-      // Use auto-generated path instead of contract-defined path
-      // This ensures consistency with backend /api/app/feature pattern
       routes.push({
         app: feature.app,
         feature: feature.feature,
-        path: autoPath,
+        path: route.path,
         component: route.component,
         componentPath,
-        protected: route.protected || false,
-        exact: route.exact !== false, // Default to true
-        layout: route.layout
+        layout: route.layout,
+        auth: route.auth || 'public'
       });
     }
 
@@ -208,52 +182,41 @@ export class WebDiscovery {
   }
 
   /**
-   * Generate route manifest for debugging
+   * Simple route manifest
    */
   generateRouteManifest(discovery: WebDiscoveryResult): any {
     return {
-      framework: 'voila-web',
-      version: '1.0.0',
+      framework: 'voila-web-bloom',
+      version: '2.0.0',
       generated: new Date().toISOString(),
       discovery: {
         apps: discovery.apps.length,
         features: discovery.totalFeatures,
         routes: discovery.totalRoutes
       },
-      apps: discovery.apps.reduce((acc, app) => {
-        const appFeatures = discovery.features.filter(f => f.app === app);
-        acc[app] = {
-          features: appFeatures.map(f => f.feature),
-          routes: discovery.routes
-            .filter(r => r.app === app)
-            .map(r => ({
-              path: r.path,
-              component: r.component,
-              feature: r.feature,
-              protected: r.protected
-            }))
-        };
-        return acc;
-      }, {} as any)
+      routes: discovery.routes.map(r => ({
+        path: r.path,
+        component: r.component,
+        app: r.app,
+        feature: r.feature,
+        auth: r.auth,
+        layout: r.layout
+      }))
     };
-  }
-
-  private capitalizeFirst(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 }
 
 /**
- * Validate all web apps and their contracts
+ * Simple validation for all web apps
  */
 export async function validateAllWebApps(webPath: string): Promise<{ success: boolean; errors: string[] }> {
-  console.log('🔍 Validating all web apps...');
+  console.log('🌸 Validating all web apps with simple contracts...');
   
   const discovery = new WebDiscovery(webPath);
   const result = await discovery.discover();
   const errors: string[] = [];
 
-  // Validate each contract
+  // Simple validation - each contract validates itself
   for (const feature of result.features) {
     const validation = validateWebContract(feature.contract);
     if (!validation.valid) {
@@ -272,9 +235,10 @@ export async function validateAllWebApps(webPath: string): Promise<{ success: bo
 
   const success = errors.length === 0;
   if (success) {
-    console.log(`✅ Web validation passed: ${result.totalFeatures} features, ${result.totalRoutes} routes`);
+    console.log(`✅ Simple validation passed: ${result.totalFeatures} features, ${result.totalRoutes} routes`);
+    console.log('📊 Contract summary:', webContractRegistry.summary());
   } else {
-    console.error(`❌ Web validation failed with ${errors.length} errors`);
+    console.error(`❌ Validation failed with ${errors.length} errors`);
     errors.forEach(error => console.error(`  - ${error}`));
   }
 
@@ -282,7 +246,7 @@ export async function validateAllWebApps(webPath: string): Promise<{ success: bo
 }
 
 /**
- * Get web discovery instance for server integration
+ * Get web discovery instance
  */
 export function getWebDiscovery(): WebDiscovery {
   const webPath = path.join(__dirname, '..', 'web', 'apps');

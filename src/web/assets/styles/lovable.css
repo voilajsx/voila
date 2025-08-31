@@ -1,0 +1,103 @@
+/* Lovable App Custom Styles */
+/* Custom CSS variables for gradients, shadows and animations used in the lovable example */
+
+@layer base {
+  :root {
+    /* Custom gradients */
+    --hero-gradient: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 50%, hsl(var(--accent)) 100%);
+    --card-gradient: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+    --text-gradient: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+    --accent-gradient: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--secondary)) 100%);
+    --warm-gradient: linear-gradient(180deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--secondary) / 0.05) 100%);
+    
+    /* Custom shadows */
+    --shadow-soft: 0 4px 20px -2px hsl(var(--primary) / 0.15);
+    --shadow-medium: 0 8px 30px -4px hsl(var(--primary) / 0.25);
+    --shadow-strong: 0 20px 50px -12px hsl(var(--primary) / 0.35);
+    --shadow-glow: 0 0 40px hsl(var(--secondary) / 0.3);
+    --shadow-subtle: 0 2px 10px -2px hsl(var(--foreground) / 0.1);
+  }
+}
+
+@layer utilities {
+  /* Background gradients */
+  .bg-hero-gradient {
+    background-image: var(--hero-gradient);
+  }
+  
+  .bg-card-gradient {
+    background-image: var(--card-gradient);
+  }
+  
+  .bg-text-gradient {
+    background-image: var(--text-gradient);
+  }
+  
+  .bg-accent-gradient {
+    background-image: var(--accent-gradient);
+  }
+  
+  .bg-warm-gradient {
+    background-image: var(--warm-gradient);
+  }
+
+  /* Custom shadows */
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .shadow-strong {
+    box-shadow: var(--shadow-strong);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-subtle {
+    box-shadow: var(--shadow-subtle);
+  }
+
+  /* Custom animations */
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.8s ease-out;
+  }
+  
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+}
+
+@layer base {
+  @keyframes fade-in {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes slide-up {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: var(--shadow-soft); }
+    50% { box-shadow: var(--shadow-glow); }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+}

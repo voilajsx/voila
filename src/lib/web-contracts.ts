@@ -1,219 +1,221 @@
-// Web Contract System for Voila Framework
-// Auto-discovery and validation for frontend features
+/**
+ * Voila Web Contracts - Bloom-inspired simple contract system
+ * @file src/lib/web-contracts.ts
+ * 
+ * Simple, reliable contracts with builder pattern - inspired by Bloom Framework
+ */
+
+// ===== SIMPLE CONTRACT TYPES =====
 
 export interface VoilaWebFeatureContract {
-  name: string;
   app: string;
-  description: string;
-  validation: 'none' | 'basic' | 'essential' | 'strict';
+  feature: string;
+  description?: string;
   
-  // Component system
-  components: {
-    provides: string[];        // Components this feature exports
-    consumes: string[];        // Components this feature imports
+  // Simple binary choices
+  sharedState: boolean;
+  
+  // What this feature provides to others
+  provides: {
+    components: string[];
+    hooks: string[];
+    services: string[];
   };
   
-  // Routing
-  routes: {
-    handles: WebRoute[];       // Routes this feature handles
-    redirects?: WebRedirect[]; // Redirects this feature defines
+  // What this feature consumes from others
+  consumes: {
+    components: string[];
+    hooks: string[];
+    apis: string[];
   };
   
-  // API integration (Enhanced)
-  api: {
-    service?: string;          // Service name for config lookup
-    endpoints: string[];       // Relative endpoint paths
-    realtime?: string[];       // WebSocket events this feature handles
-    cache?: {
-      enabled: boolean;
-      duration: number;        // Cache duration in ms
-      strategy: 'memory' | 'localStorage' | 'sessionStorage';
-    };
-    retries?: number;          // Number of retry attempts
-    timeout?: number;          // Request timeout in ms
-  };
-  
-  // SSG/ISR Configuration (New)
-  ssg?: {
-    enabled: boolean;
-    revalidate?: number;       // ISR revalidation time in seconds
-    prerender?: string[];      // Routes to prerender at build time
-    dynamic?: {
-      [routePattern: string]: () => Promise<any[]>; // Dynamic route generation
-    };
-    fallback?: boolean | 'blocking'; // Fallback strategy for dynamic routes
-  };
-  
-  // State management
-  state?: {
-    manages: string[];         // State this feature owns
-    subscribes: string[];      // External state this feature uses
-  };
-  
-  // Dependencies
-  dependencies?: {
-    files: Record<string, string>;  // File dependencies
-    services: string[];             // Service dependencies
-    external: string[];             // External libraries
-  };
-  
-  // Testing
-  tests?: WebTestCase[];
+  // Simple route definitions
+  routes: VoilaWebRoute[];
 }
 
-export interface WebRoute {
+export interface VoilaWebRoute {
   path: string;
   component: string;
-  protected?: boolean;
-  exact?: boolean;
   layout?: string;
-  // SSG specific properties
-  ssg?: {
-    enabled?: boolean;
-    revalidate?: number;
-    generateStaticParams?: () => Promise<any[]>;
+  auth?: 'public' | 'login' | 'admin';
+}
+
+// ===== BLOOM-STYLE BUILDER PATTERN =====
+
+export class VoilaWebContractBuilder {
+  private contract: Partial<VoilaWebFeatureContract> = {
+    provides: { components: [], hooks: [], services: [] },
+    consumes: { components: [], hooks: [], apis: [] },
+    routes: [],
+    sharedState: false
   };
-  // Data fetching strategy
-  dataFetching?: 'static' | 'server' | 'client' | 'hybrid';
+
+  app(name: string): VoilaWebContractBuilder {
+    this.contract.app = name;
+    return this;
+  }
+
+  feature(name: string): VoilaWebContractBuilder {
+    this.contract.feature = name;
+    return this;
+  }
+
+  description(desc: string): VoilaWebContractBuilder {
+    this.contract.description = desc;
+    return this;
+  }
+
+  // === WHAT THIS FEATURE PROVIDES ===
+  
+  providesComponent(component: string): VoilaWebContractBuilder {
+    this.contract.provides!.components.push(component);
+    return this;
+  }
+
+  providesHook(hook: string): VoilaWebContractBuilder {
+    this.contract.provides!.hooks.push(hook);
+    return this;
+  }
+
+  providesService(service: string): VoilaWebContractBuilder {
+    this.contract.provides!.services.push(service);
+    return this;
+  }
+
+  // === WHAT THIS FEATURE CONSUMES ===
+  
+  consumesComponent(component: string): VoilaWebContractBuilder {
+    this.contract.consumes!.components.push(component);
+    return this;
+  }
+
+  consumesHook(hook: string): VoilaWebContractBuilder {
+    this.contract.consumes!.hooks.push(hook);
+    return this;
+  }
+
+  consumesAPI(api: string): VoilaWebContractBuilder {
+    this.contract.consumes!.apis.push(api);
+    return this;
+  }
+
+  // === SIMPLE STATE CHOICE ===
+  
+  sharedState(enabled: boolean): VoilaWebContractBuilder {
+    this.contract.sharedState = enabled;
+    return this;
+  }
+
+  // === ROUTE DEFINITIONS ===
+  
+  route(path: string, component: string, options?: { layout?: string; auth?: 'public' | 'login' | 'admin' }): VoilaWebContractBuilder {
+    this.contract.routes!.push({
+      path,
+      component,
+      layout: options?.layout,
+      auth: options?.auth || 'public'
+    });
+    return this;
+  }
+
+  // === BUILD FINAL CONTRACT ===
+  
+  build(): VoilaWebFeatureContract {
+    // Simple validation
+    if (!this.contract.app) throw new Error('Contract missing app name');
+    if (!this.contract.feature) throw new Error('Contract missing feature name');
+    
+    return this.contract as VoilaWebFeatureContract;
+  }
 }
 
-export interface WebRedirect {
-  from: string;
-  to: string;
-  condition?: string;
+// ===== SIMPLE FACTORY FUNCTION =====
+
+export function createWebFeatureContract(): VoilaWebContractBuilder {
+  return new VoilaWebContractBuilder();
 }
 
-export interface WebTestCase {
-  type: 'component' | 'integration' | 'e2e';
-  description: string;
-  coverage: number;
-}
+// ===== SIMPLE VALIDATION =====
 
-/**
- * Create a new web feature contract with enhanced defaults
- */
-export function createWebFeatureContract(contract: Partial<VoilaWebFeatureContract> & {
-  name: string;
-  app: string;
-  description: string;
-}): VoilaWebFeatureContract {
-  return {
-    validation: 'basic',
-    components: { provides: [], consumes: [] },
-    routes: { handles: [] },
-    api: { 
-      service: contract.app, // Default service name to app name
-      endpoints: [],
-      cache: {
-        enabled: true,
-        duration: 300000, // 5 minutes default
-        strategy: 'memory'
-      },
-      retries: 2,
-      timeout: 10000
-    },
-    ssg: {
-      enabled: false,
-      revalidate: 3600, // 1 hour default
-      prerender: [],
-      dynamic: {},
-      fallback: false
-    },
-    state: { manages: [], subscribes: [] },
-    dependencies: { files: {}, services: [], external: [] },
-    tests: [],
-    ...contract
-  };
-}
-
-/**
- * Validate a web feature contract (Enhanced)
- */
-export function validateWebContract(contract: VoilaWebFeatureContract): { valid: boolean; errors: string[]; warnings: string[] } {
+export function validateWebContract(contract: VoilaWebFeatureContract, contractPath?: string): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-  const warnings: string[] = [];
 
   // Required fields
-  if (!contract.name) errors.push('Missing required field: name');
-  if (!contract.app) errors.push('Missing required field: app');
-  if (!contract.description) errors.push('Missing required field: description');
-  if (!contract.validation) errors.push('Missing required field: validation');
-
-  // Validation levels
-  const validLevels = ['none', 'basic', 'essential', 'strict'];
-  if (!validLevels.includes(contract.validation)) {
-    errors.push(`Invalid validation level: ${contract.validation}. Use: ${validLevels.join(', ')}`);
-  }
-
+  if (!contract.app) errors.push('Missing app name');
+  if (!contract.feature) errors.push('Missing feature name');
+  
   // Route validation
-  if (contract.routes?.handles) {
-    for (const route of contract.routes.handles) {
-      if (!route.path) errors.push('Route missing path');
-      if (!route.component) errors.push('Route missing component');
-      if (!route.path.startsWith('/')) errors.push(`Route path must start with '/': ${route.path}`);
-      
-      // SSG validation
-      if (route.ssg?.enabled && !contract.ssg?.enabled) {
-        warnings.push(`Route ${route.path} has SSG enabled but contract SSG is disabled`);
-      }
-    }
+  for (const route of contract.routes) {
+    if (!route.path) errors.push('Route missing path');
+    if (!route.component) errors.push('Route missing component');
+    if (!route.path.startsWith('/')) errors.push(`Route path must start with '/': ${route.path}`);
   }
 
-  // API endpoint validation (Updated for relative paths)
-  if (contract.api?.endpoints) {
-    for (const endpoint of contract.api.endpoints) {
-      if (!endpoint.startsWith('/')) {
-        errors.push(`API endpoint must start with '/': ${endpoint}`);
-      }
-      // Warn if endpoint looks like full URL instead of relative path
-      if (endpoint.startsWith('/api/')) {
-        warnings.push(`Endpoint '${endpoint}' should be relative path (remove '/api/${contract.app}' prefix)`);
-      }
-    }
-  }
-
-  // SSG validation
-  if (contract.ssg?.enabled) {
-    if (contract.ssg.revalidate && contract.ssg.revalidate < 60) {
-      warnings.push('SSG revalidate time less than 60 seconds may cause excessive rebuilds');
-    }
-    
-    // Validate dynamic route patterns
-    if (contract.ssg.dynamic) {
-      Object.keys(contract.ssg.dynamic).forEach(pattern => {
-        if (!pattern.includes(':')) {
-          warnings.push(`Dynamic SSG pattern '${pattern}' should contain route parameters`);
-        }
-      });
-    }
-  }
-
-  // Component validation for strict mode
-  if (contract.validation === 'strict') {
-    if (contract.components.provides.length === 0) {
-      errors.push('Strict validation requires at least one provided component');
-    }
-    if (contract.tests && contract.tests.length === 0) {
-      errors.push('Strict validation requires test cases');
-    }
-    if (contract.api.endpoints.length > 0 && !contract.api.service) {
-      errors.push('Strict validation requires service name when using API endpoints');
-    }
+  // Implementation validation (dev mode only)
+  if (contractPath && import.meta.env?.DEV !== false) {
+    validateImplementation(contract, contractPath, errors);
   }
 
   return {
     valid: errors.length === 0,
-    errors,
-    warnings
+    errors
   };
 }
 
-// Web contract registry for runtime access
-class WebContractRegistry {
+/**
+ * Validate that declared routes have corresponding page components
+ * and detect orphaned page files (Node.js only)
+ */
+function validateImplementation(contract: VoilaWebFeatureContract, contractPath: string, errors: string[]) {
+  // Skip in browser environment
+  if (typeof window !== 'undefined') return;
+  
+  try {
+    // Use dynamic import for Node.js modules
+    const fs = eval('require("fs")');
+    const path = eval('require("path")');
+    
+    const pagesDir = path.join(path.dirname(contractPath), 'pages');
+    
+    if (!fs.existsSync(pagesDir)) {
+      if (contract.routes.length > 0) {
+        errors.push(`Pages directory missing: ${pagesDir}`);
+      }
+      return;
+    }
+    
+    const actualFiles = fs.readdirSync(pagesDir)
+      .filter((f: string) => f.endsWith('.tsx') || f.endsWith('.ts'))
+      .map((f: string) => f);
+    
+    const declaredComponents = contract.routes.map(r => r.component);
+    
+    // Check for missing components
+    for (const component of declaredComponents) {
+      if (!actualFiles.includes(component)) {
+        errors.push(`Component missing: pages/${component} (declared in route)`);
+      }
+    }
+    
+    // Check for orphaned files (warn only)
+    for (const file of actualFiles) {
+      if (!declaredComponents.includes(file) && file !== 'index.tsx') {
+        errors.push(`Orphaned component: pages/${file} (not declared in any route)`);
+      }
+    }
+    
+  } catch (err) {
+    // Silently skip if Node.js modules not available
+  }
+}
+
+// ===== SIMPLE CONTRACT REGISTRY =====
+
+class VoilaWebContractRegistry {
   private contracts = new Map<string, VoilaWebFeatureContract>();
 
   register(contract: VoilaWebFeatureContract): void {
-    const key = `${contract.app}.${contract.name}`;
+    const key = `${contract.app}.${contract.feature}`;
     this.contracts.set(key, contract);
   }
 
@@ -233,18 +235,43 @@ class WebContractRegistry {
     this.contracts.clear();
   }
 
-  generateSummary(): any {
+  // Simple summary
+  summary(): { totalContracts: number; totalApps: number; totalRoutes: number } {
     const contracts = this.getAll();
     return {
       totalContracts: contracts.length,
       totalApps: new Set(contracts.map(c => c.app)).size,
-      totalRoutes: contracts.reduce((sum, c) => sum + c.routes.handles.length, 0),
-      validationLevels: contracts.reduce((acc, c) => {
-        acc[c.validation] = (acc[c.validation] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>)
+      totalRoutes: contracts.reduce((sum, c) => sum + c.routes.length, 0)
     };
   }
 }
 
-export const webContractRegistry = new WebContractRegistry();
+export const webContractRegistry = new VoilaWebContractRegistry();
+
+// ===== HELPER FUNCTIONS =====
+
+/**
+ * Check if a contract exists for the given app/feature
+ */
+export function hasContract(app: string, feature: string): boolean {
+  return webContractRegistry.get(app, feature) !== undefined;
+}
+
+/**
+ * Get all routes from all contracts
+ */
+export function getAllContractRoutes(): Array<{ app: string; feature: string; route: VoilaWebRoute }> {
+  const allRoutes: Array<{ app: string; feature: string; route: VoilaWebRoute }> = [];
+  
+  for (const contract of webContractRegistry.getAll()) {
+    for (const route of contract.routes) {
+      allRoutes.push({
+        app: contract.app,
+        feature: contract.feature,
+        route
+      });
+    }
+  }
+  
+  return allRoutes;
+}

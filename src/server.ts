@@ -199,7 +199,7 @@ const initializeContracts = async (): Promise<void> => {
     const apiResult = await validateAllApps(apiPath);
     
     // Validate Web contracts
-    const webPath = join(__dirname, 'web');
+    const webPath = join(__dirname, 'web', 'apps');
     const webResult = await validateAllWebApps(webPath);
     
     // Fail fast on contract violations - prevents invalid deployment

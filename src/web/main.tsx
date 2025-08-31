@@ -17,6 +17,9 @@ import '@styles/globals.css';
 // Import chocolate theme system overrides
 import '@styles/overrides.css';
 
+// Import lovable app custom styles
+import '@styles/lovable.css';
+
 // Import root app component (App.tsx already includes BrowserRouter)
 import App from './App';
 

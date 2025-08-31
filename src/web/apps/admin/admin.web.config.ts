@@ -6,14 +6,14 @@
  * Admin team controls their own API URLs and settings
  */
 
-import { createAppApiClient, type AppApiConfig } from '../../../lib/web-api.js';
+import { createAppApiClient, type AppApiConfig } from '@lib/web-api.js';
 
 /**
  * Admin App API Configuration
  * Different from greeting - admin might be a separate microservice
  */
 export const adminApiConfig: AppApiConfig = {
-  baseUrl: process.env.ADMIN_API_URL || '/api/admin',
+  baseUrl: import.meta.env.VITE_ADMIN_API_URL || '/api/admin',
   retries: 5,        // Admin needs more retries for critical operations
   timeout: 10000,    // Admin needs longer timeouts  
   headers: {
@@ -38,10 +38,10 @@ export const adminEnvironments = {
   },
   microservice: {
     ...adminApiConfig,
-    baseUrl: process.env.ADMIN_SERVICE_URL || 'https://admin-service.company.com',
+    baseUrl: import.meta.env.VITE_ADMIN_SERVICE_URL || 'https://admin-service.company.com',
     headers: {
       ...adminApiConfig.headers,
-      'Authorization': `Bearer ${process.env.ADMIN_SERVICE_TOKEN}`
+      'Authorization': `Bearer ${import.meta.env.VITE_ADMIN_SERVICE_TOKEN}`
     }
   },
   development: {

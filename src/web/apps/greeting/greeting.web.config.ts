@@ -6,7 +6,7 @@
  * Teams control their own API URLs and settings
  */
 
-import { createAppApiClient, type AppApiConfig } from '../../../lib/web-api.js';
+import { createAppApiClient, type AppApiConfig } from '@lib/web-api.js';
 
 /**
  * Greeting App API Configuration
@@ -15,7 +15,7 @@ import { createAppApiClient, type AppApiConfig } from '../../../lib/web-api.js';
  * - Microservice: https://greeting-service.company.com
  */
 export const greetingApiConfig: AppApiConfig = {
-  baseUrl: process.env.GREETING_API_URL || '/api/greeting',
+  baseUrl: import.meta.env.VITE_GREETING_API_URL || '/api/greeting',
   retries: 3,
   timeout: 5000,
   headers: {
@@ -39,7 +39,7 @@ export const greetingEnvironments = {
   },
   microservice: {
     ...greetingApiConfig,
-    baseUrl: process.env.GREETING_SERVICE_URL || 'https://greeting-service.company.com'
+    baseUrl: import.meta.env.VITE_GREETING_SERVICE_URL || 'https://greeting-service.company.com'
   },
   development: {
     ...greetingApiConfig,

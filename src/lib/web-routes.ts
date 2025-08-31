@@ -60,6 +60,10 @@ export function generateRoutePaths(urlPath: string): string[] {
     paths.push(
       // Option 1: app=first, feature=second, remaining=filename
       `apps/${firstSegment}/features/${secondSegment}/pages/${fileName}.tsx`,
+      // Option 1b: Dynamic route fallbacks for feature  
+      `apps/${firstSegment}/features/${secondSegment}/pages/[name].tsx`,
+      `apps/${firstSegment}/features/${secondSegment}/pages/[id].tsx`,
+      `apps/${firstSegment}/features/${secondSegment}/pages/[slug].tsx`,
       // Option 2: app=first, feature=home, all=filename
       `apps/${firstSegment}/features/home/pages/${[secondSegment, ...pathSegments].join('-')}.tsx`,
       // Option 3: app=main, feature=home, all=filename

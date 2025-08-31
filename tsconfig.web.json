@@ -6,7 +6,16 @@
     "allowImportingTsExtensions": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@web/*": ["src/web/*"],
+      "@lib/*": ["src/lib/*"],
+      "@api/*": ["src/api/*"],
+      "@styles/*": ["src/web/assets/styles/*"]
+    }
   },
   "include": [
     "src/web/**/*",
@@ -16,6 +25,7 @@
   "exclude": [
     "src/api/**/*",
     "src/server.ts",
+    "src/lib/web-discovery.ts",
     "node_modules"
   ]
 }
