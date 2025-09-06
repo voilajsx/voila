@@ -9,19 +9,10 @@ const MainHomeContract = createWebFeatureContract()
   .feature('home')
   .description('Main landing page and application entry point')
   
-  .providesComponent('HomePage')
-  .providesComponent('LandingSection')
-  .providesComponent('AppNavigation')
-  
-  .consumesComponent('Button')
-  .consumesComponent('Card')
-  .consumesComponent('Badge')
-  .consumesComponent('Separator')
-  
-  .sharedState(false)
-  
   .route('/', 'root.tsx', { auth: 'public' })
   .route('/test', 'test.tsx', { auth: 'public' })
+  
+  .validation('basic')
   
   .build();
 

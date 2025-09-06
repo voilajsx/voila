@@ -1,0 +1,116 @@
+{
+  "app": "greeting",
+  "type": "web",
+  "enabled": true,
+  "environments": [
+    "development",
+    "staging",
+    "production"
+  ],
+  "features": {
+    "hello": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Hello greeting component for user engagement"
+    },
+    "logs": {
+      "enabled": true,
+      "environments": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "description": "Logs management component for greeting events"
+    }
+  },
+  "metadata": {
+    "owner": "Greeting Team",
+    "created": "2025-08-21",
+    "version": "1.0.0"
+  },
+  "api": {
+    "baseUrl": "http://localhost:8000/api/greeting",
+    "timeout": 30000,
+    "retries": 3,
+    "headers": {
+      "X-App": "greeting"
+    },
+    "deployment_modes": {
+      "monolith": {
+        "baseUrl": "/api/greeting",
+        "description": "Same server, proxied requests"
+      },
+      "microservice": {
+        "baseUrl": "${VITE_GREETING_SERVICE_URL}",
+        "fallback": "https://greeting-service.company.com",
+        "description": "Dedicated greeting microservice"
+      },
+      "development": {
+        "baseUrl": "http://localhost:8000/api/greeting",
+        "description": "Local development server"
+      }
+    },
+    "environments": {
+      "development": {
+        "mode": "development",
+        "baseUrl": "http://localhost:8000/api/greeting"
+      },
+      "staging": {
+        "mode": "microservice", 
+        "baseUrl": "https://greeting-staging.company.com"
+      },
+      "production": {
+        "mode": "microservice",
+        "baseUrl": "https://greeting-service.company.com"
+      }
+    },
+    "runtime_switching": {
+      "enabled": true,
+      "available_modes": ["monolith", "microservice", "development"],
+      "default_mode": "development"
+    }
+  },
+  "compliance": {
+    "api_compliance": {
+      "enabled": false,
+      "note": "API compliance tracked by backend config"
+    },
+    "web_compliance": {
+      "enabled": true,
+      "last_test_run": null,
+      "total_checks": 0,
+      "passed_checks": 0,
+      "failed_checks": 0,
+      "success_rate": "0%",
+      "overall_status": "NOT_TESTED",
+      "requirements_met": false,
+      "issues": [],
+      "updated_at": null
+    }
+  },
+  "testing": {
+    "unit": {
+      "framework": "vitest",
+      "coverage": {
+        "enabled": true,
+        "threshold": 80
+      }
+    },
+    "e2e": {
+      "framework": "playwright",
+      "browsers": ["chromium", "firefox", "webkit"],
+      "baseUrl": "http://localhost:3000",
+      "excel_driven": true
+    }
+  },
+  "build": {
+    "target": "es2020",
+    "outDir": "dist/web/greeting",
+    "sourcemap": true,
+    "minify": true
+  }
+}

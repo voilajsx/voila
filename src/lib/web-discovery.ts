@@ -73,18 +73,20 @@ export class WebDiscovery {
   }
 
   /**
-   * Find web apps (same as before)
+   * Find web apps - look in the 'apps' subdirectory
    */
   private findWebApps(): string[] {
     const webPath = this.webPath;
-    if (!fs.existsSync(webPath)) {
-      console.warn(`Web path does not exist: ${webPath}`);
+    const appsPath = path.join(webPath, 'apps');
+    
+    if (!fs.existsSync(appsPath)) {
+      console.warn(`Apps path does not exist: ${appsPath}`);
       return [];
     }
 
-    return fs.readdirSync(webPath)
+    return fs.readdirSync(appsPath)
       .filter(item => {
-        const itemPath = path.join(webPath, item);
+        const itemPath = path.join(appsPath, item);
         const isDir = fs.statSync(itemPath).isDirectory();
         const hasFeatures = fs.existsSync(path.join(itemPath, 'features'));
         
@@ -99,7 +101,7 @@ export class WebDiscovery {
    * Simple feature discovery - look for {feature}.index.ts contracts
    */
   private async discoverAppFeatures(app: string): Promise<WebFeatureInfo[]> {
-    const featuresPath = path.join(this.webPath, app, 'features');
+    const featuresPath = path.join(this.webPath, 'apps', app, 'features');
     if (!fs.existsSync(featuresPath)) return [];
 
     const features: WebFeatureInfo[] = [];
@@ -218,7 +220,7 @@ export async function validateAllWebApps(webPath: string): Promise<{ success: bo
 
   // Simple validation - each contract validates itself
   for (const feature of result.features) {
-    const validation = validateWebContract(feature.contract);
+    const validation = validateWebContract(feature.contract, feature.contractPath);
     if (!validation.valid) {
       errors.push(`${feature.app}/${feature.feature}: ${validation.errors.join(', ')}`);
     }
@@ -249,6 +251,6 @@ export async function validateAllWebApps(webPath: string): Promise<{ success: bo
  * Get web discovery instance
  */
 export function getWebDiscovery(): WebDiscovery {
-  const webPath = path.join(__dirname, '..', 'web', 'apps');
+  const webPath = path.join(__dirname, '..', 'web');
   return new WebDiscovery(webPath);
 }

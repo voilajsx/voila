@@ -11,6 +11,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@voilajsx/uikit/theme-provider';
 import { VoilaStateProvider } from '@lib/web-providers';
 import { loadComponentFromPath } from '@lib/web-routes';
+import { getContractSeoForRoute, applySeoConfig } from '@lib/web-seo';
+
+// Import SEO module to trigger auto-initialization
+import '@lib/web-seo';
 
 // Loading component
 const LoadingPage: React.FC = () => (
@@ -57,6 +61,12 @@ const DynamicRoute: React.FC = () => {
         if (!ComponentClass) {
           setError('Component not found');
           return;
+        }
+
+        // Apply SEO automatically from contracts
+        const seoConfig = getContractSeoForRoute(location.pathname);
+        if (seoConfig) {
+          applySeoConfig(seoConfig, {});
         }
 
         setComponent(() => ComponentClass);

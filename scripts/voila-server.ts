@@ -37,24 +37,44 @@ async function main() {
 
   try {
     // Handle both old format (start, stop) and new format (api:start, api:stop)
+    // Also support package.json script names directly
     const [prefix, action] = command.includes(':') ? command.split(':') : ['dev', command];
     
     if (prefix === 'api') {
       switch (action) {
         case 'start':
-          await startServer();
+          await startApiServer();
           break;
         case 'stop':
-          await stopServer();
+          await stopApiServer();
           break;
         case 'restart':
-          await restartServer();
+          await restartApiServer();
           break;
         case 'status':
-          await checkStatus();
+          await checkApiStatus();
           break;
         default:
           console.log(`❌ Unknown API command: ${action}`);
+          showHelp();
+          process.exit(1);
+      }
+    } else if (prefix === 'web') {
+      switch (action) {
+        case 'start':
+          await startWebServer();
+          break;
+        case 'stop':
+          await stopWebServer();
+          break;
+        case 'restart':
+          await restartWebServer();
+          break;
+        case 'status':
+          await checkWebStatus();
+          break;
+        default:
+          console.log(`❌ Unknown web command: ${action}`);
           showHelp();
           process.exit(1);
       }
@@ -75,15 +95,37 @@ async function main() {
         case 'restart':
           await restartDev();
           break;
+        case 'status':
+          await checkDevStatus();
+          break;
         default:
           console.log(`❌ Unknown dev command: ${action}`);
           showHelp();
           process.exit(1);
       }
     } else {
-      console.log(`❌ Unknown service: ${prefix}`);
-      showHelp();
-      process.exit(1);
+      // Support package.json script names directly
+      switch (command) {
+        case 'dev':
+          await startDevBoth();
+          break;
+        case 'start':
+          await startApiServer();
+          break;
+        case 'stop':
+          await stopAllServers();
+          break;
+        case 'restart':
+          await restartAllServers();
+          break;
+        case 'status':
+          await checkAllStatus();
+          break;
+        default:
+          console.log(`❌ Unknown command: ${command}`);
+          showHelp();
+          process.exit(1);
+      }
     }
   } catch (error: any) {
     console.error('💥 Server management error:', error.message);
@@ -91,66 +133,101 @@ async function main() {
   }
 }
 
-async function startServer(): Promise<void> {
-  // Check if server is already running
-  const currentServer = await getCurrentServer();
-  if (currentServer) {
-    console.log(`⚠️  Server already running:`);
-    console.log(`   PID: ${currentServer.pid}`);
-    console.log(`   Port: ${currentServer.port}`);
-    console.log(`   Started: ${currentServer.startTime}`);
-    return;
-  }
-
-  console.log('🚀 Starting Voila API development server...');
-  console.log('💡 Use npm run server api:start to start manually in foreground');
-  console.log('💡 Use npm run dev:api for auto-restart development');
+async function startApiServer(): Promise<void> {
+  console.log('🚀 Starting Voila API server...');
+  await killPortProcesses([8000]);
   
-  // For simplicity, just recommend the appropriate command
-  console.log('\n🔧 Recommended startup commands:');
-  console.log('   npm run dev:api               # Auto-restart on file changes');
-  console.log('   npm run server api:start      # Manual start (foreground)');
+  console.log('📡 API Server starting on: http://localhost:8000');
+  console.log('⏹️  Press Ctrl+C to stop\n');
+  
+  const proc = spawn('tsx', ['src/server.ts'], {
+    stdio: 'inherit',
+    shell: true,
+    env: { ...process.env, PORT: '8000' }
+  });
+
+  // Save server info
+  const serverInfo: ServerInfo = {
+    pid: proc.pid!,
+    port: 8000,
+    startTime: new Date().toISOString(),
+    command: 'api:start'
+  };
+  
+  writeFileSync(join(__dirname, '..', '.voila-api.pid'), JSON.stringify(serverInfo));
+  setupGracefulShutdown([proc], 'api');
 }
 
-async function stopServer(): Promise<void> {
-  console.log('🛑 Stopping Voila development servers...');
+async function startWebServer(): Promise<void> {
+  console.log('🌐 Starting Voila Web server...');
+  await killPortProcesses([5174]);
   
-  try {
-    // Stop common Voila server processes
-    if (process.platform === 'win32') {
-      // Try to kill TSX processes running server.ts
-      try {
-        await execAsync('taskkill /f /im node.exe /fi "WINDOWTITLE eq tsx*server.ts*" 2>nul');
-      } catch {}
-      
-      // Try to kill processes on port 8000
-      try {
-        await execAsync('for /f "tokens=5" %a in (\'netstat -aon ^| find ":8000" ^| find "LISTENING"\') do taskkill /f /pid %a 2>nul');
-      } catch {}
-      
-      // Try to kill any tsx processes with server.ts
-      try {
-        await execAsync('wmic process where "CommandLine like \'%tsx%server.ts%\'" delete 2>nul');
-      } catch {}
-      
-    } else {
-      // Unix-like systems
-      try {
-        await execAsync('pkill -f "tsx.*server.ts"');
-      } catch {}
-      
-      try {
-        await execAsync('lsof -ti:8000 | xargs kill -9');
-      } catch {}
+  console.log('🌐 Web Server starting on: http://localhost:5174');
+  console.log('⏹️  Press Ctrl+C to stop\n');
+  
+  const proc = spawn('vite', ['preview', '--port', '5174'], {
+    stdio: 'inherit',
+    shell: true
+  });
+
+  // Save server info  
+  const serverInfo: ServerInfo = {
+    pid: proc.pid!,
+    port: 5174,
+    startTime: new Date().toISOString(),
+    command: 'web:start'
+  };
+  
+  writeFileSync(join(__dirname, '..', '.voila-web.pid'), JSON.stringify(serverInfo));
+  setupGracefulShutdown([proc], 'web');
+}
+
+async function stopApiServer(): Promise<void> {
+  console.log('🛑 Stopping Voila API server...');
+  
+  const serverInfo = await getCurrentServer('api');
+  if (serverInfo) {
+    try {
+      process.kill(serverInfo.pid, 'SIGTERM');
+      console.log('✅ API server stopped gracefully');
+    } catch {
+      console.log('⚠️  API server process not found, cleaning up...');
     }
-    
-    cleanupPidFile();
-    console.log('✅ Server processes stopped');
-    
-  } catch (error: any) {
-    console.log('ℹ️  No server processes found or already stopped');
-    cleanupPidFile();
+    cleanupPidFile('api');
+  } else {
+    console.log('ℹ️  API server not running');
   }
+  
+  await killPortProcesses([8000]);
+}
+
+async function stopWebServer(): Promise<void> {
+  console.log('🛑 Stopping Voila Web server...');
+  
+  const serverInfo = await getCurrentServer('web');
+  if (serverInfo) {
+    try {
+      process.kill(serverInfo.pid, 'SIGTERM');
+      console.log('✅ Web server stopped gracefully');
+    } catch {
+      console.log('⚠️  Web server process not found, cleaning up...');
+    }
+    cleanupPidFile('web');
+  } else {
+    console.log('ℹ️  Web server not running');
+  }
+  
+  await killPortProcesses([5174]);
+}
+
+async function stopAllServers(): Promise<void> {
+  console.log('🛑 Stopping all Voila servers...');
+  await Promise.all([
+    stopApiServer(),
+    stopWebServer(),
+    stopAllDev()
+  ]);
+  console.log('✅ All servers stopped');
 }
 
 async function killPortProcesses(ports: number[]): Promise<void> {
@@ -277,7 +354,28 @@ async function restartDev(): Promise<void> {
   await startDevBoth();
 }
 
-function setupGracefulShutdown(processes: any[]): void {
+async function restartApiServer(): Promise<void> {
+  console.log('🔄 Restarting Voila API server...');
+  await stopApiServer();
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  await startApiServer();
+}
+
+async function restartWebServer(): Promise<void> {
+  console.log('🔄 Restarting Voila Web server...');
+  await stopWebServer();
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  await startWebServer();
+}
+
+async function restartAllServers(): Promise<void> {
+  console.log('🔄 Restarting all Voila servers...');
+  await stopAllServers();
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  await startApiServer();
+}
+
+function setupGracefulShutdown(processes: any[], serverType?: string): void {
   // Handle various exit signals
   ['SIGINT', 'SIGTERM', 'SIGQUIT'].forEach(signal => {
     process.on(signal, () => {
@@ -296,6 +394,11 @@ function setupGracefulShutdown(processes: any[]): void {
         }
       });
       
+      // Clean up PID files
+      if (serverType) {
+        cleanupPidFile(serverType);
+      }
+      
       // Clean up ports and exit
       setTimeout(async () => {
         await killPortProcesses([8000, 5174]);
@@ -305,83 +408,130 @@ function setupGracefulShutdown(processes: any[]): void {
   });
 }
 
-async function restartServer(): Promise<void> {
-  console.log('🔄 Restarting Voila server...');
+async function checkApiStatus(): Promise<void> {
+  console.log('📊 API Server Status:');
+  const serverInfo = await getCurrentServer('api');
   
-  await stopServer();
-  
-  // Brief pause to ensure cleanup
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  console.log('\n🚀 Starting fresh server...');
-  console.log('💡 This will pick up any new apps/features generated');
-  console.log('\n📌 To start the API server, run:');
-  console.log('   npm run server api:start');
-  console.log('\n📌 Or for development with auto-restart:');
-  console.log('   npm run dev:api');
-  
-  console.log('\n✅ Server restart process completed!');
-  console.log('🔄 New apps/features will be discovered on next startup');
-}
-
-async function checkStatus(): Promise<void> {
-  const currentServer = await getCurrentServer();
-  
-  if (!currentServer) {
-    console.log('📊 Server Status: ❌ NOT RUNNING');
+  if (!serverInfo) {
+    console.log('   Status: ❌ NOT RUNNING');
     return;
   }
 
-  // Check if process is actually running
+  await checkServerStatus(serverInfo, 'api');
+}
+
+async function checkWebStatus(): Promise<void> {
+  console.log('📊 Web Server Status:');
+  const serverInfo = await getCurrentServer('web');
+  
+  if (!serverInfo) {
+    console.log('   Status: ❌ NOT RUNNING');
+    return;
+  }
+
+  await checkServerStatus(serverInfo, 'web');
+}
+
+async function checkDevStatus(): Promise<void> {
+  console.log('📊 Development Servers Status:');
+  
+  const apiRunning = await isPortInUse(8000);
+  const webRunning = await isPortInUse(5174);
+  
+  console.log(`   API (port 8000): ${apiRunning ? '✅ RUNNING' : '❌ STOPPED'}`);
+  console.log(`   Web (port 5174): ${webRunning ? '✅ RUNNING' : '❌ STOPPED'}`);
+  
+  if (apiRunning || webRunning) {
+    console.log('\n💡 To stop development servers: npm run server dev:stop');
+  } else {
+    console.log('\n💡 To start development servers: npm run server dev:both');
+  }
+}
+
+async function checkAllStatus(): Promise<void> {
+  console.log('📊 All Servers Status:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  await checkApiStatus();
+  console.log();
+  await checkWebStatus();
+  console.log();
+  await checkDevStatus();
+}
+
+async function checkServerStatus(serverInfo: ServerInfo, type: string): Promise<void> {
   try {
     if (process.platform === 'win32') {
-      await execAsync(`tasklist /fi "PID eq ${currentServer.pid}" | find "${currentServer.pid}"`);
+      await execAsync(`tasklist /fi "PID eq ${serverInfo.pid}" | find "${serverInfo.pid}"`);
     } else {
-      process.kill(currentServer.pid, 0); // Check if process exists
+      process.kill(serverInfo.pid, 0);
     }
     
-    console.log('📊 Server Status: ✅ RUNNING');
-    console.log(`   PID: ${currentServer.pid}`);
-    console.log(`   Port: ${currentServer.port}`);
-    console.log(`   Started: ${currentServer.startTime}`);
-    console.log(`   Uptime: ${getUptime(currentServer.startTime)}`);
-    console.log(`   URL: http://localhost:${currentServer.port}`);
+    console.log('   Status: ✅ RUNNING');
+    console.log(`   PID: ${serverInfo.pid}`);
+    console.log(`   Port: ${serverInfo.port}`);
+    console.log(`   Started: ${serverInfo.startTime}`);
+    console.log(`   Uptime: ${getUptime(serverInfo.startTime)}`);
+    console.log(`   URL: http://localhost:${serverInfo.port}`);
     
     // Test server responsiveness
+    const healthEndpoint = type === 'api' ? '/health' : '/';
     try {
-      const response = await fetch(`http://localhost:${currentServer.port}/health`);
+      const response = await fetch(`http://localhost:${serverInfo.port}${healthEndpoint}`);
       if (response.ok) {
-        console.log('   Health: ✅ HEALTHY');
+        console.log('   Health: ✅ RESPONDING');
       } else {
-        console.log('   Health: ⚠️  UNHEALTHY');
+        console.log('   Health: ⚠️  NOT HEALTHY');
       }
     } catch {
       console.log('   Health: ❌ NOT RESPONDING');
     }
     
   } catch {
-    console.log('📊 Server Status: ❌ PROCESS NOT FOUND');
-    console.log('🧹 Cleaning up stale PID file...');
-    cleanupPidFile();
+    console.log('   Status: ❌ PROCESS NOT FOUND');
+    console.log('   🧹 Cleaning up stale PID file...');
+    cleanupPidFile(type);
   }
 }
 
-async function getCurrentServer(): Promise<ServerInfo | null> {
-  if (!existsSync(PID_FILE)) {
+async function getCurrentServer(type?: string): Promise<ServerInfo | null> {
+  const pidFile = type ? 
+    join(__dirname, '..', `.voila-${type}.pid`) : 
+    join(__dirname, '..', '.voila-server.pid');
+    
+  if (!existsSync(pidFile)) {
     return null;
   }
 
   try {
-    const data = readFileSync(PID_FILE, 'utf-8');
+    const data = readFileSync(pidFile, 'utf-8');
     return JSON.parse(data);
   } catch {
     return null;
   }
 }
 
-function cleanupPidFile(): void {
-  if (existsSync(PID_FILE)) {
-    unlinkSync(PID_FILE);
+function cleanupPidFile(type?: string): void {
+  const pidFile = type ? 
+    join(__dirname, '..', `.voila-${type}.pid`) : 
+    join(__dirname, '..', '.voila-server.pid');
+    
+  if (existsSync(pidFile)) {
+    unlinkSync(pidFile);
+  }
+}
+
+async function isPortInUse(port: number): Promise<boolean> {
+  try {
+    if (process.platform === 'win32') {
+      const result = await execAsync(`netstat -an | findstr :${port}`);
+      return result.stdout.includes('LISTENING');
+    } else {
+      await execAsync(`lsof -i:${port}`);
+      return true;
+    }
+  } catch {
+    return false;
   }
 }
 
@@ -405,43 +555,62 @@ function getUptime(startTime: string): string {
 
 function showHelp() {
   console.log(`
-🏗️  Voila Server Manager
+🏗️  Voila Server Manager - Unified Development & Production Server Management
 
-DEVELOPMENT COMMANDS:
-  npm run server dev:api        Start API server only (port 8000)
-  npm run server dev:web        Start Web server only (port 5174)  
-  npm run server dev:both       Start both API + Web servers
+DEVELOPMENT COMMANDS (Auto-restart/reload):
+  npm run server dev:api        Start API dev server only (port 8000) with nodemon
+  npm run server dev:web        Start Web dev server only (port 5174) with vite
+  npm run server dev:both       Start both API + Web dev servers
   npm run server dev:stop       Stop all development servers
-  npm run server dev:restart    Restart all development servers
+  npm run server dev:restart    Restart all development servers  
+  npm run server dev:status     Check development servers status
 
-API MANAGEMENT:
-  npm run server api:start      Start API server (production-like)
-  npm run server api:stop       Stop API server  
+API PRODUCTION COMMANDS:
+  npm run server api:start      Start API server (production-like with tsx)
+  npm run server api:stop       Stop API server gracefully
   npm run server api:restart    Restart API server
-  npm run server api:status     Check API server status
+  npm run server api:status     Check API server status & health
 
-DEVELOPMENT FEATURES:
-  - Automatic port cleanup before restart
-  - Proper process management and graceful shutdown
-  - Cross-platform support (Windows/Unix)
-  - Auto-restart on file changes for API
-  - Auto-reload on file changes for Web
+WEB PRODUCTION COMMANDS:
+  npm run server web:start      Start Web server (production-like with vite preview)
+  npm run server web:stop       Stop Web server gracefully  
+  npm run server web:restart    Restart Web server
+  npm run server web:status     Check Web server status & health
 
-PORTS:
-  - API Server: http://localhost:8000
-  - Web Server: http://localhost:5174
+UNIFIED COMMANDS (Package.json compatibility):
+  npm run server dev            Start full dev environment (same as dev:both)
+  npm run server start          Start API server (same as api:start)
+  npm run server stop           Stop all servers (dev + production)
+  npm run server restart        Restart all servers
+  npm run server status         Check status of all servers
 
-EXAMPLES:
+FEATURES:
+  ✨ Automatic port cleanup prevents "EADDRINUSE" errors
+  🛡️  Graceful shutdown with proper signal handling
+  🔄 PID file tracking for production servers
+  🏥 Health check endpoints for monitoring
+  🖥️  Cross-platform support (Windows/Unix)
+  📊 Detailed status reporting with uptime
+  ⚡ Development servers auto-restart/reload on file changes
+
+PORTS & URLS:
+  📡 API Server:     http://localhost:8000  (Health: /health)
+  🌐 Web Server:     http://localhost:5174  (Health: /)
+
+DEVELOPMENT WORKFLOW:
   npm run server dev:both       # Start full dev environment
+  npm run server dev:status     # Check what's running
   npm run server dev:restart    # Clean restart everything
-  npm run server dev:stop       # Stop all development servers
-  npm run server api:status     # Check if API is healthy
 
-NOTES:
-  - Port cleanup prevents "EADDRINUSE" errors
-  - Graceful shutdown with Ctrl+C
-  - PID tracking for server management
-  - Health check endpoint: /health
+PRODUCTION WORKFLOW:
+  npm run server api:start      # Start API for production
+  npm run server web:start      # Start Web for production  
+  npm run server status         # Check all server health
+  npm run server stop           # Stop everything
+
+PID FILES:
+  .voila-api.pid    API server process tracking
+  .voila-web.pid    Web server process tracking
 `);
 }
 

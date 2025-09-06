@@ -58,6 +58,25 @@ async function main() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   try {
+    // Handle app:type commands
+    if (command.startsWith('app:')) {
+      const [, appType] = command.split(':');
+      if (!['api', 'web'].includes(appType)) {
+        console.error(`❌ Unknown app type: ${appType}`);
+        console.error('   Supported types: api, web');
+        process.exit(1);
+      }
+      
+      if (!description) {
+        console.error('❌ Description is required for app planning');
+        console.error(`   Example: npm run plan app:${appType} ${appName} "app description"`);
+        process.exit(1);
+      }
+      
+      await startAppPlanning(appType as 'api' | 'web', appName, description);
+      return;
+    }
+
     switch (command) {
       case 'start':
         if (!description) {
@@ -85,6 +104,85 @@ async function main() {
     }
     process.exit(1);
   }
+}
+
+async function startAppPlanning(appType: 'api' | 'web', appName: string, description: string): Promise<void> {
+  console.log(`📝 Starting ${appType.toUpperCase()} planning for: ${appName}`);
+  console.log(`💡 Description: ${description}`);
+  console.log('');
+
+  // Create planning directory
+  const planningDir = join(__dirname, '..', 'docs', 'planning', appName);
+  if (!existsSync(planningDir)) {
+    mkdirSync(planningDir, { recursive: true });
+  }
+
+  // Check for existing planning files to determine version
+  const version = await getNextPlanningVersion(planningDir, appName, appType);
+  const versionSuffix = version === '1.0' ? 'v1.0' : `v${version}-cr`;
+  
+  console.log(`📋 Generating ${appType.toUpperCase()} template files (${versionSuffix})...`);
+  
+  // Generate template files with placeholder sections
+  const businessTemplate = generateBusinessRequirementsTemplate(appName, description);
+  const technicalTemplate = appType === 'api' 
+    ? generateApiTechnicalSpecificationTemplate(appName, description, version)
+    : generateWebTechnicalSpecificationTemplate(appName, description, version);
+  
+  const businessFileName = `${appName}-business-requirements-${versionSuffix}.md`;
+  const technicalFileName = `${appName}-technical-${appType}-specification-${versionSuffix}.md`;
+  
+  await fs.writeFile(
+    join(planningDir, businessFileName),
+    businessTemplate,
+    'utf-8'
+  );
+
+  await fs.writeFile(
+    join(planningDir, technicalFileName),
+    technicalTemplate,
+    'utf-8'
+  );
+
+  console.log(`\n✅ ${appType.toUpperCase()} planning template files generated!`);
+  console.log(`📂 Location: docs/planning/${appName}/`);
+  console.log('');
+  console.log('📝 Files created:');
+  console.log(`   • ${businessFileName}`);
+  console.log(`   • ${technicalFileName}`);
+  
+  if (version !== '1.0') {
+    console.log('');
+    console.log(`📋 Version ${version} indicates this is a change request (CR)`);
+    console.log('   Previous planning versions exist - review changes carefully');
+  }
+  
+  console.log('');
+  console.log('📝 Next steps:');
+  console.log(`   1. Complete the [FILL_IN] sections in both files`);
+  console.log(`   2. Change STATUS: UNDER_REVIEW to STATUS: APPROVED in both files`);
+  console.log(`   3. Generate app structure: npm run generate app:${appType} ${appName}`);
+  console.log(`   4. Start development: npm run server dev:${appType}`);
+
+  // Log state
+  VoilaWorkflow.logAction('plan_start', `Started ${appType.toUpperCase()} planning for '${appName}' app - templates generated (${versionSuffix})`, {
+    currentApp: appName,
+    phase: 'planning',
+    nextSteps: [
+      `Complete [FILL_IN] sections in docs/planning/${appName}/`,
+      `Change STATUS: UNDER_REVIEW to STATUS: APPROVED in both files`,
+      `Run: npm run generate app:${appType} ${appName}`
+    ],
+    context: {
+      planning: {
+        appType,
+        version,
+        businessRequirementsCompleted: false,
+        technicalSpecCompleted: false,
+        approved: false
+      }
+    }
+  });
 }
 
 async function startPlanning(appName: string, description: string): Promise<void> {
@@ -129,7 +227,7 @@ async function startPlanning(appName: string, description: string): Promise<void
   console.log(`   1. Complete the [FILL_IN] sections in both files`);
   console.log(`   2. Change STATUS: UNDER_REVIEW to STATUS: APPROVED in both files`);
   console.log(`   3. Generate app structure: npm run generate app:api ${appName}`);
-  console.log(`   4. Start development: npm run dev:api`);
+  console.log(`   4. Start development: npm run server dev:api`);
 
   // Log state
   VoilaWorkflow.logAction('plan_start', `Started planning for '${appName}' app - business requirements and technical spec templates generated`, {
@@ -384,6 +482,418 @@ Example:
 `;
 }
 
+async function getNextPlanningVersion(planningDir: string, appName: string, appType?: 'api' | 'web'): Promise<string> {
+  if (!existsSync(planningDir)) {
+    return '1.0';
+  }
+
+  const files = await fs.readdir(planningDir);
+  const pattern = appType 
+    ? new RegExp(`${appName}-technical-${appType}-specification-v(\\d+\\.\\d+)(?:-cr)?\\.md`)
+    : new RegExp(`${appName}-technical-specification-v(\\d+\\.\\d+)(?:-cr)?\\.md`);
+  
+  const versions = files
+    .map(file => {
+      const match = file.match(pattern);
+      return match ? parseFloat(match[1]) : null;
+    })
+    .filter(v => v !== null)
+    .sort((a, b) => (b as number) - (a as number));
+
+  if (versions.length === 0) {
+    return '1.0';
+  }
+
+  const latestVersion = versions[0] as number;
+  const nextVersion = Math.floor(latestVersion) + (latestVersion % 1 === 0 ? 0.1 : 0.1);
+  return nextVersion.toFixed(1);
+}
+
+function generateApiTechnicalSpecificationTemplate(appName: string, description: string, version: string): string {
+  const today = new Date().toISOString().split('T')[0];
+  const isChangeRequest = version !== '1.0';
+  
+  return `# API Technical Specification
+## ${appName} API Implementation Guide
+
+### Version: v${version}${isChangeRequest ? ' (Change Request)' : ''}
+### Last Updated: ${today}
+
+***
+
+${isChangeRequest ? `## ⚠️ Change Request v${version}
+
+**Previous Version:** v${(parseFloat(version) - 0.1).toFixed(1)}
+
+### Changes in this version:
+[FILL_IN: Document what changed from the previous version]
+
+### Impact Assessment:
+[FILL_IN: Impact on existing implementation, breaking changes, migration needed]
+
+***
+
+` : ''}## 1. Application Overview
+
+| Aspect | Specification |
+|--------|---------------|
+| **Application Name** | ${appName} |
+| **Type** | API Microservice |
+| **Framework** | Voila Framework with Express.js |
+| **Language** | TypeScript (strict mode) |
+| **Architecture** | Contract-driven development |
+| **Deployment** | Single server, microservice-ready |
+| **Description** | ${description} |
+
+***
+
+## 2. Technology Stack
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|  
+| **Runtime** | Node.js 18+ | JavaScript runtime |
+| **Backend Framework** | Express.js | Web application framework |
+| **Language** | TypeScript | Type safety and development experience |
+| **Validation** | Zod schemas | Runtime type validation |
+| **Testing Framework** | Vitest | Unit and integration testing |
+| **API Testing** | Excel-based | Comprehensive API validation |
+| **Logging** | VoilaJSX AppKit | Structured application logging |
+| **Security** | VoilaJSX AppKit | Input validation and sanitization |
+
+[FILL_IN: Add any additional technologies needed]
+
+***
+
+## 3. API Feature Specifications
+
+[FILL_IN: Complete the API feature specifications table]
+
+| Feature | Endpoint Pattern | Description | Priority |
+|---------|------------------|-------------|----------|
+| [FILL_IN] | \`GET /api/${appName}/[endpoint]\` | [FILL_IN] | High |
+
+***
+
+## 4. API Endpoint Requirements
+
+[FILL_IN: Define all API endpoints]
+
+| Endpoint | Method | Input | Output | Validation |
+|----------|--------|-------|--------|------------|
+| \`/api/${appName}/[endpoint]\` | [METHOD] | [INPUT_SCHEMA] | [OUTPUT_SCHEMA] | [VALIDATION_RULES] |
+
+***
+
+## 5. Data Models & Validation
+
+[FILL_IN: Define all data models and validation rules]
+
+| Model | Schema | Validation Rules |
+|-------|--------|------------------|
+| **[ModelName]Request** | \`{ field: type }\` | [VALIDATION_RULES] |
+| **[ModelName]Response** | \`{ field: type }\` | [VALIDATION_RULES] |
+
+***
+
+## 6. Quality Requirements
+
+| Requirement | Target | Measurement |
+|-------------|--------|-------------|
+| **Test Coverage** | ≥95% | Automated coverage reports |
+| **Response Time** | <200ms | Load testing |
+| **Error Rate** | <1% | Monitoring dashboards |
+| **Uptime** | 99.9% | Health check monitoring |
+| **Code Quality** | TypeScript strict mode | Linting and type checking |
+
+[FILL_IN: Add any additional quality requirements]
+
+***
+
+## 7. API Component Structure
+
+\`\`\`
+src/api/${appName}/
+├── features/
+│   ├── [feature-name]/
+│   │   ├── [feature].routes.ts    # Express routes
+│   │   ├── [feature].services.ts  # Business logic
+│   │   ├── [feature].types.ts     # Zod schemas & TypeScript types
+│   │   ├── [feature].test.ts      # Unit tests
+│   │   └── [feature].index.ts     # Feature contract
+├── spec/
+│   └── ${appName}.api.spec.yml
+├── __apitest__/
+│   └── ${appName}-api-tests.xlsx
+├── ${appName}.api.config.json
+└── ${appName}.readme.md
+\`\`\`
+
+[FILL_IN: Customize the structure based on your specific features]
+
+***
+
+## 8. External API Integrations
+
+[FILL_IN: Define external API integrations]
+
+| Service | Purpose | API Details | Error Handling |
+|---------|---------|-------------|---------------|
+| [API_NAME] | [PURPOSE] | [BASE_URL, AUTH, LIMITS] | [ERROR_STRATEGY] |
+
+***
+
+## 9. Implementation Workflow
+
+### Feature Implementation Order
+**⚠️ CRITICAL: Implement ONE feature at a time in this order:**
+
+[FILL_IN: Define feature implementation sequence]
+
+Example:
+1. **core** (Priority: High, Complexity: High)
+   - Most complex feature with main business logic
+   - Foundation for understanding application patterns
+   
+2. **secondary** (Priority: High, Complexity: Medium)  
+   - Builds on core patterns established
+   - Moderate complexity implementation
+   
+3. **utilities** (Priority: Medium, Complexity: Low)
+   - Support functionality
+   - Simplest implementation
+
+### Per-Feature Definition of Done
+Each feature is complete when:
+- [ ] Feature generated (\`npm run generate app:api ${appName}/feature\`)
+- [ ] Contract implemented (VoilaFeatureContract with endpoints)
+- [ ] Types implemented (Zod schemas + TypeScript interfaces)
+- [ ] Services implemented (business logic with error handling)
+- [ ] Routes implemented (Express endpoints with validation)
+- [ ] Feature validated (\`npm run validate app:api ${appName}/feature\`)
+- [ ] Feature tested (\`npm run test app:api ${appName}/feature -- --unittest\`)
+
+***
+
+## 10. Implementation Approval
+
+### Technical Review Status
+- 📋 Architecture design under review
+- 📋 Technology stack pending confirmation  
+- 📋 Quality requirements being defined
+- 📋 Implementation approach pending validation
+
+### Development Ready
+**STATUS: UNDER_REVIEW**
+
+**Note:** Complete all [FILL_IN] sections, then change STATUS to APPROVED and run generation.
+
+***
+`;
+}
+
+function generateWebTechnicalSpecificationTemplate(appName: string, description: string, version: string): string {
+  const today = new Date().toISOString().split('T')[0];
+  const isChangeRequest = version !== '1.0';
+  
+  return `# Web Technical Specification
+## ${appName} Frontend Implementation Guide
+
+### Version: v${version}${isChangeRequest ? ' (Change Request)' : ''}
+### Last Updated: ${today}
+
+***
+
+${isChangeRequest ? `## ⚠️ Change Request v${version}
+
+**Previous Version:** v${(parseFloat(version) - 0.1).toFixed(1)}
+
+### Changes in this version:
+[FILL_IN: Document what changed from the previous version]
+
+### Impact Assessment:
+[FILL_IN: Impact on existing implementation, breaking changes, migration needed]
+
+***
+
+` : ''}## 1. Application Overview
+
+| Aspect | Specification |
+|--------|---------------|
+| **Application Name** | ${appName} |
+| **Type** | Web Frontend Application |
+| **Framework** | Voila Web Framework (TSX/React) |
+| **Language** | TypeScript (strict mode) |
+| **Architecture** | Component-based with contracts |
+| **Deployment** | Static site or SPA |
+| **Description** | ${description} |
+
+***
+
+## 2. Technology Stack
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|  
+| **Runtime** | Browser (ES2020+) | Client-side execution |
+| **Framework** | TSX/React | Component-based UI framework |
+| **Language** | TypeScript | Type safety and development experience |
+| **Styling** | CSS Modules / TailwindCSS | Component styling |
+| **State Management** | React hooks / Context | Application state |
+| **Testing Framework** | Vitest + React Testing Library | Unit and integration testing |
+| **E2E Testing** | Playwright | End-to-end user flow testing |
+| **Build Tool** | Vite | Development and production builds |
+| **Validation** | Zod schemas | Runtime type validation |
+
+[FILL_IN: Add any additional technologies needed]
+
+***
+
+## 3. Web Feature Specifications
+
+[FILL_IN: Complete the web feature specifications table]
+
+| Feature | Route Pattern | Description | Priority |
+|---------|---------------|-------------|----------|
+| [FILL_IN] | \`/${appName}/[page]\` | [FILL_IN] | High |
+
+***
+
+## 4. Page & Route Requirements
+
+[FILL_IN: Define all pages and routes]
+
+| Route | Component | Purpose | Props | State |
+|-------|-----------|---------|-------|-------|
+| \`/${appName}/[page]\` | [COMPONENT] | [PURPOSE] | [PROPS_TYPE] | [STATE_TYPE] |
+
+***
+
+## 5. Component Hierarchy & Data Models
+
+[FILL_IN: Define component structure and data models]
+
+| Component | Props | State | API Interactions |
+|-----------|-------|-------|------------------|
+| **[ComponentName]** | \`{ prop: type }\` | \`{ state: type }\` | [API_CALLS] |
+
+***
+
+## 6. User Experience Requirements
+
+| Requirement | Target | Measurement |
+|-------------|--------|-------------|
+| **Page Load Time** | <2s | Core Web Vitals |
+| **Interaction Response** | <100ms | User interaction metrics |
+| **Accessibility** | WCAG 2.1 AA | Automated accessibility testing |
+| **Mobile Responsive** | All devices | Cross-device testing |
+| **Browser Support** | Modern browsers | Cross-browser testing |
+
+[FILL_IN: Add any additional UX requirements]
+
+***
+
+## 7. Web Component Structure
+
+\`\`\`
+src/web/apps/${appName}/
+├── features/
+│   ├── [feature-name]/
+│   │   ├── pages/
+│   │   │   ├── [PageName].tsx     # Page components
+│   │   │   └── [PageName].test.tsx
+│   │   ├── components/
+│   │   │   ├── [ComponentName].tsx # Feature components
+│   │   │   └── [ComponentName].test.tsx
+│   │   ├── hooks/
+│   │   │   ├── [hookName].ts      # Custom hooks
+│   │   │   └── [hookName].test.ts
+│   │   ├── types.ts              # TypeScript types
+│   │   └── index.ts              # Feature exports
+├── shared/
+│   ├── components/
+│   ├── hooks/
+│   └── utils/
+├── contracts/
+│   └── ${appName}.web.contracts.ts
+├── __e2etest__/
+│   └── ${appName}-e2e-tests.spec.ts
+├── ${appName}.api.config.json
+└── ${appName}.readme.md
+\`\`\`
+
+[FILL_IN: Customize the structure based on your specific features]
+
+***
+
+## 8. API Integration & Data Flow
+
+[FILL_IN: Define how the frontend integrates with APIs]
+
+| API Endpoint | Component | Hook/Service | Error Handling |
+|--------------|-----------|--------------|----------------|
+| [ENDPOINT] | [COMPONENT] | [HOOK] | [ERROR_STRATEGY] |
+
+***
+
+## 9. E2E Test Cases
+
+[FILL_IN: Define end-to-end test scenarios]
+
+| Test Case | User Flow | Expected Outcome | Priority |
+|-----------|-----------|------------------|----------|
+| [TEST_NAME] | [USER_STEPS] | [EXPECTED_RESULT] | High |
+
+***
+
+## 10. Implementation Workflow
+
+### Feature Implementation Order
+**⚠️ CRITICAL: Implement ONE feature at a time in this order:**
+
+[FILL_IN: Define feature implementation sequence]
+
+Example:
+1. **core-pages** (Priority: High, Complexity: High)
+   - Main user-facing pages and navigation
+   - Foundation for understanding UI patterns
+   
+2. **interactive-features** (Priority: High, Complexity: Medium)  
+   - User interactions and form handling
+   - Moderate complexity implementation
+   
+3. **supporting-ui** (Priority: Medium, Complexity: Low)
+   - Support components and utilities
+   - Simplest implementation
+
+### Per-Feature Definition of Done
+Each feature is complete when:
+- [ ] Feature generated (\`npm run generate app:web ${appName}/feature\`)
+- [ ] Contract implemented (Web contract with pages/components)
+- [ ] Components implemented (TSX components with props/state)
+- [ ] Hooks implemented (custom hooks for data/state management)
+- [ ] Styling implemented (responsive CSS with design system)
+- [ ] Feature validated (\`npm run validate app:web ${appName}/feature\`)
+- [ ] Feature tested (\`npm run test app:web ${appName}/feature -- --unittest\`)
+- [ ] E2E tested (\`npm run test app:web ${appName} -- --e2e\`)
+
+***
+
+## 11. Implementation Approval
+
+### Technical Review Status
+- 📋 UI/UX design under review
+- 📋 Component architecture pending confirmation  
+- 📋 Accessibility requirements being defined
+- 📋 E2E test strategy pending validation
+
+### Development Ready
+**STATUS: UNDER_REVIEW**
+
+**Note:** Complete all [FILL_IN] sections, then change STATUS to APPROVED and run generation.
+
+***
+`;
+}
+
 function generateTechnicalSpecificationTemplate(appName: string, description: string): string {
   const today = new Date().toISOString().split('T')[0];
   
@@ -485,7 +995,7 @@ src/api/${appName}/
 │   └── ${appName}.api.spec.yml
 ├── __apitest__/
 │   └── ${appName}-api-tests.xlsx
-├── ${appName}.config.json
+├── ${appName}.api.config.json
 └── ${appName}.readme.md
 \`\`\`
 
@@ -801,7 +1311,7 @@ src/api/${context.appName}/
 │   └── ${context.appName}.api.spec.yml
 ├── __apitest__/
 │   └── ${context.appName}-api-tests.xlsx
-├── ${context.appName}.config.json
+├── ${context.appName}.api.config.json
 └── ${context.appName}.readme.md
 \`\`\`
 

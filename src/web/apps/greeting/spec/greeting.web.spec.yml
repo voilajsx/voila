@@ -1,0 +1,870 @@
+# greeting Web Application Specification
+# Web interface specification for pages, components, and user flows
+# Updated based on actual implementation: 2025-09-02
+
+app_info:
+  name: "greeting"
+  type: "web"
+  description: "Interactive greeting web application with multi-language support and logs management"
+  version: "1.0.0"
+  base_path: "/greeting"
+
+# Page specifications based on actual implementation
+pages:
+  - page_id: "greeting_hello_root"
+    path: "/greeting/hello"
+    component: "root.tsx"
+    feature: "hello"
+    title: "Interactive Greeting Demo"
+    description: "Interactive greeting interface with multi-language support and authentication"
+    auth_required: false
+    seo:
+      title: "🌍 Interactive Greeting Demo"
+      description: "Showcasing useHello hook with real API integration"
+      keywords: ["greeting", "hello", "multilanguage", "personalized", "api", "authentication"]
+    tests:
+      - test_id: "greeting_hello_page_load"
+        description: "Hello page loads successfully with correct title and structure"
+        type: "page_load"
+        expected:
+          status: "success"
+          title_contains: "Interactive Greeting Demo"
+          load_time_ms: "<3000"
+          elements_present: ["header", "auth_form", "greeting_cards", "actions"]
+      - test_id: "greeting_hello_responsive"
+        description: "Hello page displays correctly on mobile devices"
+        type: "responsive_test"
+        expected:
+          mobile_friendly: true
+          grid_responsive: true
+          navigation_accessible: true
+
+  - page_id: "greeting_hello_personal"
+    path: "/greeting/hello/:name"
+    component: "[name].tsx"
+    feature: "hello"
+    title: "Personal Greeting for {name}"
+    description: "Personalized greeting page with name parameter"
+    auth_required: false
+    tests:
+      - test_id: "greeting_personal_load"
+        description: "Personal greeting page loads with name parameter"
+        type: "page_load"
+        input:
+          name: "World"
+        expected:
+          status: "success"
+          contains_text: "World"
+          personal_greeting_visible: true
+          load_time_ms: "<2000"
+
+  - page_id: "greeting_logs_root"
+    path: "/greeting/logs"
+    component: "root.tsx"
+    feature: "logs"
+    title: "Greeting Logs"
+    description: "Logs management interface with CRUD operations and pagination"
+    auth_required: false
+    tests:
+      - test_id: "greeting_logs_page_load"
+        description: "Logs page loads with logs list and controls"
+        type: "page_load"
+        expected:
+          status: "success"
+          title_contains: "Logs"
+          elements_present: ["logs_list", "pagination", "filters", "actions"]
+          load_time_ms: "<3000"
+
+  - page_id: "greeting_logs_details"
+    path: "/greeting/logs/:id"
+    component: "details.tsx"
+    feature: "logs"
+    title: "Log Details"
+    description: "Individual log entry details and edit interface"
+    auth_required: false
+    tests:
+      - test_id: "greeting_log_details_load"
+        description: "Log details page loads with specific log data"
+        type: "page_load"
+        input:
+          id: "test-log-id"
+        expected:
+          status: "success"
+          log_details_visible: true
+          edit_form_available: true
+
+# Component specifications based on actual implementation
+components:
+  - component_id: "greeting_card"
+    name: "GreetingCard"
+    type: "display"
+    feature: "hello"
+    description: "Displays greeting data with loading, error, and success states"
+    props:
+      - name: "greeting"
+        type: "HelloResponse"
+        required: true
+      - name: "loading"
+        type: "boolean"
+        required: false
+      - name: "error"
+        type: "Error"
+        required: false
+      - name: "title"
+        type: "string"
+        required: true
+    tests:
+      - test_id: "greeting_card_render_success"
+        description: "GreetingCard renders greeting data correctly"
+        type: "component_render"
+        input:
+          greeting: { success: true, data: { greetings: ["Hello World"], name: "Test", language_count: 1 } }
+          title: "Test Greeting"
+          loading: false
+        expected:
+          renders: true
+          contains_text: "Hello World"
+          has_title: "Test Greeting"
+          shows_language_count: true
+      - test_id: "greeting_card_loading_state"
+        description: "GreetingCard shows loading state correctly"
+        type: "component_render"
+        input:
+          title: "Loading Greeting"
+          loading: true
+        expected:
+          shows_loading_display: true
+          title_visible: "Loading Greeting..."
+
+  - component_id: "auth_form"
+    name: "AuthForm"
+    type: "form"
+    feature: "hello"
+    description: "Authentication form for API key and auth token input"
+    props:
+      - name: "apiKey"
+        type: "string"
+        required: true
+      - name: "authToken"
+        type: "string"
+        required: true
+      - name: "onApiKeyChange"
+        type: "function"
+        required: true
+      - name: "onAuthTokenChange"
+        type: "function"
+        required: true
+    tests:
+      - test_id: "auth_form_interaction"
+        description: "Auth form accepts input and triggers callbacks"
+        type: "component_interaction"
+        input:
+          apiKey: "test-key"
+          authToken: "test-token"
+        expected:
+          input_accepted: true
+          callbacks_triggered: true
+          form_validation_works: true
+
+  - component_id: "logs_list"
+    name: "LogsList"
+    type: "list"
+    feature: "logs"
+    description: "Displays paginated list of log entries with filtering"
+    props:
+      - name: "logs"
+        type: "LogEntry[]"
+        required: true
+      - name: "pagination"
+        type: "PaginationInfo"
+        required: true
+      - name: "onPageChange"
+        type: "function"
+        required: true
+    tests:
+      - test_id: "logs_list_render"
+        description: "LogsList renders log entries with pagination"
+        type: "component_render"
+        input:
+          logs: [{ id: "1", message: "Test log", level: "info", timestamp: "2025-09-02T00:00:00Z" }]
+          pagination: { page: 1, totalPages: 5, hasNext: true, hasPrev: false }
+        expected:
+          renders: true
+          shows_log_entries: true
+          pagination_controls_visible: true
+
+  - component_id: "log_details"
+    name: "LogDetails"
+    type: "detail"
+    feature: "logs"
+    description: "Displays detailed log entry information with edit capability"
+    tests:
+      - test_id: "log_details_render"
+        description: "LogDetails shows log information and edit options"
+        type: "component_render"
+        expected:
+          log_info_displayed: true
+          edit_button_available: true
+
+  - component_id: "log_form"
+    name: "LogForm"
+    type: "form"
+    feature: "logs"
+    description: "Form for creating and editing log entries"
+    tests:
+      - test_id: "log_form_create"
+        description: "LogForm can create new log entries"
+        type: "component_interaction"
+        expected:
+          form_fields_present: true
+          submit_works: true
+          validation_active: true
+
+# Hook specifications based on actual implementation
+hooks:
+  - hook_id: "use_hello"
+    name: "useHello"
+    feature: "hello"
+    description: "Main hook for greeting functionality with API integration and authentication"
+    returns:
+      - name: "greetings"
+        type: "object"
+        description: "Greeting query results (default, goodDay, thankYou)"
+      - name: "auth"
+        type: "object"
+        description: "Authentication state with apiKey, authToken, and setters"
+      - name: "actions"
+        type: "object"
+        description: "Actions (getPersonalGreeting, clearCache, refresh)"
+      - name: "computed_state"
+        type: "object"
+        description: "Computed state (isLoading, hasError, isReady, canShowGoodDay, canShowThankYou)"
+    tests:
+      - test_id: "use_hello_initial_state"
+        description: "useHello hook returns correct initial state structure"
+        type: "hook_test"
+        expected:
+          greetings: "object"
+          auth: "object"
+          actions: "object"
+          state_properties: ["isLoading", "hasError", "isReady"]
+      - test_id: "use_hello_authentication_flow"
+        description: "useHello handles authentication state changes correctly"
+        type: "hook_test"
+        expected:
+          api_key_updates: true
+          auth_token_updates: true
+          computed_state_updates: true
+
+  - hook_id: "use_logs"
+    name: "useLogs"
+    feature: "logs"
+    description: "Comprehensive logs management hook with CRUD operations and pagination"
+    returns:
+      - name: "logs"
+        type: "object"
+        description: "Logs data with loading, error, and refetch"
+      - name: "pagination"
+        type: "object"
+        description: "Pagination state and navigation"
+      - name: "currentLog"
+        type: "object"
+        description: "Currently selected log entry"
+      - name: "actions"
+        type: "object"
+        description: "CRUD actions (fetchLogs, createLog, updateLog, deleteLog, etc.)"
+      - name: "filters"
+        type: "object"
+        description: "Search and filter functionality"
+    tests:
+      - test_id: "use_logs_crud_operations"
+        description: "useLogs provides complete CRUD functionality"
+        type: "hook_test"
+        expected:
+          create_function: true
+          read_function: true
+          update_function: true
+          delete_function: true
+          pagination_works: true
+      - test_id: "use_logs_filtering"
+        description: "useLogs handles search and filtering correctly"
+        type: "hook_test"
+        expected:
+          search_functionality: true
+          level_filtering: true
+          filter_clearing: true
+
+# API Integration specifications
+api_integration:
+  base_url: "http://localhost:8000/api/greeting"
+  endpoints:
+    # Hello feature endpoints
+    - endpoint_id: "greeting_hello_default"
+      path: "/hello"
+      method: "GET"
+      description: "Default greeting endpoint"
+      feature: "hello"
+      component_usage: ["GreetingCard", "HelloPage"]
+      tests:
+        - test_id: "greeting_api_hello_default"
+          description: "Default greeting API returns success"
+          type: "api_integration"
+          expected:
+            status: 200
+            response_time_ms: "<1000"
+            response_body:
+              success: true
+              data:
+                greetings: ["array of strings"]
+                name: "string"
+                language_count: "number"
+
+    - endpoint_id: "greeting_hello_goodday"
+      path: "/hello/goodday"
+      method: "GET"
+      description: "Good day greeting with API key authentication"
+      feature: "hello"
+      component_usage: ["GreetingCard"]
+      auth_required: "api_key"
+      tests:
+        - test_id: "greeting_api_goodday_auth"
+          description: "Good day greeting API requires and validates API key"
+          type: "api_integration"
+          expected:
+            status: 200
+            auth_header_required: "X-API-Key"
+            authenticated_response: true
+
+    - endpoint_id: "greeting_hello_thankyou"
+      path: "/hello/thankyou"
+      method: "GET"
+      description: "Thank you greeting with token authentication"
+      feature: "hello"
+      component_usage: ["GreetingCard"]
+      auth_required: "auth_token"
+      tests:
+        - test_id: "greeting_api_thankyou_auth"
+          description: "Thank you greeting API requires and validates auth token"
+          type: "api_integration"
+          expected:
+            status: 200
+            auth_header_required: "Authorization"
+            bearer_token_format: true
+
+    - endpoint_id: "greeting_hello_personal"
+      path: "/hello/:name"
+      method: "GET"
+      description: "Personalized greeting with name parameter"
+      feature: "hello"
+      component_usage: ["HelloPage"]
+      tests:
+        - test_id: "greeting_api_personal_name"
+          description: "Personal greeting API accepts name parameter"
+          type: "api_integration"
+          expected:
+            status: 200
+            name_parameter_used: true
+            personalized_response: true
+
+    # Logs feature endpoints
+    - endpoint_id: "greeting_logs_list"
+      path: "/logs"
+      method: "GET"
+      description: "Get paginated logs list with filtering"
+      feature: "logs"
+      component_usage: ["LogsList", "LogsPage"]
+      tests:
+        - test_id: "greeting_api_logs_list"
+          description: "Logs list API returns paginated results"
+          type: "api_integration"
+          expected:
+            status: 200
+            pagination_present: true
+            logs_array: true
+
+    - endpoint_id: "greeting_logs_get"
+      path: "/logs/:id"
+      method: "GET"
+      description: "Get specific log entry by ID"
+      feature: "logs"
+      component_usage: ["LogDetails"]
+      tests:
+        - test_id: "greeting_api_log_get"
+          description: "Single log API returns log details"
+          type: "api_integration"
+          expected:
+            status: 200
+            log_details_present: true
+
+    - endpoint_id: "greeting_logs_create"
+      path: "/logs"
+      method: "POST"
+      description: "Create new log entry"
+      feature: "logs"
+      component_usage: ["LogForm"]
+      tests:
+        - test_id: "greeting_api_log_create"
+          description: "Log creation API accepts and validates input"
+          type: "api_integration"
+          expected:
+            status: 201
+            created_log_returned: true
+
+    - endpoint_id: "greeting_logs_update"
+      path: "/logs/:id"
+      method: "PUT"
+      description: "Update existing log entry"
+      feature: "logs"
+      component_usage: ["LogForm"]
+      tests:
+        - test_id: "greeting_api_log_update"
+          description: "Log update API modifies and returns updated log"
+          type: "api_integration"
+          expected:
+            status: 200
+            updated_log_returned: true
+
+    - endpoint_id: "greeting_logs_delete"
+      path: "/logs/:id"
+      method: "DELETE"
+      description: "Delete specific log entry"
+      feature: "logs"
+      component_usage: ["LogDetails", "LogsList"]
+      tests:
+        - test_id: "greeting_api_log_delete"
+          description: "Log deletion API removes log entry"
+          type: "api_integration"
+          expected:
+            status: 204
+            log_deleted: true
+
+    - endpoint_id: "greeting_logs_clear"
+      path: "/logs"
+      method: "DELETE"
+      description: "Clear all log entries"
+      feature: "logs"
+      component_usage: ["LogsList"]
+      tests:
+        - test_id: "greeting_api_logs_clear"
+          description: "Clear all logs API removes all entries"
+          type: "api_integration"
+          expected:
+            status: 204
+            all_logs_cleared: true
+
+# Excel-driven E2E workflows for hello feature
+excel_workflows:
+  - workflow_id: "WF001"
+    name: "Basic Hello Page Loading"
+    description: "Verify hello page loads with correct SEO and basic content"
+    feature: "hello"
+    test_cases:
+      - test_id: "TC001"
+        flow_step: 1
+        route: "/greeting/hello"
+        action: "navigate"
+        input: "-"
+        expected: "Page loads with correct SEO title"
+        type: "page_load"
+      - test_id: "TC002"
+        flow_step: 2
+        route: "/greeting/hello"
+        action: "verify_content"
+        input: "-"
+        expected: "Interactive Greeting Demo visible"
+        type: "content_check"
+      - test_id: "TC003"
+        flow_step: 3
+        route: "/greeting/hello"
+        action: "verify_status"
+        input: "-"
+        expected: "Ready status badge visible"
+        type: "status_check"
+
+  - workflow_id: "WF002"
+    name: "Parameter Route Navigation"
+    description: "Navigate through parameterized routes and verify content"
+    feature: "hello"
+    test_cases:
+      - test_id: "TC004"
+        flow_step: 1
+        route: "/greeting/hello/TestUser"
+        action: "navigate"
+        input: "-"
+        expected: "Personal page loads with name parameter"
+        type: "navigation"
+      - test_id: "TC005"
+        flow_step: 2
+        route: "/greeting/hello/TestUser"
+        action: "verify_parameter"
+        input: "TestUser"
+        expected: "TestUser displayed in greeting"
+        type: "parameter_check"
+      - test_id: "TC006"
+        flow_step: 3
+        route: "/greeting/hello/Developer/sample"
+        action: "navigate"
+        input: "-"
+        expected: "Multi-parameter route loads"
+        type: "navigation"
+      - test_id: "TC007"
+        flow_step: 4
+        route: "/greeting/hello/Developer/sample"
+        action: "verify_parameters"
+        input: "Developer,sample"
+        expected: "Both parameters displayed"
+        type: "parameter_check"
+
+  - workflow_id: "WF003"
+    name: "Day Selection Form Interaction"
+    description: "Complete day selection form workflow"
+    feature: "hello"
+    test_cases:
+      - test_id: "TC008"
+        flow_step: 1
+        route: "/greeting/hello/teja"
+        action: "navigate"
+        input: "-"
+        expected: "Personal greeting page loads"
+        type: "navigation"
+      - test_id: "TC009"
+        flow_step: 2
+        route: "/greeting/hello/teja"
+        action: "fill_input"
+        input: "Monday"
+        expected: "Day input accepts Monday"
+        type: "form_input"
+      - test_id: "TC010"
+        flow_step: 3
+        route: "/greeting/hello/teja"
+        action: "click_button"
+        input: "Set Day"
+        expected: "Set Day button clicked"
+        type: "form_action"
+      - test_id: "TC011"
+        flow_step: 4
+        route: "/greeting/hello/teja"
+        action: "verify_result"
+        input: "-"
+        expected: "Day set to: Monday message appears"
+        type: "result_check"
+      - test_id: "TC012"
+        flow_step: 5
+        route: "/greeting/hello/teja"
+        action: "verify_personalized_message"
+        input: "-"
+        expected: "It's Monday! Hope you have a wonderful day!"
+        type: "content_check"
+
+# E2E Test flows based on actual application features
+e2e_flows:
+  - flow_id: "greeting_hello_basic_flow"
+    name: "Hello Feature Basic Flow"
+    description: "User navigates and interacts with greeting functionality"
+    steps:
+      - step: 1
+        action: "navigate_to"
+        target: "/greeting/hello"
+        expected: "page_loads_successfully"
+      - step: 2
+        action: "verify_content"
+        target: "greeting_cards"
+        expected: "default_greeting_visible"
+      - step: 3
+        action: "click_element"
+        target: "[data-testid='refresh-button']"
+        expected: "greeting_refreshes"
+      - step: 4
+        action: "click_element"
+        target: "[data-testid='clear-cache-button']"
+        expected: "cache_cleared"
+    tests:
+      - test_id: "greeting_e2e_hello_basic"
+        description: "Complete hello feature basic interaction flow"
+        type: "e2e_flow"
+        browsers: ["chromium", "firefox", "webkit"]
+        expected:
+          completion_time_ms: "<10000"
+          success_rate: "100%"
+
+  - flow_id: "greeting_authentication_complete_flow"
+    name: "Complete Authentication Flow"
+    description: "User authenticates with both API key and token to access all greetings"
+    steps:
+      - step: 1
+        action: "navigate_to"
+        target: "/greeting/hello"
+        expected: "page_loads"
+      - step: 2
+        action: "verify_initial_state"
+        target: "greeting_cards"
+        expected: "only_default_greeting_visible"
+      - step: 3
+        action: "input_text"
+        target: "[data-testid='api-key-input']"
+        value: "test-api-key"
+        expected: "api_key_accepted"
+      - step: 4
+        action: "verify_content"
+        target: "[data-testid='good-day-greeting']"
+        expected: "good_day_greeting_appears"
+      - step: 5
+        action: "input_text"
+        target: "[data-testid='auth-token-input']"
+        value: "test-auth-token"
+        expected: "auth_token_accepted"
+      - step: 6
+        action: "verify_content"
+        target: "[data-testid='thank-you-greeting']"
+        expected: "thank_you_greeting_appears"
+      - step: 7
+        action: "verify_badges"
+        target: "[data-testid='status-badges']"
+        expected: "all_badges_active"
+    tests:
+      - test_id: "greeting_e2e_full_authentication"
+        description: "Complete authentication flow with API key and token"
+        type: "e2e_flow"
+        browsers: ["chromium"]
+        expected:
+          completion_time_ms: "<15000"
+          success_rate: "100%"
+          all_greetings_visible: true
+
+  - flow_id: "greeting_personal_greeting_flow"
+    name: "Personal Greeting Flow"
+    description: "User creates personal greetings and navigates to personal page"
+    steps:
+      - step: 1
+        action: "navigate_to"
+        target: "/greeting/hello"
+        expected: "page_loads"
+      - step: 2
+        action: "input_text"
+        target: "[data-testid='personal-name-input']"
+        value: "Alice"
+        expected: "name_input_accepted"
+      - step: 3
+        action: "click_element"
+        target: "[data-testid='get-greeting-button']"
+        expected: "personal_greeting_card_appears"
+      - step: 4
+        action: "verify_content"
+        target: "[data-testid='personal-greeting-card']"
+        expected: "contains_name_alice"
+      - step: 5
+        action: "click_element"
+        target: "[href='/greeting/hello/World']"
+        expected: "navigates_to_world_page"
+      - step: 6
+        action: "verify_url"
+        target: "/greeting/hello/World"
+        expected: "url_contains_world"
+      - step: 7
+        action: "verify_content"
+        target: "page_content"
+        expected: "world_greeting_displayed"
+    tests:
+      - test_id: "greeting_e2e_personal_flow"
+        description: "Personal greeting creation and navigation flow"
+        type: "e2e_flow"
+        browsers: ["chromium", "firefox"]
+        expected:
+          completion_time_ms: "<12000"
+          success_rate: "100%"
+
+  - flow_id: "greeting_logs_management_flow"
+    name: "Logs Management Flow"
+    description: "User navigates and manages log entries with CRUD operations"
+    steps:
+      - step: 1
+        action: "navigate_to"
+        target: "/greeting/logs"
+        expected: "logs_page_loads"
+      - step: 2
+        action: "verify_content"
+        target: "logs_list"
+        expected: "logs_list_visible"
+      - step: 3
+        action: "click_element"
+        target: "[data-testid='create-log-button']"
+        expected: "log_form_opens"
+      - step: 4
+        action: "fill_form"
+        target: "log_form"
+        data: { message: "Test log entry", level: "info" }
+        expected: "form_filled"
+      - step: 5
+        action: "click_element"
+        target: "[data-testid='submit-log-button']"
+        expected: "log_created_successfully"
+      - step: 6
+        action: "verify_content"
+        target: "logs_list"
+        expected: "new_log_appears"
+      - step: 7
+        action: "click_element"
+        target: "[data-testid='log-details-link']"
+        expected: "navigates_to_log_details"
+      - step: 8
+        action: "click_element"
+        target: "[data-testid='edit-log-button']"
+        expected: "edit_form_opens"
+      - step: 9
+        action: "click_element"
+        target: "[data-testid='delete-log-button']"
+        expected: "log_deleted_successfully"
+    tests:
+      - test_id: "greeting_e2e_logs_crud"
+        description: "Complete logs CRUD operations flow"
+        type: "e2e_flow"
+        browsers: ["chromium"]
+        expected:
+          completion_time_ms: "<20000"
+          success_rate: "100%"
+          crud_operations_work: true
+
+  - flow_id: "greeting_logs_pagination_filter_flow"
+    name: "Logs Pagination and Filtering Flow"
+    description: "User navigates through paginated logs and uses filtering features"
+    steps:
+      - step: 1
+        action: "navigate_to"
+        target: "/greeting/logs"
+        expected: "logs_page_loads"
+      - step: 2
+        action: "verify_content"
+        target: "pagination_controls"
+        expected: "pagination_visible"
+      - step: 3
+        action: "click_element"
+        target: "[data-testid='next-page-button']"
+        expected: "page_2_loads"
+      - step: 4
+        action: "verify_url_params"
+        target: "page=2"
+        expected: "url_updated_with_page"
+      - step: 5
+        action: "input_text"
+        target: "[data-testid='search-input']"
+        value: "error"
+        expected: "search_applied"
+      - step: 6
+        action: "select_option"
+        target: "[data-testid='level-filter']"
+        value: "error"
+        expected: "filter_applied"
+      - step: 7
+        action: "verify_content"
+        target: "filtered_logs"
+        expected: "only_error_logs_visible"
+      - step: 8
+        action: "click_element"
+        target: "[data-testid='clear-filters-button']"
+        expected: "filters_cleared"
+    tests:
+      - test_id: "greeting_e2e_logs_navigation"
+        description: "Logs pagination and filtering functionality"
+        type: "e2e_flow"
+        browsers: ["chromium", "firefox"]
+        expected:
+          completion_time_ms: "<15000"
+          success_rate: "100%"
+          pagination_works: true
+          filtering_works: true
+
+  - flow_id: "greeting_responsive_mobile_flow"
+    name: "Mobile Responsive Flow"
+    description: "User accesses greeting app on mobile device and uses core features"
+    steps:
+      - step: 1
+        action: "set_viewport"
+        target: "mobile"
+        size: "375x667"
+        expected: "mobile_viewport_set"
+      - step: 2
+        action: "navigate_to"
+        target: "/greeting/hello"
+        expected: "mobile_page_loads"
+      - step: 3
+        action: "verify_responsive_layout"
+        target: "page_layout"
+        expected: "mobile_friendly_layout"
+      - step: 4
+        action: "scroll_to"
+        target: "auth_form"
+        expected: "auth_form_visible"
+      - step: 5
+        action: "tap_element"
+        target: "[data-testid='api-key-input']"
+        expected: "input_focused_mobile"
+      - step: 6
+        action: "input_text"
+        target: "[data-testid='api-key-input']"
+        value: "mobile-test-key"
+        expected: "mobile_input_works"
+      - step: 7
+        action: "navigate_to"
+        target: "/greeting/logs"
+        expected: "logs_mobile_loads"
+      - step: 8
+        action: "verify_responsive_layout"
+        target: "logs_layout"
+        expected: "mobile_logs_layout"
+    tests:
+      - test_id: "greeting_e2e_mobile_responsive"
+        description: "Mobile responsive design and functionality test"
+        type: "e2e_flow"
+        browsers: ["chromium"]
+        expected:
+          completion_time_ms: "<12000"
+          success_rate: "100%"
+          mobile_optimized: true
+
+# Performance specifications
+performance:
+  metrics:
+    - metric: "first_contentful_paint"
+      target: "<1.5s"
+      priority: "high"
+    - metric: "largest_contentful_paint"
+      target: "<2.5s"
+      priority: "high"
+    - metric: "cumulative_layout_shift"
+      target: "<0.1"
+      priority: "medium"
+    - metric: "first_input_delay"
+      target: "<100ms"
+      priority: "high"
+    - metric: "api_response_time"
+      target: "<1000ms"
+      priority: "high"
+
+# Accessibility specifications
+accessibility:
+  wcag_level: "AA"
+  requirements:
+    - requirement: "keyboard_navigation"
+      description: "All interactive elements keyboard accessible including greeting cards, forms, and navigation"
+    - requirement: "screen_reader_support"
+      description: "Proper ARIA labels for greeting status, authentication states, and log entries"
+    - requirement: "color_contrast"
+      description: "Minimum 4.5:1 contrast ratio for all text including badges and status indicators"
+    - requirement: "focus_indicators"
+      description: "Visible focus indicators on inputs, buttons, and interactive cards"
+    - requirement: "semantic_html"
+      description: "Proper heading hierarchy and semantic markup for greeting content and logs"
+
+# Testing configuration
+testing:
+  unit_tests:
+    framework: "vitest"
+    coverage_threshold: 80
+    test_pattern: "**/*.test.{ts,tsx}"
+  e2e_tests:
+    framework: "playwright"
+    browsers: ["chromium", "firefox", "webkit"]
+    test_pattern: "**/*.e2e.{ts,js}"
+    parallelization: true
+    mobile_testing: true
+    accessibility_testing: true

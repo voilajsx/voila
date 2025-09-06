@@ -1,0 +1,104 @@
+{
+  "_comment": "Optional microservices registry - rename to services.registry.json to enable",
+  "_usage": "If service not listed here, framework defaults to monolithic /api/{serviceName}",
+  
+  "registry": {
+    "user": {
+      "name": "user",
+      "type": "service",
+      "deployment_mode": "microservice",
+      "health_check": "/health",
+      "endpoints": {
+        "monolith": {
+          "baseUrl": "/api/user",
+          "port": 8000,
+          "internal": true
+        },
+        "microservice": {
+          "baseUrl": "https://user-service.company.com",
+          "port": 3002,
+          "internal": false,
+          "discovery": {
+            "enabled": true,
+            "protocol": "http",
+            "path": "/health"
+          }
+        },
+        "development": {
+          "baseUrl": "http://localhost:8001/api/user",
+          "port": 8001,
+          "internal": true
+        }
+      }
+    },
+    "auth": {
+      "name": "auth",
+      "type": "service",
+      "deployment_mode": "microservice", 
+      "health_check": "/health",
+      "endpoints": {
+        "monolith": {
+          "baseUrl": "/api/auth",
+          "port": 8000,
+          "internal": true
+        },
+        "microservice": {
+          "baseUrl": "https://auth-service.company.com",
+          "port": 3003,
+          "internal": false,
+          "discovery": {
+            "enabled": true,
+            "protocol": "http",
+            "path": "/health"
+          }
+        },
+        "development": {
+          "baseUrl": "http://localhost:8002/api/auth",
+          "port": 8002,
+          "internal": true
+        }
+      }
+    }
+  },
+  "environments": {
+    "development": {
+      "default_mode": "monolith",
+      "service_discovery": false,
+      "gateway": {
+        "enabled": false
+      }
+    },
+    "staging": {
+      "default_mode": "microservice",
+      "service_discovery": true,
+      "gateway": {
+        "enabled": true,
+        "url": "https://api-gateway-staging.company.com"
+      }
+    },
+    "production": {
+      "default_mode": "microservice",
+      "service_discovery": true,
+      "gateway": {
+        "enabled": true,
+        "url": "https://api-gateway.company.com"
+      }
+    }
+  },
+  "global_config": {
+    "service_discovery": {
+      "enabled": true,
+      "interval": 30000,
+      "timeout": 5000
+    },
+    "load_balancing": {
+      "default_strategy": "round_robin",
+      "health_check_interval": 10000
+    },
+    "circuit_breaker": {
+      "default_failure_threshold": 5,
+      "default_timeout": 30000,
+      "default_retry_interval": 60000
+    }
+  }
+}

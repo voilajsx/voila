@@ -18,44 +18,78 @@ export interface HelloData {
 export interface HelloResponse {
   success: boolean;
   data: HelloData;
+  error?: string;
 }
+
+// API Error types
+export interface ApiError {
+  message: string;
+  status: number;
+  code?: string;
+}
+
+// Language types
+export type SupportedLanguage = 'english' | 'spanish' | 'french';
 
 // Frontend-specific state types
 export interface GreetingState {
   currentGreeting: HelloResponse | null;
   loading: boolean;
-  error: string | null;
-  selectedLanguage: 'english' | 'spanish' | 'french';
+  error: ApiError | null;
+  selectedLanguage: SupportedLanguage;
 }
 
-export interface AuthDemoState {
+export interface AuthState {
   apiKey: string;
-  isLoggedIn: boolean;
-  userRole: 'user' | 'admin' | null;
-  loginToken: string | null;
+  authToken: string;
+  isAuthenticated: boolean;
 }
 
-// UI Component props
+// UI Component props with better type safety
 export interface GreetingCardProps {
   greeting: HelloResponse;
-  language: 'english' | 'spanish' | 'french';
+  language: SupportedLanguage;
   loading?: boolean;
+  onRetry?: () => void;
 }
 
 export interface LanguageSelectorProps {
-  selectedLanguage: 'english' | 'spanish' | 'french';
-  onLanguageChange: (language: 'english' | 'spanish' | 'french') => void;
+  selectedLanguage: SupportedLanguage;
+  onLanguageChange: (language: SupportedLanguage) => void;
+  disabled?: boolean;
 }
 
-export interface AuthDemoProps {
-  authState: AuthDemoState;
-  onAuthChange: (state: Partial<AuthDemoState>) => void;
+export interface AuthFormProps {
+  onApiKeyChange: (apiKey: string) => void;
+  onAuthTokenChange: (token: string) => void;
+  apiKey: string;
+  authToken: string;
 }
 
-// API service types
-export interface ApiService {
-  getDefaultGreeting(): Promise<HelloResponse>;
-  getGoodDayGreeting(apiKey: string): Promise<HelloResponse>;
-  getThankYouGreeting(token: string): Promise<HelloResponse>;
-  getPersonalizedGreeting(name: string, token: string): Promise<HelloResponse>;
+// React Query types import for actual return types
+import type { UseQueryResult } from '@tanstack/react-query';
+
+// Hook return types
+export interface UseHelloReturn {
+  greetings: {
+    default: UseQueryResult<HelloResponse, Error>;
+    goodDay: UseQueryResult<HelloResponse, Error>;
+    thankYou: UseQueryResult<HelloResponse, Error>;
+  };
+  auth: AuthState & {
+    setApiKey: (key: string) => void;
+    setAuthToken: (token: string) => void;
+  };
+  actions: {
+    getPersonalGreeting: (name: string) => UseQueryResult<HelloResponse, Error> | null;
+    clearCache: () => void;
+    refresh: () => void;
+  };
+  isLoading: boolean;
+  hasError: boolean;
+  isReady: boolean;
+  hasApiKey: boolean;
+  hasAuthToken: boolean;
+  canShowGoodDay: boolean;
+  canShowThankYou: boolean;
 }

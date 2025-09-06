@@ -1,62 +1,114 @@
 /**
- * Hello Feature Hook - Optimized & Clean
+ * Hello Feature Hook - Greeting API integration with caching and validation
+ * @module greeting/hello
  * @file src/web/apps/greeting/features/hello/hooks/useHello.ts
  * 
- * Main hook for Hello feature following Bloom patterns
+ * @llm-rule WHEN: Need greeting functionality with multi-language support and authentication
+ * @llm-rule AVOID: Direct GreetingApi calls - use this hook for consistency and caching
+ * @llm-rule PATTERN: Returns {greetings, auth, actions, computed} structure with React Query integration
+ * @llm-rule NOTE: Matches backend HelloService patterns, uses real auth tokens from .env.auth
  */
 
 import { useCallback, useMemo } from 'react';
-import { useVoilaApi, useVoilaStorage } from '@lib/web-hooks';
+import { useQueryClient } from '@tanstack/react-query';
+import { useVoilaApi, useVoilaStorage } from '../../../../../../lib/web-hooks';
 import { GreetingApi } from '../../../greeting.web.config.js';
+import { AuthTokenHelpers } from '../../../../../../lib/test-auth';
+import type { UseHelloReturn, HelloResponse, ApiError } from '../types/hello';
 
 /**
  * Main Hello Feature Hook - Primary interface
- * Simple, optimized, and follows Bloom patterns
+ * Optimized, type-safe, and follows Bloom patterns
  */
-export function useHello() {
+export function useHello(): UseHelloReturn {
   const api = useVoilaApi(GreetingApi);
-  const [apiKey, setApiKey] = useVoilaStorage('hello-api-key', '');
-  const [authToken, setAuthToken] = useVoilaStorage('hello-auth-token', '');
-
-  // Base queries
-  const defaultGreeting = api.get('/hello');
+  const queryClient = useQueryClient();
   
-  const goodDayGreeting = api.get('/hello/goodday', {
-    headers: apiKey ? { 'X-API-Key': apiKey } : {},
-    enabled: !!apiKey
+  // Load TEST tokens from .env.auth using helper (DEVELOPMENT/TESTING ONLY)
+  // TODO: Replace with real user authentication in production
+  const API_TOKEN = AuthTokenHelpers.getApiToken();
+  const USER_LOGIN_TOKEN = AuthTokenHelpers.getUserToken();
+  const ADMIN_LOGIN_TOKEN = AuthTokenHelpers.getAdminToken();
+
+
+  // Base queries with proper typing and automatic token selection
+  const defaultGreeting = api.get<HelloResponse>('/hello');
+  
+  // /hello/goodday requires API token (WEBHOOK_SERVICE_API_TOKEN)
+  const goodDayGreeting = api.get<HelloResponse>('/hello/goodday', {
+    headers: { 'Authorization': `Bearer ${API_TOKEN}` }
   });
   
-  const thankYouGreeting = api.get('/hello/thankyou', {
-    headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
-    enabled: !!authToken
+  // /hello/thankyou requires any login token (USER_BASIC)
+  const thankYouGreeting = api.get<HelloResponse>('/hello/thankyou', {
+    headers: { 'Authorization': `Bearer ${USER_LOGIN_TOKEN}` }
   });
 
-  // Optimized personalized greeting function
+  /**
+   * Generate personalized greeting with name validation
+   * @llm-rule WHEN: User provides name for personalized greeting
+   * @llm-rule AVOID: Processing empty/invalid names - validate first
+   * @llm-rule PATTERN: URL-encode names and return React Query result
+   */
   const getPersonalGreeting = useCallback((name: string) => {
-    if (!name?.trim()) return null;
-    return api.get(`/hello/${encodeURIComponent(name.trim())}`);
+    const trimmedName = name?.trim() || '';
+    // /hello/:name requires admin.tenant role (ADMIN_TENANT token)
+    return api.get<HelloResponse>(`/hello/${encodeURIComponent(trimmedName || 'anonymous')}`, {
+      headers: { 'Authorization': `Bearer ${ADMIN_LOGIN_TOKEN}` },
+      enabled: !!trimmedName  // Only requires name, token is hardcoded
+    });
   }, [api]);
 
-  // Clear all greeting cache
+  /**
+   * Clear all greeting cache and invalidate queries
+   * @llm-rule WHEN: Need to refresh all cached greeting data
+   * @llm-rule PATTERN: Uses React Query invalidateQueries for cache management
+   */
   const clearCache = useCallback(() => {
     api.invalidateQueries();
   }, [api]);
 
-  // Memoized computed values
+  /**
+   * Refresh all greeting queries with hardcoded tokens
+   * @llm-rule WHEN: User requests manual refresh of greeting data
+   * @llm-rule PATTERN: Refetch all queries since tokens are hardcoded
+   */
+  const refresh = useCallback(() => {
+    defaultGreeting.refetch?.();
+    goodDayGreeting.refetch?.();
+    thankYouGreeting.refetch?.();
+  }, [defaultGreeting.refetch, goodDayGreeting.refetch, thankYouGreeting.refetch]);
+
+  // Memoized computed values for performance
   const computed = useMemo(() => ({
     isLoading: defaultGreeting.isLoading || goodDayGreeting.isLoading || thankYouGreeting.isLoading,
-    hasError: defaultGreeting.error || goodDayGreeting.error || thankYouGreeting.error,
+    hasError: !!(defaultGreeting.error || goodDayGreeting.error || thankYouGreeting.error),
     isReady: !defaultGreeting.isLoading && !defaultGreeting.error,
-    hasApiKey: !!apiKey,
-    hasAuthToken: !!authToken,
-    canShowGoodDay: !!apiKey && !goodDayGreeting.isLoading,
-    canShowThankYou: !!authToken && !thankYouGreeting.isLoading
+    hasApiKey: !!API_TOKEN,
+    hasAuthToken: !!USER_LOGIN_TOKEN,
+    canShowGoodDay: !!API_TOKEN && !goodDayGreeting.isLoading,
+    canShowThankYou: !!USER_LOGIN_TOKEN && !thankYouGreeting.isLoading
   }), [
     defaultGreeting.isLoading, defaultGreeting.error,
     goodDayGreeting.isLoading, goodDayGreeting.error,
-    thankYouGreeting.isLoading, thankYouGreeting.error,
-    apiKey, authToken
+    thankYouGreeting.isLoading, thankYouGreeting.error
   ]);
+
+  // Memoized auth state for performance
+  const auth = useMemo(() => ({
+    apiKey: API_TOKEN,
+    authToken: USER_LOGIN_TOKEN,
+    isAuthenticated: true, // Always authenticated with hardcoded tokens
+    setApiKey: () => {}, // No-op since tokens are hardcoded
+    setAuthToken: () => {} // No-op since tokens are hardcoded
+  }), [API_TOKEN, USER_LOGIN_TOKEN]);
+
+  // Memoized actions for performance
+  const actions = useMemo(() => ({
+    getPersonalGreeting,
+    clearCache,
+    refresh
+  }), [getPersonalGreeting, clearCache, refresh]);
 
   return {
     // Data
@@ -67,23 +119,10 @@ export function useHello() {
     },
     
     // Auth state
-    auth: {
-      apiKey,
-      setApiKey,
-      authToken,
-      setAuthToken
-    },
+    auth,
     
     // Actions
-    actions: {
-      getPersonalGreeting,
-      clearCache,
-      refresh: () => {
-        defaultGreeting.refetch?.();
-        if (apiKey) goodDayGreeting.refetch?.();
-        if (authToken) thankYouGreeting.refetch?.();
-      }
-    },
+    actions,
     
     // Computed state
     ...computed

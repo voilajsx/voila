@@ -1,0 +1,91 @@
+{
+  "app": "{{APP_NAME}}",
+  "type": "web",
+  "enabled": true,
+  "environments": [
+    "development",
+    "staging",
+    "production"
+  ],
+  "features": {},
+  "metadata": {
+    "owner": "{{APP_NAME}} Team",
+    "created": "{{CREATED_DATE}}",
+    "version": "1.0.0"
+  },
+  "api": {
+    "baseUrl": "http://localhost:8000/api/{{APP_NAME}}",
+    "timeout": 30000,
+    "retries": 3,
+    "headers": {
+      "X-App": "{{APP_NAME}}"
+    },
+    "deployment_modes": {
+      "monolith": {
+        "baseUrl": "/api/{{APP_NAME}}",
+        "description": "Same server, proxied requests"
+      },
+      "microservice": {
+        "baseUrl": "${VITE_{{APP_NAME_UPPER}}_SERVICE_URL}",
+        "fallback": "https://{{APP_NAME}}-service.company.com",
+        "description": "Dedicated {{APP_NAME}} microservice"
+      },
+      "development": {
+        "baseUrl": "http://localhost:8000/api/{{APP_NAME}}",
+        "description": "Local development server"
+      }
+    },
+    "environments": {
+      "development": {
+        "mode": "development",
+        "baseUrl": "http://localhost:8000/api/{{APP_NAME}}"
+      },
+      "staging": {
+        "mode": "microservice", 
+        "baseUrl": "https://{{APP_NAME}}-staging.company.com"
+      },
+      "production": {
+        "mode": "microservice",
+        "baseUrl": "https://{{APP_NAME}}-service.company.com"
+      }
+    },
+    "runtime_switching": {
+      "enabled": true,
+      "available_modes": ["monolith", "microservice", "development"],
+      "default_mode": "development"
+    }
+  },
+  "web_compliance": {
+    "enabled": true,
+    "last_test_run": null,
+    "total_checks": 0,
+    "passed_checks": 0,
+    "failed_checks": 0,
+    "success_rate": "0%",
+    "overall_status": "NOT_TESTED",
+    "requirements_met": false,
+    "issues": [],
+    "updated_at": null
+  },
+  "testing": {
+    "unit": {
+      "framework": "vitest",
+      "coverage": {
+        "enabled": true,
+        "threshold": 80
+      }
+    },
+    "e2e": {
+      "framework": "playwright",
+      "browsers": ["chromium", "firefox", "webkit"],
+      "baseUrl": "http://localhost:3000",
+      "excel_driven": true
+    }
+  },
+  "build": {
+    "target": "es2020",
+    "outDir": "dist/web/{{APP_NAME}}",
+    "sourcemap": true,
+    "minify": true
+  }
+}

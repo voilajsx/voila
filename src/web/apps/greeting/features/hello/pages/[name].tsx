@@ -1,157 +1,172 @@
 /**
  * Dynamic Name Greeting Page - Handles /greeting/hello/:name routes
- * @file src/web/apps/greeting/features/hello/pages/hello-name.tsx
+ * @file src/web/apps/greeting/features/hello/pages/[name].tsx
  */
 
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Card, Button, Alert } from '@voilajsx/uikit';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, Button } from '@voilajsx/uikit';
+import { useVoilaApi } from '../../../../../../lib/web-hooks';
+import { GreetingApi } from '../../../greeting.web.config.js';
+import { useRouteParam } from '../../../../../../lib/web-routes';
+import { AuthTokenHelpers } from '../../../../../../lib/test-auth';
+import type { HelloResponse } from '../types/hello';
+
+const GreetingDisplay: React.FC<{ greeting: HelloResponse; name: string; dayMessage: string }> = ({ 
+  greeting, 
+  name, 
+  dayMessage 
+}) => (
+  <div className="text-center space-y-4">
+    <div className="text-6xl">👋</div>
+    <div className="space-y-1">
+      <p className="text-lg text-muted-foreground">Hello, <strong>{name}</strong>!</p>
+      <p className="text-base text-blue-600 font-medium">{dayMessage}</p>
+    </div>
+  </div>
+);
 
 const HelloNamePage: React.FC = () => {
-  const location = useLocation();
-  const [greeting, setGreeting] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
+  // Extract name from route parameter using proper hook
+  const name = useRouteParam('name', undefined, 'World');
   
-  // Extract name from URL path
-  const pathSegments = location.pathname.split('/').filter(s => s.length > 0);
-  const name = pathSegments[2] || 'World'; // /greeting/hello/:name
   
-  const fetchPersonalGreeting = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch(`/api/greeting/hello/${encodeURIComponent(name)}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      setGreeting(data.message || `Hello, ${name}!`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch greeting');
-    } finally {
-      setLoading(false);
+  // Day selection state
+  const [selectedDay, setSelectedDay] = useState('');
+  const [dayError, setDayError] = useState('');
+  
+  // Valid days of the week
+  const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  
+  // Direct API call for personalized greeting only
+  // TODO: Replace with real user authentication in production
+  const api = useVoilaApi(GreetingApi);
+  const ADMIN_LOGIN_TOKEN = AuthTokenHelpers.getAdminToken(); // TEST TOKEN ONLY
+  
+  // Get personalized greeting using direct API call
+  const personalGreeting = api.get<HelloResponse>(`/hello/${encodeURIComponent(name || 'World')}`, {
+    headers: { 'Authorization': `Bearer ${ADMIN_LOGIN_TOKEN}` }
+  });
+  
+  // Generate day message
+  const dayMessage = selectedDay 
+    ? `It's ${selectedDay}! Hope you have a wonderful day!`
+    : 'Have a nice day!';
+  
+  // Validation functions
+  const validateDay = (day: string): string | null => {
+    if (!day) return null;
+    
+    // Check if input contains numbers
+    if (/\d/.test(day)) {
+      return 'Numeric values not allowed. Please enter a day name.';
     }
+    
+    // Check if it's a valid day of the week
+    if (!validDays.includes(day)) {
+      return 'Please enter a valid day (Monday to Sunday)';
+    }
+    
+    return null;
   };
-
-  useEffect(() => {
-    if (name) {
-      fetchPersonalGreeting();
+  
+  // Handle form submission
+  const handleDaySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const inputDay = (formData.get('day') as string)?.trim();
+    
+    const error = validateDay(inputDay);
+    if (error) {
+      setDayError(error);
+      return;
     }
-  }, [name]);
+    
+    setDayError('');
+    setSelectedDay(inputDay);
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-foreground">
-            👋 Personal Greeting
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Special greeting for <span className="font-semibold text-primary">{name}</span>
-          </p>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-foreground">Personal Greeting</h1>
+          <p className="text-muted-foreground">Hello {name}! Select a day for a personalized message.</p>
         </div>
+
+        {/* Day Selection Form */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4">Enter Day of the Week</h3>
+          
+          <div className="space-y-4">
+            <form onSubmit={handleDaySubmit} className="flex space-x-2">
+              <input
+                name="day"
+                type="text"
+                placeholder="Enter a day (e.g., Monday, Tuesday...)"
+                className="flex-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Button type="submit">Set Day</Button>
+            </form>
+            
+            {dayError && (
+              <div className="text-red-600 text-sm mt-2">{dayError}</div>
+            )}
+            
+            {selectedDay && (
+              <div className="text-green-600 text-sm mt-2">
+                ✅ Day set to: <strong>{selectedDay}</strong>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Greeting Display */}
+        <Card className="p-6">
+          {personalGreeting.isLoading && (
+            <div className="text-center py-8">
+              <p>Loading greeting for {name}...</p>
+            </div>
+          )}
+          
+          {personalGreeting.error && (
+            <div className="text-center py-8 text-red-600">
+              <p>Failed to load greeting for {name}</p>
+              <Button onClick={() => personalGreeting.refetch?.()} className="mt-2">
+                Try Again
+              </Button>
+            </div>
+          )}
+          
+          {personalGreeting.data && (
+            <GreetingDisplay 
+              greeting={personalGreeting.data} 
+              name={name} 
+              dayMessage={dayMessage}
+            />
+          )}
+        </Card>
+
 
         {/* Navigation */}
         <div className="flex justify-center space-x-4">
-          <Link to="/">
-            <Button>← Home</Button>
-          </Link>
-          <Link to="/greeting">
-            <Button>← Greeting Home</Button>
-          </Link>
           <Link to="/greeting/hello">
-            <Button>← Hello Feature</Button>
+            <Button variant="outline">← Back</Button>
           </Link>
+          <Button onClick={() => personalGreeting.refetch?.()} variant="outline">
+            🔄 Refresh
+          </Button>
+          <Button 
+            onClick={() => {
+              setSelectedDay('');
+              setDayError('');
+            }}
+            variant="outline"
+          >
+            Clear Day
+          </Button>
         </div>
-
-        {/* Greeting Display */}
-        <Card className="p-8">
-          <div className="text-center space-y-6">
-            {loading && (
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            )}
-            
-            {error && (
-              <Alert className="text-red-600 bg-red-50 border-red-200">
-                Error: {error}
-              </Alert>
-            )}
-            
-            {!loading && !error && greeting && (
-              <div className="space-y-4">
-                <div className="text-6xl">🎯</div>
-                <h2 className="text-3xl font-bold text-foreground">
-                  {greeting}
-                </h2>
-                <p className="text-lg text-muted-foreground">
-                  Personalized greeting from <code>/api/greeting/hello/{name}</code>
-                </p>
-              </div>
-            )}
-            
-            <Button 
-              onClick={fetchPersonalGreeting}
-              disabled={loading}
-              className="mt-6"
-            >
-              {loading ? 'Loading...' : '🔄 Refresh Greeting'}
-            </Button>
-          </div>
-        </Card>
-
-        {/* API Info */}
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">Dynamic Route Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">Route Information</h4>
-              <div className="space-y-1 text-sm text-blue-800">
-                <p><strong>Pattern:</strong> <code>/greeting/hello/:name</code></p>
-                <p><strong>Current Path:</strong> <code>{location.pathname}</code></p>
-                <p><strong>Extracted Name:</strong> <code>{name}</code></p>
-                <p><strong>API Endpoint:</strong> <code>/api/greeting/hello/{name}</code></p>
-              </div>
-            </div>
-            
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h4 className="font-medium text-green-900 mb-2">Try Different Names</h4>
-              <div className="space-y-2 text-sm">
-                <Link to="/greeting/hello/john" className="block text-green-700 hover:text-green-900">
-                  → /greeting/hello/john
-                </Link>
-                <Link to="/greeting/hello/sarah" className="block text-green-700 hover:text-green-900">
-                  → /greeting/hello/sarah
-                </Link>
-                <Link to="/greeting/hello/world" className="block text-green-700 hover:text-green-900">
-                  → /greeting/hello/world
-                </Link>
-                <Link to="/greeting/hello/developer" className="block text-green-700 hover:text-green-900">
-                  → /greeting/hello/developer
-                </Link>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* URL Pattern Info */}
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">How Dynamic Routing Works</h3>
-          <div className="bg-gray-50 p-4 rounded-lg text-sm">
-            <p className="mb-2">
-              <strong>URL Pattern:</strong> Any URL matching <code>/greeting/hello/[anything]</code> will load this component.
-            </p>
-            <p className="mb-2">
-              <strong>Name Extraction:</strong> The component extracts the name from <code>location.pathname</code> using URL splitting.
-            </p>
-            <p>
-              <strong>API Integration:</strong> Makes a personalized API call to <code>/api/greeting/hello/{`{name}`}</code> for dynamic responses.
-            </p>
-          </div>
-        </Card>
       </div>
     </div>
   );

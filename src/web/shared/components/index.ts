@@ -1,11 +1,8 @@
 /**
- * Shared Components - Used across multiple apps
+ * Global Shared Components for Web Apps
  * @file src/web/shared/components/index.ts
+ * 
+ * Reusable components available to all web apps (greeting, admin, lovable, main)
  */
 
-// Example shared components would be exported here
-// export { Button } from './Button';
-// export { Modal } from './Modal';
-// export { Layout } from './Layout';
-
-export {};
+export { ErrorBoundary, ErrorDisplay, LoadingDisplay, EmptyState } from './ErrorBoundary';

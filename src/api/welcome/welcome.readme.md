@@ -103,7 +103,7 @@ npm run test app:api welcome
 
 ## Configuration
 
-The API behavior can be configured through `welcome.config.json`.
+The API behavior can be configured through `welcome.api.config.json`.
 
 ## Compliance
 

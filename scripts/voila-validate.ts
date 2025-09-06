@@ -14,6 +14,7 @@ import { spawn } from 'child_process';
 import { readdirSync, statSync, existsSync } from 'fs';
 import fs from 'fs';
 import { validateContracts } from '../src/lib/contracts.js';
+import { validateAllWebApps } from '../src/lib/web-discovery.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -117,6 +118,18 @@ async function main() {
       }
       
       await validateApp(appName, featureName, skimMode);
+    } else if (prefix === 'app' && action === 'web') {
+      // Web app validation
+      let appName: string | undefined;
+      
+      if (target) {
+        appName = target;
+        console.log(`🎯 Target: Web App '${appName}'`);
+      } else {
+        console.log(`🎯 Target: All web apps`);
+      }
+      
+      await validateWebApp(appName, skimMode);
     } else {
       console.log(`❌ Unknown command: ${command}`);
       showHelp();
@@ -127,6 +140,53 @@ async function main() {
     if (process.env.DEBUG) {
       console.error(error.stack);
     }
+    process.exit(1);
+  }
+}
+
+async function validateWebApp(appName?: string, skimMode: boolean = false) {
+  const webPath = join(__dirname, '..', 'src', 'web');
+  let allValidationsPassed = true;
+  let totalErrors = 0;
+  let totalWarnings = 0;
+
+  // Step 1: Web Contract Validation
+  console.log('📋 Step 1: Web Contract Validation');
+  try {
+    const webResult = await validateAllWebApps(webPath);
+    
+    if (webResult.success) {
+      console.log(`✅ Web contracts validation passed`);
+      console.log(`📊 Stats: ${webResult.stats?.apps || 0} apps, ${webResult.stats?.features || 0} features`);
+    } else {
+      console.log(`❌ Web contracts validation failed`);
+      allValidationsPassed = false;
+      
+      if (webResult.errors?.length) {
+        totalErrors += webResult.errors.length;
+        webResult.errors.forEach((error: string) => console.log(`   ❌ ${error}`));
+      }
+      
+      if (webResult.warnings?.length) {
+        totalWarnings += webResult.warnings.length;
+        webResult.warnings.forEach((warning: string) => console.log(`   ⚠️  ${warning}`));
+      }
+    }
+  } catch (error: any) {
+    console.log(`❌ Web contract validation failed: ${error.message}`);
+    allValidationsPassed = false;
+    totalErrors++;
+  }
+
+  console.log('\n🏁 Web Validation Summary');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  if (allValidationsPassed) {
+    console.log('✅ All web validations passed!');
+    console.log(`📊 Summary: ${totalWarnings} warnings`);
+  } else {
+    console.log('❌ Some web validations failed');
+    console.log(`📊 Summary: ${totalErrors} errors, ${totalWarnings} warnings`);
     process.exit(1);
   }
 }
@@ -461,22 +521,28 @@ async function validateSyntax(apiPath: string, appName?: string, featureName?: s
 
 function showHelp() {
   console.log(`
-🔍 Voila Contract Validation - Comprehensive API Validation Suite
+🔍 Voila Contract Validation - Comprehensive API & Web Validation Suite
 
 USAGE:
   npm run validate app:api [app-name[/feature-name]] [--skim]
+  npm run validate app:web [app-name] [--skim]
 
 COMMANDS:
   app:api [target]       Validate app API structure and contracts
+  app:web [app-name]     Validate web app structure and contracts
 
 FLAGS:
   --skim                 Skip contracts and tests, only check comments and types
 
 EXAMPLES:
-  npm run validate app:api                    # Validate all apps
-  npm run validate app:api converter          # Validate specific app (all features)
-  npm run validate app:api converter/currency # Validate specific feature only
-  npm run validate app:api welcome -- --skim  # Quick validation: comments and types only
+  npm run validate app:api                    # Validate all API apps
+  npm run validate app:api converter          # Validate specific API app (all features)
+  npm run validate app:api converter/currency # Validate specific API feature only
+  npm run validate app:api welcome -- --skim  # Quick API validation: comments and types only
+  
+  npm run validate app:web                    # Validate all web apps
+  npm run validate app:web greeting           # Validate specific web app
+  npm run validate app:web greeting -- --skim # Quick web validation
 
 VALIDATION PIPELINE:
   📋 Step 1: Contract Validation (skipped in --skim mode)

@@ -1479,7 +1479,7 @@ export async function validateAllApps(apiPath: string): Promise<ValidationResult
  */
 export function isFeatureEnabled(apiPath: string, appName: string, featureName: string, environment: string = 'development'): boolean {
   try {
-    const configPath = join(apiPath, appName, `${appName}.config.json`);
+    const configPath = join(apiPath, appName, `${appName}.api.config.json`);
     const configContent = readFileSync(configPath, 'utf-8');
     const config: VoilaAppConfig = JSON.parse(configContent);
     

@@ -55,7 +55,7 @@ export function getAppConfig(appName: string, environment?: string): {
   
   try {
     // Load config file
-    const configPath = path.join(__dirname, '..', 'api', appName, `${appName}.config.json`);
+    const configPath = path.join(__dirname, '..', 'api', appName, `${appName}.api.config.json`);
     const configData = fs.readFileSync(configPath, 'utf8');
     const config: AppConfig = JSON.parse(configData);
     
@@ -132,7 +132,7 @@ export function buildApiUrl(appName: string, endpoint: string, environment?: str
  */
 export function getAppEnvironments(appName: string): string[] {
   try {
-    const configPath = path.join(__dirname, '..', 'api', appName, `${appName}.config.json`);
+    const configPath = path.join(__dirname, '..', 'api', appName, `${appName}.api.config.json`);
     const configData = fs.readFileSync(configPath, 'utf8');
     const config: AppConfig = JSON.parse(configData);
     return Object.keys(config.api || {});
@@ -169,7 +169,7 @@ export function validateAppConfig(appName: string): { valid: boolean; errors: st
   const warnings: string[] = [];
   
   try {
-    const configPath = path.join(__dirname, '..', 'api', appName, `${appName}.config.json`);
+    const configPath = path.join(__dirname, '..', 'api', appName, `${appName}.api.config.json`);
     const configData = fs.readFileSync(configPath, 'utf8');
     const config: AppConfig = JSON.parse(configData);
     

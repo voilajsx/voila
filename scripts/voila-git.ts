@@ -120,6 +120,8 @@ dist/
 .env.local
 .voila-cache/
 .voila-server.pid
+.voila-api.pid
+.voila-web.pid
 
 # IDE
 .vscode/
@@ -244,8 +246,8 @@ async function commitChanges(target: string, customMessage?: string, args: strin
   // Run validation
   console.log('🔍 Running validation...');
   try {
-    await execAsync(`npm run validate app:api ${appName}`);
-    console.log('✅ Validation passed');
+    await execAsync('npm run validate');
+    console.log('✅ Validation passed (API + Web)');
   } catch (error: any) {
     throw new Error(`Validation failed: ${error.message}`);
   }
@@ -316,8 +318,8 @@ async function pushBranch(target: string): Promise<void> {
   // Final validation
   console.log('🔍 Final validation...');
   try {
-    await execAsync(`npm run validate app:api ${appName}`);
-    console.log('✅ Validation passed');
+    await execAsync('npm run validate');
+    console.log('✅ Validation passed (API + Web)');
   } catch (error: any) {
     throw new Error(`Validation failed: ${error.message}`);
   }
@@ -401,8 +403,8 @@ async function mergeBranch(appName: string): Promise<void> {
   try {
     // Run validation first
     console.log('🔍 Running validation...');
-    await execAsync(`npm run validate app:api ${appName}`);
-    console.log('✅ Validation passed');
+    await execAsync('npm run validate');
+    console.log('✅ Validation passed (API + Web)');
     
     // Switch to development and pull latest
     await execAsync('git checkout development');
@@ -421,8 +423,8 @@ async function mergeBranch(appName: string): Promise<void> {
     
     // Run post-merge validation
     console.log('🔍 Running post-merge validation...');
-    await execAsync(`npm run validate app:api ${appName}`);
-    console.log('✅ Post-merge validation passed');
+    await execAsync('npm run validate');
+    console.log('✅ Post-merge validation passed (API + Web)');
     
     console.log('\\n💡 Next steps:');
     console.log(`   1. Test the merged code on development branch`);
@@ -564,7 +566,7 @@ COMMIT TYPES (Conventional Commits):
   --chore      Maintenance, refactoring, dependencies
 
 VALIDATION:
-  ✅ Runs 'npm run validate app:api <app>' before commit/push
+  ✅ Runs 'npm run validate' (API + Web) before commit/push
   ✅ Prevents broken code in Git history
   ✅ Conventional commit messages for clear history
   ✅ Easy filtering: git log --grep="feat(" --oneline

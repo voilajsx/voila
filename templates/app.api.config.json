@@ -1,0 +1,28 @@
+{
+  "app": "{{APP_NAME}}",
+  "type": "api",
+  "enabled": true,
+  "environments": [
+    "development",
+    "staging",
+    "production"
+  ],
+  "features": {},
+  "metadata": {
+    "owner": "{{APP_NAME}} Team",
+    "created": "{{CREATED_DATE}}",
+    "version": "1.0.0"
+  },
+  "api_compliance": {
+    "enabled": true,
+    "last_test_run": null,
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "success_rate": "0%",
+    "overall_status": "NOT_TESTED",
+    "requirements_met": false,
+    "test_results_file": null,
+    "updated_at": null
+  }
+}

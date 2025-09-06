@@ -1,0 +1,272 @@
+# {{APP_NAME}} Web Application Specification
+# Web interface specification for pages, components, and user flows
+# Generated: {{CREATED_DATE}}
+
+app_info:
+  name: "{{APP_NAME}}"
+  type: "web"
+  description: "Frontend web application specification"
+  version: "1.0.0"
+  base_path: "/{{APP_NAME}}"
+
+# Page specifications
+pages:
+  - page_id: "{{APP_NAME}}_home"
+    path: "/{{APP_NAME}}"
+    component: "root.tsx"
+    title: "{{APP_NAME}} - Home"
+    description: "Main landing page for {{APP_NAME}} application"
+    auth_required: false
+    seo:
+      title: "{{APP_NAME}} Application"
+      description: "Welcome to {{APP_NAME}} - built with Voila Web Framework"
+      keywords: ["{{APP_NAME}}", "web", "application"]
+    tests:
+      - test_id: "{{APP_NAME}}_home_load"
+        description: "Page loads successfully with correct title"
+        type: "page_load"
+        expected:
+          status: "success"
+          title_contains: "{{APP_NAME}}"
+          load_time_ms: "<3000"
+      - test_id: "{{APP_NAME}}_home_content"
+        description: "Page displays welcome content and navigation"
+        type: "content_validation"
+        expected:
+          elements_present: ["welcome_message", "navigation", "features_list"]
+          responsive: true
+          accessibility: "wcag_aa"
+
+# Component specifications  
+components:
+  - component_id: "{{APP_NAME}}_layout"
+    name: "AppLayout"
+    type: "layout"
+    description: "Main layout wrapper for {{APP_NAME}} pages"
+    props:
+      - name: "children"
+        type: "ReactNode"
+        required: true
+      - name: "title"
+        type: "string"
+        required: false
+    tests:
+      - test_id: "{{APP_NAME}}_layout_render"
+        description: "Layout renders children correctly"
+        type: "component_render"
+        input:
+          children: "<div>Test Content</div>"
+          title: "Test Page"
+        expected:
+          renders: true
+          contains_text: "Test Content"
+          has_title: "Test Page"
+
+# Hook specifications
+hooks:
+  - hook_id: "{{APP_NAME}}_main"
+    name: "use{{APP_NAME_UPPER}}"
+    description: "Main hook for {{APP_NAME}} functionality"
+    returns:
+      - name: "data"
+        type: "object"
+        description: "Main application data"
+      - name: "loading"
+        type: "boolean"
+        description: "Loading state indicator"
+      - name: "error"
+        type: "Error | null"
+        description: "Error state if any"
+      - name: "actions"
+        type: "object"
+        description: "Available actions"
+    tests:
+      - test_id: "{{APP_NAME}}_hook_initial"
+        description: "Hook returns correct initial state"
+        type: "hook_test"
+        expected:
+          data: "null"
+          loading: false
+          error: "null"
+          actions: "object"
+
+# API Integration specifications
+api_integration:
+  base_url: "http://localhost:8000/api/{{APP_NAME}}"
+  endpoints:
+    - endpoint_id: "{{APP_NAME}}_health"
+      path: "/health"
+      method: "GET"
+      description: "Health check endpoint"
+      component_usage: ["AppLayout", "HealthIndicator"]
+      tests:
+        - test_id: "{{APP_NAME}}_api_health"
+          description: "Health endpoint returns success"
+          type: "api_integration"
+          expected:
+            status: 200
+            response_time_ms: "<1000"
+            response_body:
+              status: "healthy"
+
+# Excel-driven E2E workflows for business-friendly testing
+excel_workflows:
+  - workflow_id: "WF001"
+    name: "Basic Page Loading"
+    description: "Verify {{APP_NAME}} page loads with correct content and SEO"
+    feature: "main"
+    test_cases:
+      - test_id: "TC001"
+        flow_step: 1
+        route: "/{{APP_NAME}}"
+        action: "navigate"
+        input: "-"
+        expected: "Page loads successfully with correct title"
+        type: "page_load"
+      - test_id: "TC002"
+        flow_step: 2
+        route: "/{{APP_NAME}}"
+        action: "verify_content"
+        input: "-"
+        expected: "Main content visible"
+        type: "content_check"
+      - test_id: "TC003"
+        flow_step: 3
+        route: "/{{APP_NAME}}"
+        action: "verify_responsive"
+        input: "-"
+        expected: "Mobile responsive layout"
+        type: "responsive_check"
+
+  - workflow_id: "WF002"
+    name: "User Interaction Flow"
+    description: "Test main user interactions and form submissions"
+    feature: "main"
+    test_cases:
+      - test_id: "TC004"
+        flow_step: 1
+        route: "/{{APP_NAME}}"
+        action: "fill_form"
+        input: "test_data"
+        expected: "Form accepts input"
+        type: "form_input"
+      - test_id: "TC005"
+        flow_step: 2
+        route: "/{{APP_NAME}}"
+        action: "submit_form"
+        input: "-"
+        expected: "Form submits successfully"
+        type: "form_action"
+      - test_id: "TC006"
+        flow_step: 3
+        route: "/{{APP_NAME}}"
+        action: "verify_result"
+        input: "-"
+        expected: "Success message appears"
+        type: "result_check"
+
+  - workflow_id: "WF003"
+    name: "Navigation Flow"
+    description: "Test navigation between different pages and routes"
+    feature: "navigation"
+    test_cases:
+      - test_id: "TC007"
+        flow_step: 1
+        route: "/{{APP_NAME}}"
+        action: "click_link"
+        input: "about"
+        expected: "Navigate to about page"
+        type: "navigation"
+      - test_id: "TC008"
+        flow_step: 2
+        route: "/{{APP_NAME}}/about"
+        action: "verify_page"
+        input: "-"
+        expected: "About page content visible"
+        type: "page_check"
+      - test_id: "TC009"
+        flow_step: 3
+        route: "/{{APP_NAME}}/about"
+        action: "navigate_back"
+        input: "-"
+        expected: "Return to main page"
+        type: "navigation"
+
+# E2E Test flows
+  - flow_id: "{{APP_NAME}}_basic_navigation"
+    name: "Basic Navigation Flow"
+    description: "User can navigate through main application areas"
+    steps:
+      - step: 1
+        action: "navigate_to"
+        target: "/{{APP_NAME}}"
+        expected: "page_loads"
+      - step: 2
+        action: "click_element"
+        target: "[data-testid='features-link']"
+        expected: "navigation_occurs"
+      - step: 3
+        action: "verify_content"
+        target: "page_content"
+        expected: "features_visible"
+    tests:
+      - test_id: "{{APP_NAME}}_e2e_navigation"
+        description: "Complete navigation flow works end-to-end"
+        type: "e2e_flow"
+        browsers: ["chromium", "firefox", "webkit"]
+        expected:
+          completion_time_ms: "<10000"
+          success_rate: "100%"
+
+# Performance specifications
+performance:
+  metrics:
+    - metric: "first_contentful_paint"
+      target: "<1.5s"
+      priority: "high"
+    - metric: "largest_contentful_paint" 
+      target: "<2.5s"
+      priority: "high"
+    - metric: "cumulative_layout_shift"
+      target: "<0.1"
+      priority: "medium"
+    - metric: "first_input_delay"
+      target: "<100ms"
+      priority: "high"
+
+# Accessibility specifications
+accessibility:
+  wcag_level: "AA"
+  requirements:
+    - requirement: "keyboard_navigation"
+      description: "All interactive elements keyboard accessible"
+    - requirement: "screen_reader_support"
+      description: "Proper ARIA labels and semantic HTML"
+    - requirement: "color_contrast"
+      description: "Minimum 4.5:1 contrast ratio"
+    - requirement: "focus_indicators"
+      description: "Visible focus indicators on all interactive elements"
+
+# Build and deployment specifications
+build:
+  target: "es2020"
+  bundle_size_target: "<500kb"
+  tree_shaking: true
+  code_splitting: true
+  
+deployment:
+  type: "static"
+  platforms: ["vercel", "netlify", "s3"]
+  environments: ["development", "staging", "production"]
+
+# Testing configuration
+testing:
+  unit_tests:
+    framework: "vitest"
+    coverage_threshold: 80
+    test_pattern: "**/*.test.{ts,tsx}"
+  e2e_tests:
+    framework: "playwright"
+    browsers: ["chromium", "firefox", "webkit"]
+    test_pattern: "**/*.e2e.{ts,js}"
+    parallelization: true

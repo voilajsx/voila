@@ -13,9 +13,10 @@ import { createAppApiClient, type AppApiConfig } from '@lib/web-api.js';
  * Configure URL based on deployment architecture:
  * - Monolith: /api/greeting (same server)
  * - Microservice: https://greeting-service.company.com
+ * - Development: Direct to API server without proxy
  */
 export const greetingApiConfig: AppApiConfig = {
-  baseUrl: import.meta.env.VITE_GREETING_API_URL || '/api/greeting',
+  baseUrl: import.meta.env.VITE_GREETING_API_URL || 'http://localhost:8000/api/greeting',
   retries: 3,
   timeout: 5000,
   headers: {

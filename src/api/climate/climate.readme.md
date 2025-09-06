@@ -55,7 +55,7 @@ npm run test all climate
 
 ## Configuration
 
-The API behavior can be configured through `climate.config.json`.
+The API behavior can be configured through `climate.api.config.json`.
 
 ## Compliance
 

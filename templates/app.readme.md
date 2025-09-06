@@ -55,7 +55,7 @@ npm run test all {{APP_NAME}}
 
 ## Configuration
 
-The API behavior can be configured through `{{APP_NAME}}.config.json`.
+The API behavior can be configured through `{{APP_NAME}}.api.config.json`.
 
 ## Compliance
 

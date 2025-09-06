@@ -12,6 +12,7 @@
 import 'dotenv/config';
 
 import express from 'express';
+import cors from 'cors';
 import { createServer } from 'http';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -22,6 +23,9 @@ import { contractRegistry, validateAllApps, isFeatureEnabled } from './lib/contr
 
 // Web integration system
 import { getWebDiscovery, validateAllWebApps } from './lib/web-discovery.js';
+
+// Service proxy system for microservices
+import { createServiceProxyMiddleware } from './lib/service-proxy.js';
 
 /**
  * Extended Express Request interface for VoilaJSX AppKit integration
@@ -108,10 +112,26 @@ logger.info('Server configuration loaded', {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 2. Security middleware - rate limiting, CORS, helmet functionality
+// 2. CORS middleware - enable cross-origin requests
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173', 
+    'http://localhost:5174',
+    'http://localhost:8000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-App']
+}));
+
+// 3. Security middleware - rate limiting, helmet functionality  
 app.use('/api', security.requests(100, 900000)); // 100 requests per 15 minutes
 
-// 3. Request logging and tracing middleware
+// 4. Service proxy middleware - handle microservice routing BEFORE regular routes
+app.use(createServiceProxyMiddleware());
+
+// 5. Request logging and tracing middleware
 app.use((req, res, next) => {
   // Generate unique request ID for tracing
   req.requestId = util.uuid();
@@ -199,7 +219,7 @@ const initializeContracts = async (): Promise<void> => {
     const apiResult = await validateAllApps(apiPath);
     
     // Validate Web contracts
-    const webPath = join(__dirname, 'web', 'apps');
+    const webPath = join(__dirname, 'web');
     const webResult = await validateAllWebApps(webPath);
     
     // Fail fast on contract violations - prevents invalid deployment

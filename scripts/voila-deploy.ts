@@ -93,8 +93,8 @@ async function checkFlyctlInstalled(): Promise<void> {
 
 async function runValidation(): Promise<void> {
   try {
-    await execAsync('npm run validate app:api');
-    console.log('✅ Validation passed');
+    await execAsync('npm run validate');
+    console.log('✅ Validation passed (API + Web)');
   } catch (error: any) {
     throw new Error(`Validation failed: ${error.message}`);
   }
@@ -135,8 +135,9 @@ async function checkGitStatus(environment: 'staging' | 'production'): Promise<vo
 
 async function buildProject(): Promise<void> {
   try {
+    console.log('🏗️ Building API and Web...');
     await execAsync('npm run build');
-    console.log('✅ Build completed');
+    console.log('✅ Build completed (API + Web)');
   } catch (error: any) {
     throw new Error(`Build failed: ${error.message}`);
   }
@@ -159,6 +160,29 @@ async function deployWithFlyctl(environment: 'staging' | 'production'): Promise<
   }
   
   console.log('✅ Deployment completed');
+  
+  // Basic health check
+  console.log('🏥 Running health check...');
+  await performHealthCheck(environment);
+}
+
+async function performHealthCheck(environment: string): Promise<void> {
+  try {
+    // Wait a moment for deployment to settle
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    const { stdout: statusJson } = await execAsync('flyctl status --json');
+    const app = JSON.parse(statusJson);
+    
+    if (app.Status === 'running') {
+      console.log('✅ Health check passed - app is running');
+    } else {
+      console.log(`⚠️  Health check warning - app status: ${app.Status}`);
+    }
+  } catch (error) {
+    console.log('⚠️  Health check failed, but deployment may still be successful');
+    console.log('💡 Check status manually with: flyctl status');
+  }
 }
 
 async function showDeploymentInfo(environment: 'staging' | 'production'): Promise<void> {
@@ -201,11 +225,12 @@ EXAMPLES:
 
 WORKFLOW:
   1. Validates flyctl is installed
-  2. Runs Voila validation (npm run validate app:api)
+  2. Runs Voila validation (API + Web contracts)
   3. Checks git status and branch safety
-  4. Builds project (npm run build)
+  4. Builds project (API + Web together)
   5. Deploys with flyctl deploy
-  6. Shows deployment info and next steps
+  6. Runs basic health check
+  7. Shows deployment info and next steps
 
 REQUIREMENTS:
   ✅ flyctl installed (curl -L https://fly.io/install.sh | sh)

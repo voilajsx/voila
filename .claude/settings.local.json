@@ -11,7 +11,11 @@
       "Bash(npm start)",
       "Bash(npx tsc:*)",
       "Bash(npx prisma generate:*)",
-      "Bash(NODE_ENV=production npm start)"
+      "Bash(NODE_ENV=production npm start)",
+      "Bash(npx tsx:*)",
+      "Bash(sed:*)",
+      "Bash(npx typedoc:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

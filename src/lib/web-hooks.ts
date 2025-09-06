@@ -99,12 +99,30 @@ export function useVoilaApi(apiClient: VoilaApiClient) {
     return useQuery<T>({
       queryKey: ['voila-api', apiClient.constructor.name, endpoint, headers],
       queryFn: async () => {
+        console.log(`🚀 [API GET Request]`, {
+          endpoint,
+          headers,
+          fullUrl: `${apiClient.constructor.name}${endpoint}`,
+          actualUrl: `Direct to API server: localhost:8000/api/greeting${endpoint}`,
+          timestamp: new Date().toISOString()
+        });
         const response = await apiClient.get<T>(endpoint, { headers });
+        console.log(`📨 [API GET Response]`, {
+          endpoint,
+          success: response.success,
+          status: response.status,
+          error: response.error,
+          hasData: !!response.data,
+          fullResponse: response,
+          timestamp: new Date().toISOString()
+        });
         if (!response.success) {
           throw new Error(response.error || 'API request failed');
         }
         return response.data!;
       },
+      retry: 3, // Limit to 3 retries
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff: 1s, 2s, 4s, max 30s
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000,   // 10 minutes
       ...queryOptions
@@ -249,7 +267,7 @@ export function useVoilaState() {
   }, [setState]);
 
   const addNotification = useCallback((notification: Omit<VoilaGlobalState['notifications'][0], 'id'>) => {
-    const id = `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     setState(prev => ({
       ...prev,
       notifications: [...prev.notifications, { id, ...notification }]
