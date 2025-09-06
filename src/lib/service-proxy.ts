@@ -2,13 +2,18 @@
  * Voila Service Proxy - Simple microservice routing middleware
  * @file src/lib/service-proxy.ts
  * 
+ * @llm-rule WHEN: Need gradual migration from monolith to microservices
+ * @llm-rule AVOID: Direct microservice calls - use proxy for service discovery
+ * @llm-rule PATTERN: Registry-based routing with automatic fallback to monolith
+ * @llm-rule NOTE: Optional registry file - if missing, defaults to monolith mode
+ * 
  * Simple proxy that:
  * - Checks registry for service
  * - If found -> proxy to microservice
  * - If not found -> continue to local monolith
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -29,7 +34,7 @@ interface ServiceRegistry {
 
 class ServiceProxyManager {
   private registry: ServiceRegistry | null = null;
-  private proxies: Map<string, any> = new Map();
+  private proxies: Map<string, RequestHandler> = new Map();
 
   constructor() {
     this.loadRegistry();
@@ -53,7 +58,7 @@ class ServiceProxyManager {
   /**
    * Get proxy middleware for a service
    */
-  getProxy(serviceName: string): any {
+  getProxy(serviceName: string): RequestHandler | null {
     if (!this.registry) return null;
 
     const serviceConfig = this.registry.registry[serviceName];
@@ -92,7 +97,7 @@ class ServiceProxyManager {
       this.proxies.set(cacheKey, proxy);
     }
 
-    return this.proxies.get(cacheKey);
+    return this.proxies.get(cacheKey) || null;
   }
 
   /**

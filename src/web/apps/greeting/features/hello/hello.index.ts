@@ -1,7 +1,7 @@
 /**
- * Hello Feature Contract - Interactive greeting UI with multi-language support
- * @module greeting/hello
- * @file src/web/apps/greeting/features/hello/hello.index.ts
+ * Hello Web Contract - Feature contract for greeting UI with routing and SEO
+ * @file src/web/apps/greeting/features/hello/hello.index.ts  
+ * @group Web Contract
  * 
  * @llm-rule WHEN: Building greeting features with authentication and personalization
  * @llm-rule AVOID: Hardcoded routes - use contract system for dynamic discovery

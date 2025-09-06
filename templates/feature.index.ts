@@ -8,8 +8,8 @@
  * @llm-rule NOTE: This contract enforces API consistency and enables automated validation
  */
 
-import type { VoilaFeatureContract } from '@/lib/contracts.js';
-import { createFeatureContract } from '@/lib/contracts.js';
+import type { VoilaFeatureContract } from '@/lib/api-contracts.js';
+import { createFeatureContract } from '@/lib/api-contracts.js';
 
 // ✅ CONTRACT: {{FEATURE_NAME_PASCAL}} feature with validation levels and bidirectional communication
 const {{FEATURE_NAME_PASCAL}}FeatureContract: VoilaFeatureContract = createFeatureContract({

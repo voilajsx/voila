@@ -8,8 +8,8 @@
  * @llm-rule NOTE: This contract enforces API consistency and enables automated validation
  */
 
-import type { VoilaFeatureContract } from '@/lib/contracts.js';
-import { createFeatureContract } from '@/lib/contracts.js';
+import type { VoilaFeatureContract } from '@/lib/api-contracts.js';
+import { createFeatureContract } from '@/lib/api-contracts.js';
 
 // ✅ CONTRACT: Multi-language greeting service with AppKit auth and service integration
 const HelloFeatureContract: VoilaFeatureContract = createFeatureContract({

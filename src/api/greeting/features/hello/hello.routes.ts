@@ -1,11 +1,12 @@
 /**
- * Hello feature Express route definitions with authentication
- * @module greeting/hello
- * @file src/api/greeting/features/hello/hello.routes.ts
+ * Hello API Routes - Express route definitions with authentication
+ * @file src/api/greeting/features/hello/hello.routes.ts  
+ * @group API Routes
  * 
- * @llm-rule WHEN: Need HTTP endpoints for hello greeting functionality with auth
- * @llm-rule AVOID: Adding business logic here - keep routes thin, delegate to services
- * @llm-rule NOTE: Routes map to HelloService static methods with appropriate auth middleware
+ * @llm-rule WHEN: Need HTTP endpoints for greeting functionality
+ * @llm-rule AVOID: Business logic in routes - delegate to service layer
+ * @llm-rule PATTERN: Route -> Middleware -> Service -> Response
+ * @llm-rule NOTE: All routes require authentication and include CORS headers
  */
 
 import express from 'express';

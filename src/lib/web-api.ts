@@ -2,6 +2,11 @@
  * Voila Framework API Client - Framework-level API utilities
  * @file src/lib/web-api.ts
  * 
+ * @llm-rule WHEN: Web apps need standardized HTTP client with retry logic
+ * @llm-rule AVOID: Direct fetch calls - use this client for consistency
+ * @llm-rule PATTERN: Config-driven client with exponential backoff retry
+ * @llm-rule NOTE: Each app configures its own baseUrl and settings
+ * 
  * Provides standardized API client that apps can configure with their own URLs
  */
 
@@ -22,10 +27,20 @@ export interface ApiResponse<T> {
 /**
  * Framework-level API Client
  * Apps configure their own URLs and settings
+ * 
+ * @llm-rule WHEN: Need HTTP client with retry, timeout, and error handling
+ * @llm-rule AVOID: Creating new fetch wrapper - extend this class instead
+ * @llm-rule PATTERN: Exponential backoff with configurable retries
  */
 export class VoilaApiClient {
   constructor(private config: AppApiConfig) {}
 
+  /**
+   * Perform GET request with retry logic
+   * @param endpoint - API endpoint path (relative to baseUrl)
+   * @param options - Optional headers
+   * @returns Promise resolving to typed API response
+   */
   async get<T>(endpoint: string, options?: { headers?: Record<string, string> }): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'GET',
@@ -33,6 +48,13 @@ export class VoilaApiClient {
     });
   }
 
+  /**
+   * Perform POST request with retry logic
+   * @param endpoint - API endpoint path (relative to baseUrl)
+   * @param data - Request body data
+   * @param options - Optional headers
+   * @returns Promise resolving to typed API response
+   */
   async post<T>(endpoint: string, data?: any, options?: { headers?: Record<string, string> }): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'POST',
@@ -115,6 +137,10 @@ export class VoilaApiClient {
 
 /**
  * Factory function to create app-specific API clients
+ * @param config - App-specific API configuration
+ * @returns Configured VoilaApiClient instance
+ * @llm-rule WHEN: Setting up API client for a new web app
+ * @llm-rule PATTERN: Use this factory instead of direct constructor
  */
 export function createAppApiClient(config: AppApiConfig): VoilaApiClient {
   return new VoilaApiClient(config);

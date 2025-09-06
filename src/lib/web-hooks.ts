@@ -2,7 +2,16 @@
  * Voila Framework Global Hooks - Infrastructure-level React hooks
  * @file src/lib/web-hooks.ts
  * 
- * Provides consistent infrastructure hooks across all Voila apps/features
+ * @llm-rule WHEN: Need standardized hooks across all web apps (storage, API, global state)
+ * @llm-rule AVOID: Creating custom hooks in each app - use these framework hooks instead
+ * @llm-rule PATTERN: Consistent API with React Query integration and typed interfaces
+ * @llm-rule NOTE: All hooks are framework-level and can be used in any Voila web application
+ * 
+ * Provides consistent infrastructure hooks across all Voila apps/features including:
+ * - Storage management (localStorage/sessionStorage with serialization)
+ * - API client integration with React Query (caching, retry, mutations)
+ * - Global state management (user, theme, notifications)
+ * - Development utilities and environment access
  */
 
 import { useState, useCallback, useContext } from 'react';
@@ -14,14 +23,32 @@ import { VoilaStateContext, type VoilaGlobalState } from './web-providers.js';
 // Storage Hook
 // ================================
 
+/**
+ * Configuration options for Voila storage hook
+ */
 export interface VoilaStorageOptions {
+  /** Storage type to use - defaults to localStorage */
   storage?: 'localStorage' | 'sessionStorage';
+  /** Whether to serialize values as JSON - defaults to true */
   serialize?: boolean;
 }
 
 /**
  * Voila Storage Hook - Consistent local storage management
- * Supports both localStorage and sessionStorage with serialization
+ * 
+ * Provides a React hook for managing browser storage with automatic serialization,
+ * error handling, and consistent API across localStorage and sessionStorage.
+ * 
+ * @param key - Storage key to use
+ * @param defaultValue - Default value if key doesn't exist
+ * @param options - Storage configuration options
+ * @returns Tuple of [value, setValue, removeValue]
+ * 
+ * @example
+ * ```tsx
+ * const [theme, setTheme, clearTheme] = useVoilaStorage('user-theme', 'light');
+ * const [settings, setSettings] = useVoilaStorage('app-settings', {}, { serialize: true });
+ * ```
  */
 export function useVoilaStorage<T>(
   key: string, 
@@ -74,17 +101,38 @@ export function useVoilaStorage<T>(
 // API Hook
 // ================================
 
+/**
+ * Options for Voila API GET requests with React Query integration
+ */
 export interface VoilaApiHookOptions<T> extends Omit<UseQueryOptions<T>, 'queryKey' | 'queryFn'> {
+  /** Additional headers to include with the request */
   headers?: Record<string, string>;
 }
 
+/**
+ * Options for Voila API mutation requests (POST, PUT, DELETE)
+ */
 export interface VoilaMutationOptions<TData, TVariables> extends UseMutationOptions<TData, Error, TVariables> {
+  /** Additional headers to include with the request */
   headers?: Record<string, string>;
 }
 
 /**
  * Voila API Hook - Consistent API management with React Query
- * Integrates with VoilaApiClient for automatic retry/caching
+ * 
+ * Integrates VoilaApiClient with React Query for advanced caching, retry logic,
+ * and optimistic updates. Provides methods for all HTTP verbs with consistent
+ * error handling and query invalidation.
+ * 
+ * @param apiClient - Configured VoilaApiClient instance
+ * @returns Object with HTTP methods and cache utilities
+ * 
+ * @example
+ * ```tsx
+ * const api = useVoilaApi(greetingApiClient);
+ * const { data, isLoading } = api.get('/hello/world');
+ * const mutation = api.post('/hello', { onSuccess: () => console.log('Success!') });
+ * ```
  */
 export function useVoilaApi(apiClient: VoilaApiClient) {
   const queryClient = useQueryClient();
@@ -242,7 +290,20 @@ export function useVoilaApi(apiClient: VoilaApiClient) {
 
 /**
  * Voila State Hook - Global state management
- * Access and modify framework-level state
+ * 
+ * Provides access to framework-level global state including user authentication,
+ * theme preferences, API environment, and notifications. Must be used within
+ * a VoilaStateProvider context.
+ * 
+ * @returns Object with state values and mutation methods
+ * @throws Error if used outside VoilaStateProvider
+ * 
+ * @example
+ * ```tsx
+ * const { user, theme, setTheme, addNotification } = useVoilaState();
+ * setTheme('dark');
+ * addNotification({ message: 'Hello!', type: 'success' });
+ * ```
  */
 export function useVoilaState() {
   const context = useContext(VoilaStateContext);
@@ -306,13 +367,15 @@ export function useVoilaState() {
 
 /**
  * Check if running in development mode
+ * @returns Boolean indicating if in development environment
  */
 export function useVoilaDev() {
   return import.meta.env.DEV;
 }
 
 /**
- * Get Voila environment variables
+ * Get Voila environment variables and configuration
+ * @returns Object with environment flags and configuration values
  */
 export function useVoilaEnv() {
   return {

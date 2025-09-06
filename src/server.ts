@@ -16,10 +16,10 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import ApiDiscovery from './lib/discovery.js';
+import ApiDiscovery from './lib/api-discovery.js';
 
 // Contract validation system
-import { contractRegistry, validateAllApps, isFeatureEnabled } from './lib/contracts.js';
+import { contractRegistry, validateAllApps, isFeatureEnabled } from './lib/api-contracts.js';
 
 // Web integration system
 import { getWebDiscovery, validateAllWebApps } from './lib/web-discovery.js';

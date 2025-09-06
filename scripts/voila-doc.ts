@@ -8,10 +8,45 @@
 import { execSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 const PROJECT_ROOT = process.cwd();
 const TYPEDOC_CONFIG = path.join(PROJECT_ROOT, 'typedoc.json');
-const DOCS_OUTPUT = path.join(PROJECT_ROOT, 'docs-generated');
+const DOCS_OUTPUT = path.join(PROJECT_ROOT, 'docs/typedocs');
+
+/**
+ * Open documentation in the default browser
+ */
+function openDocs(): void {
+  const indexPath = path.join(DOCS_OUTPUT, 'index.html');
+  
+  if (!existsSync(indexPath)) {
+    console.log('❌ Documentation not found. Run npm run doc first.');
+    return;
+  }
+
+  const platform = process.platform;
+  let openCommand: string;
+
+  switch (platform) {
+    case 'darwin':
+      openCommand = 'open';
+      break;
+    case 'win32':
+      openCommand = 'start';
+      break;
+    default:
+      openCommand = 'xdg-open';
+  }
+
+  try {
+    execSync(`${openCommand} "${indexPath}"`, { stdio: 'ignore' });
+    console.log('🌐 Documentation opened in browser');
+  } catch (error) {
+    console.log(`🌐 Open documentation manually: file://${indexPath}`);
+  }
+}
 
 /**
  * Generate TypeDoc documentation
@@ -53,9 +88,14 @@ async function generateDocs(): Promise<void> {
     console.log(`\n✅ Documentation generated successfully in ${duration}s`);
     console.log(`📁 Output location: ${DOCS_OUTPUT}`);
     
-    // Check if docs were generated
+    // Check if docs were generated and offer to open them
     if (existsSync(path.join(DOCS_OUTPUT, 'index.html'))) {
       console.log(`🌐 Open documentation: file://${path.join(DOCS_OUTPUT, 'index.html')}`);
+      
+      // Auto-open in development mode
+      if (process.argv.includes('--open') || process.argv.includes('-o')) {
+        openDocs();
+      }
     }
 
     console.log('\n📋 Documentation includes:');
@@ -79,13 +119,42 @@ async function generateDocs(): Promise<void> {
 }
 
 /**
- * Main execution
+ * Handle command line arguments
  */
-if (import.meta.url === `file://${process.argv[1]}`) {
+function handleCommand(): void {
+  const args = process.argv.slice(2);
+  
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log('📚 VoilaJS Documentation Generator');
+    console.log('Usage:');
+    console.log('  npm run doc           Generate documentation');
+    console.log('  npm run doc -- --open Generate and open in browser');
+    console.log('  npm run doc -- -o     Generate and open in browser (short)');
+    console.log('');
+    console.log('Options:');
+    console.log('  --open, -o  Open documentation in browser after generation');
+    console.log('  --help, -h  Show this help message');
+    return;
+  }
+
+  if (args.includes('open')) {
+    // Just open existing docs without regenerating
+    openDocs();
+    return;
+  }
+
+  // Default: generate documentation
   generateDocs().catch((error) => {
     console.error('Fatal error:', error);
     process.exit(1);
   });
 }
 
-export { generateDocs };
+/**
+ * Main execution
+ */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  handleCommand();
+}
+
+export { generateDocs, openDocs };

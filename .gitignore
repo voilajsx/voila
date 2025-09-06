@@ -59,3 +59,6 @@ tests/
 
 # Service Registry (optional - only needed for microservices)
 registry/services.registry.json
+
+# Prisma generated client files
+src/api/*/prisma/generated/

@@ -37,18 +37,6 @@ export interface VoilaWebFeatureContract {
     canonical?: string;
   }>;
   
-  // Legacy support (deprecated but kept for backward compatibility)
-  sharedState?: boolean;
-  provides?: {
-    components: string[];
-    hooks: string[];
-    services: string[];
-  };
-  consumes?: {
-    components: string[];
-    hooks: string[];
-    apis: string[];
-  };
 }
 
 export interface VoilaWebRoute {
@@ -68,10 +56,6 @@ export class VoilaWebContractBuilder {
     sharedComponents: [],
     routes: [],
     
-    // Legacy support (initialized for backward compatibility)
-    provides: { components: [], hooks: [], services: [] },
-    consumes: { components: [], hooks: [], apis: [] },
-    sharedState: false
   };
 
   app(name: string): VoilaWebContractBuilder {
@@ -92,24 +76,10 @@ export class VoilaWebContractBuilder {
   // === MODERN CLEAN APPROACH (recommended) ===
   
   providesHook(hook: string): VoilaWebContractBuilder {
-    // New clean approach
     this.contract.hooks!.push(hook);
-    // Legacy support
-    this.contract.provides!.hooks.push(hook);
     return this;
   }
 
-  // === LEGACY METHODS (deprecated, use customComponent/sharedComponent instead) ===
-  
-  providesComponent(component: string): VoilaWebContractBuilder {
-    this.contract.provides!.components.push(component);
-    return this;
-  }
-
-  providesService(service: string): VoilaWebContractBuilder {
-    this.contract.provides!.services.push(service);
-    return this;
-  }
 
   // === COMPONENT DEPENDENCIES (modern approach) ===
   
@@ -123,27 +93,6 @@ export class VoilaWebContractBuilder {
     return this;
   }
 
-  // === LEGACY METHODS (deprecated, kept for backward compatibility) ===
-  
-  consumesComponent(component: string): VoilaWebContractBuilder {
-    this.contract.consumes!.components.push(component);
-    return this;
-  }
-
-  consumesHook(hook: string): VoilaWebContractBuilder {
-    this.contract.consumes!.hooks.push(hook);
-    return this;
-  }
-
-  consumesAPI(api: string): VoilaWebContractBuilder {
-    this.contract.consumes!.apis.push(api);
-    return this;
-  }
-  
-  sharedState(enabled: boolean): VoilaWebContractBuilder {
-    this.contract.sharedState = enabled;
-    return this;
-  }
 
   // === ROUTE DEFINITIONS ===
   

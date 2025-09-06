@@ -13,7 +13,7 @@ import { dirname, join } from 'path';
 import { spawn } from 'child_process';
 import { readdirSync, statSync, existsSync } from 'fs';
 import fs from 'fs';
-import { validateContracts } from '../src/lib/contracts.js';
+import { validateContracts } from '../src/lib/api-contracts.js';
 import { validateAllWebApps } from '../src/lib/web-discovery.js';
 
 const __filename = fileURLToPath(import.meta.url);

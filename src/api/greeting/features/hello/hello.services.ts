@@ -1,4 +1,13 @@
-// Hello service handlers with authentication integration
+/**
+ * Hello API Services - Backend greeting services with authentication
+ * @file src/api/greeting/features/hello/hello.services.ts
+ * @group API Services
+ * 
+ * @llm-rule WHEN: Building greeting endpoints with authentication and validation
+ * @llm-rule AVOID: Business logic in routes - use service layer pattern  
+ * @llm-rule PATTERN: Static methods for Express handlers, AppKit integration
+ * @llm-rule NOTE: Integrates with VoilaJSX AppKit for consistent error handling
+ */
 
 import { Request, Response } from 'express';
 // Import VoilaJSX AppKit modules for enterprise features

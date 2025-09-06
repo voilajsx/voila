@@ -16,7 +16,7 @@
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { readdirSync, existsSync, statSync } from 'fs';
-import { VoilaFeatureContract } from '../src/lib/contracts.js';
+import { VoilaFeatureContract } from '../src/lib/api-contracts.js';
 import { WebDiscovery } from '../src/lib/web-discovery.js';
 
 const __filename = fileURLToPath(import.meta.url);

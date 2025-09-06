@@ -1,7 +1,7 @@
 /**
- * Hello Feature Hook - Greeting API integration with caching and validation
- * @module greeting/hello
+ * Hello Web Hook - React hook for greeting API with caching and validation
  * @file src/web/apps/greeting/features/hello/hooks/useHello.ts
+ * @group Web Hooks
  * 
  * @llm-rule WHEN: Need greeting functionality with multi-language support and authentication
  * @llm-rule AVOID: Direct GreetingApi calls - use this hook for consistency and caching
